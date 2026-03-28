@@ -141,7 +141,7 @@ const Quote = () => {
                 {/* Material */}
                 <div>
                   <label className="text-sm font-medium text-foreground mb-2 block">Material</label>
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-2 gap-2">
                     {MATERIALS.map((m, i) => (
                       <button
                         key={m.name}
