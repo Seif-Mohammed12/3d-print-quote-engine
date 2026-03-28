@@ -32,12 +32,12 @@ const services = [
 ];
 
 const materials = [
-  { name: "PLA", desc: "Eco-friendly, great surface finish", color: "text-green-400" },
-  { name: "ABS", desc: "Heat resistant, durable", color: "text-orange-400" },
-  { name: "PETG", desc: "Chemical resistant, strong", color: "text-blue-400" },
-  { name: "Resin", desc: "Ultra-fine detail, smooth", color: "text-purple-400" },
-  { name: "Nylon", desc: "Flexible, high impact strength", color: "text-cyan-400" },
-  { name: "TPU", desc: "Rubber-like flexibility", color: "text-pink-400" },
+  { name: "PLA", desc: "Eco-friendly, great surface finish", color: "text-green-400", available: true },
+  { name: "ABS", desc: "Heat resistant, durable", color: "text-orange-400", available: false },
+  { name: "PETG", desc: "Chemical resistant, strong", color: "text-blue-400", available: true },
+  { name: "Resin", desc: "Ultra-fine detail, smooth", color: "text-purple-400", available: false },
+  { name: "Nylon", desc: "Flexible, high impact strength", color: "text-cyan-400", available: false },
+  { name: "TPU", desc: "Rubber-like flexibility", color: "text-pink-400", available: false },
 ];
 
 const Services = () => (
@@ -82,10 +82,15 @@ const Services = () => (
               whileInView={{ opacity: 1, scale: 1 }}
               viewport={{ once: true }}
               transition={{ delay: i * 0.05 }}
-              className="glass-card p-5 text-center"
+              className={`glass-card p-5 text-center relative ${!m.available ? 'opacity-60' : ''}`}
             >
               <span className={`font-heading font-bold text-lg ${m.color}`}>{m.name}</span>
               <p className="text-xs text-muted-foreground mt-2">{m.desc}</p>
+              {!m.available && (
+                <div className="absolute -top-1 -right-1 bg-primary/90 text-primary-foreground text-xs px-2 py-0.5 rounded-full font-medium">
+                  Soon
+                </div>
+              )}
             </motion.div>
           ))}
         </div>

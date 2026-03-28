@@ -79,13 +79,13 @@ const Contact = () => {
                 <h3 className="font-heading font-semibold text-foreground">Get in Touch</h3>
                 <div className="space-y-3 text-sm text-muted-foreground">
                   <p className="flex items-center gap-3"><Mail className="w-4 h-4 text-primary" /> hello@3dprintit.com</p>
-                  <p className="flex items-center gap-3"><Phone className="w-4 h-4 text-primary" /> +1 (555) 123-4567</p>
-                  <p className="flex items-center gap-3"><MapPin className="w-4 h-4 text-primary" /> San Francisco, CA</p>
+                  <p className="flex items-center gap-3"><Phone className="w-4 h-4 text-primary" /> +20 109 922 8486</p>
+                  <p className="flex items-center gap-3"><MapPin className="w-4 h-4 text-primary" /> New Cairo, Egypt</p>
                 </div>
               </div>
 
               <a
-                href="https://wa.me/15551234567"
+                href="whatsapp://send?phone=201099228486"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="glass-card-hover p-6 flex items-center gap-4 group"

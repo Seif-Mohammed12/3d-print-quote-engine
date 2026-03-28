@@ -42,14 +42,14 @@ const Footer = () => (
           <h4 className="font-heading font-semibold text-foreground mb-3 text-sm">Contact</h4>
           <div className="flex flex-col gap-2 text-sm text-muted-foreground">
             <span className="flex items-center gap-2"><Mail className="w-4 h-4" /> hello@3dprintit.com</span>
-            <span className="flex items-center gap-2"><Phone className="w-4 h-4" /> +1 (555) 123-4567</span>
-            <span className="flex items-center gap-2"><MapPin className="w-4 h-4" /> San Francisco, CA</span>
+            <span className="flex items-center gap-2"><Phone className="w-4 h-4" /> +20 109 922 8486</span>
+            <span className="flex items-center gap-2"><MapPin className="w-4 h-4" /> New Cairo, Egypt</span>
           </div>
         </div>
       </div>
 
       <div className="mt-10 pt-6 border-t border-border/30 text-center text-xs text-muted-foreground">
-        © {new Date().getFullYear()} 3D Print It. All rights reserved.
+        © 2021 - {new Date().getFullYear()} 3D Print It. All rights reserved.
       </div>
     </div>
   </footer>

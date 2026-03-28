@@ -153,7 +153,7 @@ const Quote = () => {
                         }`}
                       >
                         <span className={`font-semibold ${m.color}`}>{m.name}</span>
-                        <span className="block text-xs mt-0.5">${m.costPerGram}/g</span>
+                        <span className="block text-xs mt-0.5">EGP{m.costPerGram}/g</span>
                       </button>
                     ))}
                   </div>
@@ -219,7 +219,7 @@ const Quote = () => {
                     <div className="text-center mb-6">
                       <span className="text-sm text-muted-foreground">Estimated Price</span>
                       <p className="text-4xl font-heading font-bold neon-text mt-1">
-                        ${quote.totalPrice.toFixed(2)}
+                        EGP{quote.totalPrice.toFixed(2)}
                       </p>
                     </div>
 
@@ -227,9 +227,8 @@ const Quote = () => {
                       {[
                         { icon: Weight, label: "Weight", value: `${quote.weightGrams.toFixed(1)}g` },
                         { icon: Clock, label: "Print Time", value: quote.estimatedTime },
-                        { icon: DollarSign, label: "Material Cost", value: `$${quote.materialCost.toFixed(2)}` },
-                        { icon: Clock, label: "Time Cost", value: `$${quote.timeCost.toFixed(2)}` },
-                        { icon: DollarSign, label: "Base Fee", value: `$${quote.baseFee.toFixed(2)}` },
+                        { icon: DollarSign, label: "Material Cost", value: `EGP${quote.materialCost.toFixed(2)}` },
+                        { icon: Clock, label: "Time Cost", value: `EGP${quote.timeCost.toFixed(2)}` },
                       ].map((row) => (
                         <div key={row.label} className="flex items-center justify-between text-sm">
                           <span className="flex items-center gap-2 text-muted-foreground">

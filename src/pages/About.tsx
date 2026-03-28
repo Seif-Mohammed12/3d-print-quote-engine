@@ -22,16 +22,16 @@ const About = () => (
           className="glass-card p-8 md:p-12 mb-16"
         >
           <p className="text-muted-foreground leading-relaxed mb-4">
-            Founded in 2023, <span className="text-foreground font-semibold">3D Print It</span> was born from a simple idea: 
+            Founded in 2021, <span className="text-foreground font-semibold">3D Print It</span> was born from a simple idea: 
             everyone should have access to professional-grade 3D printing without the complexity or cost barriers.
           </p>
           <p className="text-muted-foreground leading-relaxed mb-4">
-            We started as a small workshop with a single printer and a passion for making. Today, we operate 
-            a fleet of industrial-grade FDM and SLA machines, serving everyone from hobbyists to Fortune 500 companies.
+            As a dedicated small business, we focus on delivering exceptional quality and personalized service to our customers. 
+            We combine traditional craftsmanship with cutting-edge technology to bring your ideas to life with precision and care.
           </p>
           <p className="text-muted-foreground leading-relaxed">
-            Our smart quoting system uses real-time material analysis to deliver instant, transparent pricing — 
-            no back-and-forth emails, no surprises.
+            Our smart quoting system uses advanced material analysis to provide instant, transparent pricing — 
+            no hidden fees, no surprises, just honest business practices that build trust with every order.
           </p>
         </motion.div>
 
