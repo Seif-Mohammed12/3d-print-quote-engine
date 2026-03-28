@@ -65,7 +65,7 @@ const ModelViewer = ({ fileBuffer }: Props) => (
         <Stage environment="city" intensity={0.6}>
           <STLModel buffer={fileBuffer} />
         </Stage>
-        <OrbitControls autoRotate autoRotateSpeed={2} />
+        <OrbitControls />
       </Suspense>
     </Canvas>
   </div>

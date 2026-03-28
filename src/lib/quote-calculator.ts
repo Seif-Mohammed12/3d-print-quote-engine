@@ -7,11 +7,7 @@ export interface Material {
 
 export const MATERIALS: Material[] = [
   { name: "PLA", density: 1.24, costPerGram: 0.04, color: "text-green-400" },
-  { name: "ABS", density: 1.04, costPerGram: 0.05, color: "text-orange-400" },
   { name: "PETG", density: 1.27, costPerGram: 0.06, color: "text-blue-400" },
-  { name: "Resin", density: 1.10, costPerGram: 0.12, color: "text-purple-400" },
-  { name: "Nylon", density: 1.15, costPerGram: 0.10, color: "text-cyan-400" },
-  { name: "TPU", density: 1.21, costPerGram: 0.08, color: "text-pink-400" },
 ];
 
 export type Quality = "draft" | "standard" | "high";
@@ -29,14 +25,17 @@ export interface QuoteResult {
   infill: number;
 }
 
-const QUALITY_MULTIPLIERS: Record<Quality, { speed: number; cost: number; layer: string }> = {
-  draft: { speed: 0.7, cost: 0.85, layer: "0.3mm" },
-  standard: { speed: 1.0, cost: 1.0, layer: "0.2mm" },
-  high: { speed: 1.6, cost: 1.3, layer: "0.1mm" },
+// Layer heights and speed profiles tuned to typical FDM printers (~60mm/s)
+const QUALITY_MULTIPLIERS: Record<Quality, { speed: number; cost: number; layer: number; label: string }> = {
+  draft: { speed: 0.75, cost: 0.85, layer: 0.3, label: "0.3mm" },
+  standard: { speed: 1.0, cost: 1.0, layer: 0.2, label: "0.2mm" },
+  high: { speed: 1.8, cost: 1.3, layer: 0.12, label: "0.12mm" },
 };
 
 const BASE_FEE = 5.0;
 const TIME_COST_PER_HOUR = 2.5;
+const PRINT_SPEED_MM_S = 60; // typical print speed
+const NOZZLE_WIDTH = 0.4; // mm
 
 export function calculateQuote(
   volumeCm3: number,
@@ -44,21 +43,33 @@ export function calculateQuote(
   quality: Quality,
   infill: number // 0-100
 ): QuoteResult {
-  const infillFactor = 0.3 + (infill / 100) * 0.7; // shell + infill contribution
-  const effectiveVolume = volumeCm3 * infillFactor;
+  // Weight calculation: ~2 perimeter walls + top/bottom shells + infill
+  const shellFraction = 0.15; // perimeters + top/bottom typically ~15% of volume
+  const infillFraction = (1 - shellFraction) * (infill / 100);
+  const effectiveFillRatio = shellFraction + infillFraction;
+  const effectiveVolume = volumeCm3 * effectiveFillRatio;
   const weightGrams = effectiveVolume * material.density;
 
   const qualityMult = QUALITY_MULTIPLIERS[quality];
   const materialCost = weightGrams * material.costPerGram;
 
-  // Rough print time heuristic: ~20cm³/hr at standard, adjusted by quality
-  const baseHours = effectiveVolume / 20;
-  const hours = baseHours * qualityMult.speed;
-  const timeCost = hours * TIME_COST_PER_HOUR;
+  // Print time estimate based on extrusion volume and layer height
+  // Volume to extrude in mm³
+  const extrusionVolumeMm3 = effectiveVolume * 1000; // cm³ → mm³
+  // Cross-section of extruded line: layer_height × nozzle_width
+  const lineArea = qualityMult.layer * NOZZLE_WIDTH; // mm²
+  // Total travel distance in mm
+  const travelMm = extrusionVolumeMm3 / lineArea;
+  // Time in hours (speed adjusted by quality)
+  const effectiveSpeed = PRINT_SPEED_MM_S / qualityMult.speed; // slower for higher quality
+  const hours = (travelMm / effectiveSpeed) / 3600;
+  // Add ~15% overhead for travel moves, retraction, heating, etc.
+  const totalHours = hours * 1.15;
+  const timeCost = totalHours * TIME_COST_PER_HOUR;
 
   const totalPrice = (materialCost + timeCost + BASE_FEE) * qualityMult.cost;
 
-  const estimatedTime = formatTime(hours);
+  const estimatedTime = formatTime(totalHours);
 
   return {
     volumeCm3,
