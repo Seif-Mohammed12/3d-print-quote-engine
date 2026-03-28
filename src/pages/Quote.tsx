@@ -141,7 +141,7 @@ const Quote = () => {
                 {/* Material */}
                 <div>
                   <label className="text-sm font-medium text-foreground mb-2 block">Material</label>
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-2 gap-2">
                     {MATERIALS.map((m, i) => (
                       <button
                         key={m.name}
@@ -239,6 +239,10 @@ const Quote = () => {
                         </div>
                       ))}
                     </div>
+
+                    <p className="text-xs text-muted-foreground text-center mb-4 leading-relaxed">
+                      * This is an approximate estimate. Final pricing may vary after we review your file. We will contact you to confirm the details before proceeding.
+                    </p>
 
                     <div className="flex gap-3">
                       <button className="flex-1 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:shadow-[0_0_20px_-5px_hsl(var(--neon-glow)/0.5)] transition-all flex items-center justify-center gap-2">
