@@ -34,8 +34,10 @@ const QUALITY_MULTIPLIERS: Record<Quality, { speed: number; cost: number; layer:
 
 const BASE_FEE = 5.0;
 const TIME_COST_PER_HOUR = 2.5;
-const PRINT_SPEED_MM_S = 60; // typical print speed
-const NOZZLE_WIDTH = 0.4; // mm
+
+// Typical material deposition rates (grams/hour) at standard quality
+// Based on real-world FDM printing at ~50-60mm/s with 0.4mm nozzle
+const GRAMS_PER_HOUR_STANDARD = 5.5;
 
 export function calculateQuote(
   volumeCm3: number,
@@ -43,8 +45,9 @@ export function calculateQuote(
   quality: Quality,
   infill: number // 0-100
 ): QuoteResult {
-  // Weight calculation: ~2 perimeter walls + top/bottom shells + infill
-  const shellFraction = 0.15; // perimeters + top/bottom typically ~15% of volume
+  // Weight: shells (walls + top/bottom) typically consume ~35% of solid volume
+  // on average-sized models with 3 perimeters + 4 top/bottom layers
+  const shellFraction = 0.35;
   const infillFraction = (1 - shellFraction) * (infill / 100);
   const effectiveFillRatio = shellFraction + infillFraction;
   const effectiveVolume = volumeCm3 * effectiveFillRatio;
@@ -53,18 +56,10 @@ export function calculateQuote(
   const qualityMult = QUALITY_MULTIPLIERS[quality];
   const materialCost = weightGrams * material.costPerGram;
 
-  // Print time estimate based on extrusion volume and layer height
-  // Volume to extrude in mm³
-  const extrusionVolumeMm3 = effectiveVolume * 1000; // cm³ → mm³
-  // Cross-section of extruded line: layer_height × nozzle_width
-  const lineArea = qualityMult.layer * NOZZLE_WIDTH; // mm²
-  // Total travel distance in mm
-  const travelMm = extrusionVolumeMm3 / lineArea;
-  // Time in hours (speed adjusted by quality)
-  const effectiveSpeed = PRINT_SPEED_MM_S / qualityMult.speed; // slower for higher quality
-  const hours = (travelMm / effectiveSpeed) / 3600;
-  // Add ~15% overhead for travel moves, retraction, heating, etc.
-  const totalHours = hours * 1.15;
+  // Print time: weight-based heuristic calibrated to real prints
+  // ~5.5 g/hr at standard, slower for high quality, faster for draft
+  const gramsPerHour = GRAMS_PER_HOUR_STANDARD / qualityMult.speed;
+  const totalHours = weightGrams / gramsPerHour;
   const timeCost = totalHours * TIME_COST_PER_HOUR;
 
   const totalPrice = (materialCost + timeCost + BASE_FEE) * qualityMult.cost;
