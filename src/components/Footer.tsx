@@ -41,7 +41,7 @@ const Footer = () => (
         <div>
           <h4 className="font-heading font-semibold text-foreground mb-3 text-sm">Contact</h4>
           <div className="flex flex-col gap-2 text-sm text-muted-foreground">
-            <span className="flex items-center gap-2"><Mail className="w-4 h-4" /> hello@3dprintit.com</span>
+            <span className="flex items-center gap-2"><Mail className="w-4 h-4" /> 3d.print.ittt@gmail.com</span>
             <span className="flex items-center gap-2"><Phone className="w-4 h-4" /> +20 109 922 8486</span>
             <span className="flex items-center gap-2"><MapPin className="w-4 h-4" /> New Cairo, Egypt</span>
           </div>

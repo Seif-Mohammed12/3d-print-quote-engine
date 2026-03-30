@@ -1,0 +1,129 @@
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { motion } from "framer-motion";
+import { CheckCircle, MessageCircle, ArrowLeft } from "lucide-react";
+import Layout from "@/components/Layout";
+
+interface OrderData {
+  customer: string;
+  email: string;
+  phone: string;
+  items: any[];
+  total: string;
+  timestamp: string;
+}
+
+const OrderConfirmation = () => {
+  const [order, setOrder] = useState<OrderData | null>(null);
+
+  useEffect(() => {
+    const saved = sessionStorage.getItem("lastOrder");
+    if (saved) {
+      setOrder(JSON.parse(saved));
+    }
+  }, []);
+
+  return (
+    <Layout>
+      <section className="section-padding">
+        <div className="container mx-auto max-w-2xl">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="text-center mb-8"
+          >
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 0.2, type: "spring" }}
+              className="inline-block"
+            >
+              <CheckCircle className="w-24 h-24 text-green-400 mx-auto" />
+            </motion.div>
+            <h1 className="text-3xl font-heading font-bold text-foreground mt-4 mb-2">
+              Order Confirmed!
+            </h1>
+            <p className="text-lg text-muted-foreground">
+              Thank you for your order. We'll review your files and contact you shortly.
+            </p>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="glass-card p-8 space-y-6 mb-6"
+          >
+            <div className="bg-primary/10 border border-primary/20 rounded-lg p-4 space-y-3 text-sm">
+              <p className="font-semibold text-foreground">✓ What happens next:</p>
+              <div className="space-y-2 text-muted-foreground">
+                <p>• Check your email for the order confirmation</p>
+                <p>• We'll review your 3D files and specifications</p>
+                <p>• Final quote and timeline will be emailed to you</p>
+                <p>• We'll confirm payment and schedule printing</p>
+              </div>
+            </div>
+
+            {order && (
+              <div className="space-y-4">
+                <h3 className="font-heading font-semibold text-foreground">Order Details</h3>
+                <div className="space-y-3">
+                  <div className="flex justify-between py-2 border-b border-border/30">
+                    <span className="text-muted-foreground">Customer</span>
+                    <span className="text-foreground font-medium">{order.customer}</span>
+                  </div>
+                  <div className="flex justify-between py-2 border-b border-border/30">
+                    <span className="text-muted-foreground">Email</span>
+                    <span className="text-foreground font-medium">{order.email}</span>
+                  </div>
+                  <div className="flex justify-between py-2 border-b border-border/30">
+                    <span className="text-muted-foreground">Phone</span>
+                    <span className="text-foreground font-medium">{order.phone}</span>
+                  </div>
+                  <div className="flex justify-between py-2 border-b border-border/30">
+                    <span className="text-muted-foreground">Items</span>
+                    <span className="text-foreground font-medium">{order.items.length}</span>
+                  </div>
+                  <div className="flex justify-between py-2">
+                    <span className="text-muted-foreground">Estimated Total</span>
+                    <span className="text-foreground font-bold">EGP{order.total}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+            className="glass-card p-6 text-center space-y-4"
+          >
+            <h3 className="font-heading font-semibold text-foreground">Questions?</h3>
+            <p className="text-muted-foreground text-sm">
+              Reach out to us directly via WhatsApp or email. We respond within 2 hours during business hours.
+            </p>
+            <div className="flex gap-3 justify-center">
+              <a
+                href="whatsapp://send?phone=201099228486&text=Hi%20there!%20I%20just%20placed%20an%20order"
+                className="px-4 py-2 rounded-lg bg-green-500/10 border border-green-500/20 text-green-400 hover:bg-green-500/20 text-sm font-medium transition-colors flex items-center gap-2"
+              >
+                <MessageCircle className="w-4 h-4" />
+                WhatsApp Us
+              </a>
+              <Link
+                to="/"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 text-sm font-medium transition-colors"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                Back Home
+              </Link>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+    </Layout>
+  );
+};
+
+export default OrderConfirmation;

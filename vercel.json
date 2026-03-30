@@ -1,0 +1,16 @@
+{
+  "version": 2,
+  "buildCommand": "npm run build",
+  "framework": "vite",
+  "env": {
+    "SENDGRID_API_KEY": "@sendgrid_api_key",
+    "ADMIN_EMAIL": "@admin_email",
+    "SENDGRID_FROM_EMAIL": "@sendgrid_from_email"
+  },
+  "functions": {
+    "api/send-order-email.js": {
+      "memory": 1024,
+      "maxDuration": 30
+    }
+  }
+}

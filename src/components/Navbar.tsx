@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Menu, X, Printer } from "lucide-react";
+import { Menu, X, Printer, ShoppingCart } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useCart } from "@/lib/cart-context";
 
 const navLinks = [
   { to: "/", label: "Home" },
@@ -15,6 +16,7 @@ const navLinks = [
 const Navbar = () => {
   const [open, setOpen] = useState(false);
   const location = useLocation();
+  const { cart } = useCart();
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/50">
@@ -43,6 +45,17 @@ const Navbar = () => {
               {link.label}
             </Link>
           ))}
+          <Link
+            to="/cart"
+            className="relative ml-2 px-4 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary transition-all duration-300 flex items-center gap-2"
+          >
+            <ShoppingCart className="w-4 h-4" />
+            {cart.length > 0 && (
+              <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-primary text-white text-xs flex items-center justify-center font-bold">
+                {cart.length}
+              </span>
+            )}
+          </Link>
         </div>
 
         {/* Mobile toggle */}

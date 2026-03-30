@@ -1,4 +1,5 @@
 import { useState, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Upload, FileType, Weight, Clock, DollarSign, Download, ShoppingCart, RotateCcw } from "lucide-react";
 import Layout from "@/components/Layout";
@@ -6,9 +7,12 @@ import SectionHeading from "@/components/SectionHeading";
 import ModelViewer from "@/components/ModelViewer";
 import { parseSTL, type STLResult } from "@/lib/stl-parser";
 import { calculateQuote, MATERIALS, type Quality, type QuoteResult } from "@/lib/quote-calculator";
+import { useCart } from "@/lib/cart-context";
 import { toast } from "sonner";
 
 const Quote = () => {
+  const navigate = useNavigate();
+  const { addToCart, cart } = useCart();
   const [fileBuffer, setFileBuffer] = useState<ArrayBuffer | null>(null);
   const [fileName, setFileName] = useState("");
   const [stlResult, setStlResult] = useState<STLResult | null>(null);
@@ -244,11 +248,32 @@ const Quote = () => {
                     </p>
 
                     <div className="flex gap-3">
-                      <button className="flex-1 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:shadow-[0_0_20px_-5px_hsl(var(--neon-glow)/0.5)] transition-all flex items-center justify-center gap-2">
-                        <ShoppingCart className="w-4 h-4" /> Order Now
+                      <button 
+                        onClick={() => {
+                          const cartItem = {
+                            id: `${Date.now()}-${Math.random()}`,
+                            fileName,
+                            fileBuffer: fileBuffer!,
+                            quote,
+                            material: MATERIALS[materialIdx].name,
+                            quality,
+                            infill,
+                          };
+                          addToCart(cartItem);
+                          toast.success("Added to cart!");
+                        }}
+                        className="flex-1 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:shadow-[0_0_20px_-5px_hsl(var(--neon-glow)/0.5)] transition-all flex items-center justify-center gap-2">
+                        <ShoppingCart className="w-4 h-4" /> Add to Cart
                       </button>
-                      <button className="py-2.5 px-4 rounded-lg border border-border text-muted-foreground hover:text-foreground transition-colors text-sm flex items-center gap-2">
-                        <Download className="w-4 h-4" /> PDF
+                      <button 
+                        onClick={() => navigate("/cart")}
+                        className="py-2.5 px-4 rounded-lg border border-border text-muted-foreground hover:text-foreground transition-colors text-sm flex items-center gap-2 relative">
+                        <ShoppingCart className="w-4 h-4" /> 
+                        {cart.length > 0 && (
+                          <span className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-primary text-white text-xs flex items-center justify-center font-bold">
+                            {cart.length}
+                          </span>
+                        )}
                       </button>
                     </div>
                   </motion.div>
