@@ -7,35 +7,26 @@ import SectionHeading from "@/components/SectionHeading";
 import { useCart } from "@/lib/cart-context";
 import { toast } from "sonner";
 
-// Helper to convert ArrayBuffer to base64
-const arrayBufferToBase64 = (buffer: ArrayBuffer): string => {
-  let binary = '';
-  const bytes = new Uint8Array(buffer);
-  for (let i = 0; i < bytes.byteLength; i++) {
-    binary += String.fromCharCode(bytes[i]);
-  }
-  return btoa(binary);
-};
-
-// Email sending service - sends to backend with file attachments
-const sendOrderEmail = async (orderDetails: any, fileBuffers: ArrayBuffer[]) => {
+// Email sending service - sends order details and files using FormData (multipart)
+const sendOrderEmail = async (orderDetails: any, fileBuffers: { name: string; buffer: ArrayBuffer }[]) => {
   try {
-    // Convert file buffers to base64
-    const encodedFiles = fileBuffers.map(buffer => ({
-      buffer: arrayBufferToBase64(buffer),
-    }));
+    const formData = new FormData();
+    
+    // Add order details as JSON
+    formData.append('orderDetails', JSON.stringify(orderDetails));
+    
+    // Add file buffers as binary
+    fileBuffers.forEach((file, index) => {
+      const blob = new Blob([file.buffer], { type: 'application/octet-stream' });
+      formData.append(`files`, blob, file.name);
+    });
 
     const response = await fetch(
       import.meta.env.VITE_API_URL || '/api/send-order-email',
       {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          orderDetails,
-          fileBuffers: encodedFiles,
-        }),
+        body: formData,
+        // Don't set Content-Type - browser will set it with boundary
       }
     );
 
@@ -88,8 +79,11 @@ const Checkout = () => {
         total: getTotalPrice().toFixed(2),
       };
 
-      // Prepare file buffers
-      const fileBuffers = cart.map(item => item.fileBuffer);
+      // Prepare file buffers with names
+      const fileBuffers = cart.map(item => ({
+        name: item.fileName,
+        buffer: item.fileBuffer,
+      }));
 
       // Send email with order details and files
       const emailSent = await sendOrderEmail(orderDetails, fileBuffers);

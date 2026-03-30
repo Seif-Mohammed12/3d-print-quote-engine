@@ -1,61 +1,248 @@
-const sgMail = require('@sendgrid/mail');
+import sgMail from '@sendgrid/mail';
+import busboy from 'busboy';
+import { Readable } from 'stream';
+
+console.log('📧 Function initialized - SendGrid key present:', !!process.env.SENDGRID_API_KEY);
 
 // Initialize SendGrid with your API key
 if (!process.env.SENDGRID_API_KEY) {
+  console.error('❌ SENDGRID_API_KEY is missing!');
   throw new Error('SENDGRID_API_KEY environment variable is not set');
 }
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+console.log('✅ SendGrid initialized');
 
-export default async function handler(req, res) {
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'Content-Type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Content-Type': 'application/json',
+};
+
+export default async function handler(request) {
+  console.log('📨 Received request:', {
+    method: request.method,
+    url: request.url,
+  });
+
+  // Handle preflight requests
+  if (request.method === 'OPTIONS') {
+    console.log('✅ Handling preflight OPTIONS request');
+    return new Response(JSON.stringify({ ok: true }), {
+      status: 200,
+      headers: corsHeaders,
+    });
+  }
+
   // Only allow POST requests
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+  if (request.method !== 'POST') {
+    console.error('❌ Invalid method:', request.method);
+    return new Response(JSON.stringify({ error: 'Method not allowed' }), {
+      status: 405,
+      headers: corsHeaders,
+    });
   }
 
   try {
-    const { orderDetails, fileBuffers } = req.body;
+    // Log headers for debugging
+    console.log('📋 Request headers:', Object.keys(request.headers));
+    console.log('📋 Content-Type:', request.headers.get('content-type'));
 
-    if (!orderDetails || !fileBuffers) {
-      return res.status(400).json({ error: 'Missing order details or files' });
-    }
+    // Parse multipart form data with streaming
+    const bb = busboy({
+      headers: Object.fromEntries(request.headers), // Convert Headers to object
+      limits: {
+        fileSize: 100 * 1024 * 1024, // Allow up to 100MB per file
+      },
+    });
 
-    // Prepare attachments
-    const attachments = fileBuffers.map((file, index) => ({
-      filename: orderDetails.items[index].file,
-      content: file.buffer, // Base64 encoded
-      type: 'application/octet-stream',
-      disposition: 'attachment',
-    }));
+    let orderDetails = null;
+    const files = [];
+    let parseError = null;
+    let filesBeingProcessed = 0;
 
-    // Email to admin with attachments
-    const adminEmailHTML = createAdminEmailHTML(orderDetails);
-    const adminEmail = {
-      to: process.env.ADMIN_EMAIL || '3d.print.ittt@gmail.com',
-      from: process.env.SENDGRID_FROM_EMAIL || '3d.print.ittt@gmail.com',
-      subject: `🎉 New Order - ${orderDetails.customer} (${orderDetails.items.length} files)`,
-      html: adminEmailHTML,
-      attachments: attachments,
-    };
+    return new Promise((resolve) => {
+      bb.on('field', (fieldname, val) => {
+        if (fieldname === 'orderDetails') {
+          try {
+            orderDetails = JSON.parse(val);
+            console.log('📦 Parsed order:', orderDetails?.customer, 'Items:', orderDetails?.items?.length);
+          } catch (e) {
+            parseError = 'Invalid JSON in orderDetails';
+          }
+        }
+      });
 
-    // Email to customer (without files attached, just confirmation)
-    const customerEmailHTML = createCustomerEmailHTML(orderDetails);
-    const customerEmail = {
-      to: orderDetails.email,
-      from: process.env.SENDGRID_FROM_EMAIL || '3d.print.ittt@gmail.com',
-      subject: `✓ Order Confirmed - 3D Print It (${orderDetails.items.length} files)`,
-      html: customerEmailHTML,
-    };
+      bb.on('file', (fieldname, file, info) => {
+        filesBeingProcessed++;
+        const chunks = [];
+        let fileSize = 0;
+        const maxFileSize = 50 * 1024 * 1024; // 50MB max per file
 
-    // Send both emails
-    await Promise.all([
-      sgMail.send(adminEmail),
-      sgMail.send(customerEmail),
-    ]);
+        console.log(`📄 Starting to stream file: ${info.filename}`);
 
-    return res.status(200).json({ success: true, message: 'Emails sent successfully' });
+        file.on('data', (data) => {
+          fileSize += data.length;
+          if (fileSize > maxFileSize) {
+            file.destroy();
+            parseError = `File ${info.filename} exceeds 50MB limit`;
+            console.error(`❌ File too large: ${info.filename}`);
+            return;
+          }
+          chunks.push(data);
+        });
+
+        file.on('end', () => {
+          if (parseError) {
+            filesBeingProcessed--;
+            return;
+          }
+
+          const buffer = Buffer.concat(chunks);
+          files.push({
+            filename: info.filename,
+            content: buffer.toString('base64'),
+            type: 'application/octet-stream',
+            disposition: 'attachment',
+          });
+          filesBeingProcessed--;
+          console.log(`✅ File streamed and buffered: ${info.filename} (${buffer.length} bytes)`);
+        });
+
+        file.on('error', (err) => {
+          console.error(`❌ File stream error: ${err.message}`);
+          parseError = `File upload error: ${err.message}`;
+          filesBeingProcessed--;
+        });
+      });
+
+      bb.on('close', async () => {
+        // Wait for all files to finish processing
+        const waitForFiles = () => {
+          return new Promise((waitResolve) => {
+            if (filesBeingProcessed === 0) {
+              waitResolve();
+              return;
+            }
+            const checkInterval = setInterval(() => {
+              console.log(`⏳ Waiting for files... (${filesBeingProcessed} remaining)`);
+              if (filesBeingProcessed === 0) {
+                clearInterval(checkInterval);
+                waitResolve();
+              }
+            }, 50);
+          });
+        };
+
+        await waitForFiles();
+        console.log(`✅ All files processed. Total: ${files.length}`);
+
+        if (parseError) {
+          resolve(new Response(JSON.stringify({ error: parseError }), {
+            status: 400,
+            headers: corsHeaders,
+          }));
+          return;
+        }
+
+        if (!orderDetails) {
+          resolve(new Response(JSON.stringify({ error: 'Missing order details' }), {
+            status: 400,
+            headers: corsHeaders,
+          }));
+          return;
+        }
+
+        try {
+          console.log('📎 Files ready for sending:', files.length, 'File names:', files.map(f => f.filename).join(', '));
+          console.log('📎 File sizes:', files.map(f => `${f.filename}: ${(f.content.length / 1024).toFixed(2)}KB`).join(', '));
+
+          // Email to admin with attachments
+          const adminEmailHTML = createAdminEmailHTML(orderDetails);
+          const adminEmail = {
+            to: process.env.ADMIN_EMAIL || '3d.print.ittt@gmail.com',
+            from: process.env.SENDGRID_FROM_EMAIL || '3d.print.ittt@gmail.com',
+            subject: `🎉 New Order - ${orderDetails.customer} (${orderDetails.items.length} files)`,
+            html: adminEmailHTML,
+            attachments: files,
+          };
+          console.log('📧 Admin email configured with', files.length, 'attachments');
+
+          // Email to customer (without files, just confirmation)
+          const customerEmailHTML = createCustomerEmailHTML(orderDetails);
+          const customerEmail = {
+            to: orderDetails.email,
+            from: process.env.SENDGRID_FROM_EMAIL || '3d.print.ittt@gmail.com',
+            subject: `✓ Order Confirmed - 3D Print It (${orderDetails.items.length} files)`,
+            html: customerEmailHTML,
+          };
+
+          // Send both emails
+          console.log('📤 Sending emails to admin:', adminEmail.to, 'and customer:', customerEmail.to);
+          console.log('📤 API Key length:', process.env.SENDGRID_API_KEY?.length);
+
+          try {
+            await Promise.all([
+              sgMail.send(adminEmail),
+              sgMail.send(customerEmail),
+            ]);
+          } catch (emailError) {
+            console.error('❌ SendGrid error:', JSON.stringify({
+              message: emailError.message,
+              code: emailError.code,
+              status: emailError.status,
+              errors: emailError.response?.body?.errors,
+            }, null, 2));
+            throw emailError;
+          }
+
+          console.log('✅ Emails sent successfully with', files.length, 'attachments!');
+          resolve(new Response(
+            JSON.stringify({ 
+              success: true, 
+              message: 'Emails sent successfully',
+              filesAttached: files.length,
+            }),
+            {
+              status: 200,
+              headers: corsHeaders,
+            }
+          ));
+        } catch (error) {
+          console.error('❌ Email send error:', error.message);
+          resolve(new Response(JSON.stringify({ error: error.message }), {
+            status: 500,
+            headers: corsHeaders,
+          }));
+        }
+      });
+
+      bb.on('error', (err) => {
+        console.error('❌ Form parse error:', err.message);
+        resolve(new Response(JSON.stringify({ error: `Parse error: ${err.message}` }), {
+          status: 400,
+          headers: corsHeaders,
+        }));
+      });
+
+      // Convert Web API ReadableStream to Node.js Readable stream and pipe to busboy
+      if (request.body) {
+        const nodeStream = Readable.fromWeb(request.body);
+        nodeStream.pipe(bb);
+      } else {
+        console.error('❌ No request body');
+        resolve(new Response(JSON.stringify({ error: 'No request body' }), {
+          status: 400,
+          headers: corsHeaders,
+        }));
+      }
+    });
   } catch (error) {
-    console.error('Email error:', error);
-    return res.status(500).json({ error: error.message });
+    console.error('❌ Handler error:', error.message);
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500,
+      headers: corsHeaders,
+    });
   }
 }
 
@@ -250,6 +437,3 @@ function createCustomerEmailHTML(orderDetails) {
 </html>
   `;
 }
-
-// Export for Vercel
-module.exports = handler;
