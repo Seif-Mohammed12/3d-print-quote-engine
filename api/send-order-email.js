@@ -1,16 +1,6 @@
 import sgMail from '@sendgrid/mail';
 import busboy from 'busboy';
-import { Readable } from 'stream';
-
-console.log('📧 Function initialized - SendGrid key present:', !!process.env.SENDGRID_API_KEY);
-
-// Initialize SendGrid with your API key
-if (!process.env.SENDGRID_API_KEY) {
-  console.error('❌ SENDGRID_API_KEY is missing!');
-  throw new Error('SENDGRID_API_KEY environment variable is not set');
-}
-sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-console.log('✅ SendGrid initialized');
+import { Readable } from 'node:stream';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -19,38 +9,65 @@ const corsHeaders = {
   'Content-Type': 'application/json',
 };
 
-export default async function handler(request) {
-  console.log('📨 Received request:', {
-    method: request.method,
-    url: request.url,
-  });
+function json(statusCode, body, extraHeaders = {}) {
+  return {
+    statusCode,
+    headers: { ...corsHeaders, ...extraHeaders },
+    body: JSON.stringify(body),
+  };
+}
+
+function normalizeHeaders(headers = {}) {
+  // Netlify provides headers as an object; Busboy expects lowercased keys.
+  const normalized = {};
+  for (const [k, v] of Object.entries(headers)) {
+    if (typeof v === 'undefined') continue;
+    normalized[String(k).toLowerCase()] = Array.isArray(v) ? v.join(',') : String(v);
+  }
+  return normalized;
+}
+
+function readableFromEventBody(event) {
+  const raw = event?.body ?? '';
+  const buf = Buffer.from(raw, event?.isBase64Encoded ? 'base64' : 'utf8');
+  return Readable.from(buf);
+}
+
+export const handler = async (event) => {
+  const method = event?.httpMethod || 'GET';
+  console.log('📨 Received request:', { method, path: event?.path });
 
   // Handle preflight requests
-  if (request.method === 'OPTIONS') {
+  if (method === 'OPTIONS') {
     console.log('✅ Handling preflight OPTIONS request');
-    return new Response(JSON.stringify({ ok: true }), {
-      status: 200,
-      headers: corsHeaders,
-    });
+    return json(200, { ok: true });
   }
 
   // Only allow POST requests
-  if (request.method !== 'POST') {
-    console.error('❌ Invalid method:', request.method);
-    return new Response(JSON.stringify({ error: 'Method not allowed' }), {
-      status: 405,
-      headers: corsHeaders,
-    });
+  if (method !== 'POST') {
+    console.error('❌ Invalid method:', method);
+    return json(405, { error: 'Method not allowed' });
   }
 
   try {
+    if (!process.env.SENDGRID_API_KEY) {
+      console.error('❌ SENDGRID_API_KEY is missing!');
+      return json(500, { error: 'Server misconfigured: SENDGRID_API_KEY is not set' });
+    }
+    sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+
     // Log headers for debugging
-    console.log('📋 Request headers:', Object.keys(request.headers));
-    console.log('📋 Content-Type:', request.headers.get('content-type'));
+    const headers = normalizeHeaders(event?.headers);
+    console.log('📋 Request headers:', Object.keys(headers));
+    console.log('📋 Content-Type:', headers['content-type']);
+
+    if (!headers['content-type']?.includes('multipart/form-data')) {
+      return json(400, { error: 'Expected multipart/form-data' });
+    }
 
     // Parse multipart form data with streaming
     const bb = busboy({
-      headers: Object.fromEntries(request.headers), // Convert Headers to object
+      headers,
       limits: {
         fileSize: 100 * 1024 * 1024, // Allow up to 100MB per file
       },
@@ -61,7 +78,7 @@ export default async function handler(request) {
     let parseError = null;
     let filesBeingProcessed = 0;
 
-    return new Promise((resolve) => {
+    return await new Promise((resolve) => {
       bb.on('field', (fieldname, val) => {
         if (fieldname === 'orderDetails') {
           try {
@@ -138,18 +155,12 @@ export default async function handler(request) {
         console.log(`✅ All files processed. Total: ${files.length}`);
 
         if (parseError) {
-          resolve(new Response(JSON.stringify({ error: parseError }), {
-            status: 400,
-            headers: corsHeaders,
-          }));
+          resolve(json(400, { error: parseError }));
           return;
         }
 
         if (!orderDetails) {
-          resolve(new Response(JSON.stringify({ error: 'Missing order details' }), {
-            status: 400,
-            headers: corsHeaders,
-          }));
+          resolve(json(400, { error: 'Missing order details' }));
           return;
         }
 
@@ -197,54 +208,38 @@ export default async function handler(request) {
           }
 
           console.log('✅ Emails sent successfully with', files.length, 'attachments!');
-          resolve(new Response(
-            JSON.stringify({ 
-              success: true, 
+          resolve(
+            json(200, {
+              success: true,
               message: 'Emails sent successfully',
               filesAttached: files.length,
-            }),
-            {
-              status: 200,
-              headers: corsHeaders,
-            }
-          ));
+            })
+          );
         } catch (error) {
           console.error('❌ Email send error:', error.message);
-          resolve(new Response(JSON.stringify({ error: error.message }), {
-            status: 500,
-            headers: corsHeaders,
-          }));
+          resolve(json(500, { error: error.message }));
         }
       });
 
       bb.on('error', (err) => {
         console.error('❌ Form parse error:', err.message);
-        resolve(new Response(JSON.stringify({ error: `Parse error: ${err.message}` }), {
-          status: 400,
-          headers: corsHeaders,
-        }));
+        resolve(json(400, { error: `Parse error: ${err.message}` }));
       });
 
-      // Convert Web API ReadableStream to Node.js Readable stream and pipe to busboy
-      if (request.body) {
-        const nodeStream = Readable.fromWeb(request.body);
-        nodeStream.pipe(bb);
-      } else {
+      if (!event?.body) {
         console.error('❌ No request body');
-        resolve(new Response(JSON.stringify({ error: 'No request body' }), {
-          status: 400,
-          headers: corsHeaders,
-        }));
+        resolve(json(400, { error: 'No request body' }));
+        return;
       }
+
+      const nodeStream = readableFromEventBody(event);
+      nodeStream.pipe(bb);
     });
   } catch (error) {
     console.error('❌ Handler error:', error.message);
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
-      headers: corsHeaders,
-    });
+    return json(500, { error: error.message });
   }
-}
+};
 
 // HTML email templates
 function createAdminEmailHTML(orderDetails) {

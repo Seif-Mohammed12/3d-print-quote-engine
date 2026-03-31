@@ -62,6 +62,68 @@ const Home = () => (
       </div>
     </section>
 
+    {/* Brand lines */}
+    <section className="section-padding">
+      <div className="container mx-auto grid gap-6 md:grid-cols-2">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5 }}
+          className="relative overflow-hidden rounded-2xl border border-cyan-500/30 bg-gradient-to-br from-slate-950/90 via-slate-950 to-slate-900 shadow-[0_0_30px_-12px_rgba(56,189,248,0.8)] p-6 md:p-7"
+        >
+          <div className="pointer-events-none absolute -top-10 right-0 h-40 w-40 rounded-full bg-[radial-gradient(circle_at_top,_rgba(56,189,248,0.5),_transparent)] blur-2xl" />
+          <div className="relative space-y-3">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-200">
+              Pforge
+            </p>
+            <h3 className="font-heading text-xl font-semibold text-foreground">
+              Gaming Stands &amp; Accessories
+            </h3>
+            <p className="text-sm text-muted-foreground">
+              Neon‑lit holders, docks and mounts built for controllers, headsets and full gaming
+              setups.
+            </p>
+            <Link
+              to="/pforge"
+              className="inline-flex items-center gap-1 text-sm font-semibold text-cyan-300 hover:text-cyan-200"
+            >
+              Explore Pforge <ArrowRight className="h-3 w-3" />
+            </Link>
+          </div>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="relative overflow-hidden rounded-2xl border border-blue-400/30 bg-gradient-to-br from-slate-950/90 via-slate-950 to-slate-900 shadow-[0_0_30px_-16px_rgba(37,99,235,0.8)] p-6 md:p-7"
+        >
+          <div className="pointer-events-none absolute -top-12 left-0 h-40 w-40 rounded-full bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.55),_transparent)] blur-2xl" />
+          <div className="pointer-events-none absolute bottom-0 right-0 h-32 w-32 rounded-full bg-[radial-gradient(circle_at_bottom,_rgba(250,204,21,0.55),_transparent)] blur-2xl" />
+          <div className="relative space-y-3">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-200">
+              Printique
+            </p>
+            <h3 className="font-heading text-xl font-semibold text-foreground">
+              Aesthetic Decor &amp; Objects
+            </h3>
+            <p className="text-sm text-muted-foreground">
+              Dark, elegant pieces in deep blue and gold — trays, vases and wall art that feel
+              premium.
+            </p>
+            <Link
+              to="/printique"
+              className="inline-flex items-center gap-1 text-sm font-semibold text-blue-200 hover:text-blue-100"
+            >
+              Explore Printique <ArrowRight className="h-3 w-3" />
+            </Link>
+          </div>
+        </motion.div>
+      </div>
+    </section>
+
     {/* Features */}
     <section className="section-padding">
       <div className="container mx-auto">

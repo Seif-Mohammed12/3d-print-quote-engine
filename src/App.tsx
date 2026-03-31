@@ -5,6 +5,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { CartProvider } from "@/lib/cart-context";
 import Index from "./pages/Index";
 import Services from "./pages/Services";
+import Pforge from "./pages/Pforge";
+import Printique from "./pages/Printique";
 import Gallery from "./pages/Gallery";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
@@ -25,6 +27,8 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/services" element={<Services />} />
+            <Route path="/pforge" element={<Pforge />} />
+            <Route path="/printique" element={<Printique />} />
             <Route path="/gallery" element={<Gallery />} />
             <Route path="/about" element={<About />} />
             <Route path="/contact" element={<Contact />} />

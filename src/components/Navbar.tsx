@@ -1,12 +1,14 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Menu, X, Printer, ShoppingCart } from "lucide-react";
+import { Menu, X, ShoppingCart } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCart } from "@/lib/cart-context";
 
 const navLinks = [
   { to: "/", label: "Home" },
   { to: "/services", label: "Services" },
+  { to: "/pforge", label: "Pforge" },
+  { to: "/printique", label: "Printique" },
   { to: "/gallery", label: "Gallery" },
   { to: "/about", label: "About" },
   { to: "/contact", label: "Contact" },
@@ -21,8 +23,14 @@ const Navbar = () => {
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/50">
       <div className="container mx-auto flex items-center justify-between h-16 px-4">
-        <Link to="/" className="flex items-center gap-2 group">
-          <Printer className="w-6 h-6 text-primary transition-all group-hover:drop-shadow-[0_0_8px_hsl(var(--neon-glow)/0.6)]" />
+        <Link to="/" className="flex items-center gap-3 group">
+          <div className="relative h-9 w-9 overflow-hidden rounded-xl bg-slate-900/80 ring-1 ring-primary/40 shadow-[0_0_18px_-6px_hsl(var(--neon-glow)/0.8)]">
+            <img
+              src="/logos/3d-print-it-logo.png"
+              alt="3D Print It logo"
+              className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-105"
+            />
+          </div>
           <span className="font-heading font-bold text-lg text-foreground">
             3D Print <span className="text-primary">It</span>
           </span>
