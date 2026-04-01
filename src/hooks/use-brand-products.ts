@@ -1,6 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
 import type { BrandId } from "@/lib/brand-catalog";
-import { brandCatalog } from "@/lib/brand-catalog";
 import { fetchPublicProducts, mapDbProductToLegacyProduct } from "@/lib/products-api";
 import { cacheProducts } from "@/lib/runtime-product-cache";
 
@@ -13,9 +12,11 @@ export function useBrandProducts(brand: BrandId) {
       cacheProducts(brand, mapped);
       return mapped;
     },
-    staleTime: 60000,
+    staleTime: 60_000,
     retry: 1,
-    placeholderData: brandCatalog[brand].products,
+    // Do not use placeholderData from static catalog — it caused a flash of old products,
+    // then a second paint when live Supabase data arrived.
+    refetchOnWindowFocus: false,
   });
 }
 

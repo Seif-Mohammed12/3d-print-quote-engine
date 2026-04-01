@@ -9,7 +9,7 @@ import { useBrandProducts } from "@/hooks/use-brand-products";
 
 const Pforge = () => {
   const [quickAddProduct, setQuickAddProduct] = useState<Product | null>(null);
-  const { data: products = [] } = useBrandProducts("pforge");
+  const { data: products, isPending, isError, error } = useBrandProducts("pforge");
 
   return (
     <Layout>
@@ -70,7 +70,12 @@ const Pforge = () => {
             animate={{ opacity: 1, y: 0 }}
             className="grid gap-7 md:grid-cols-3"
           >
-            {products.map((product, idx) => (
+            {isPending ? (
+              <p className="col-span-full text-center text-sm text-slate-400 py-16">Loading products…</p>
+            ) : isError ? (
+              <p className="col-span-full text-center text-sm text-red-400 py-16">{error?.message || "Could not load products."}</p>
+            ) : null}
+            {(products ?? []).map((product, idx) => (
               <motion.div
                 key={product.id}
                 initial={{ opacity: 0, y: 16 }}

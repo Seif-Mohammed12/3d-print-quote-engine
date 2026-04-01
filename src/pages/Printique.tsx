@@ -9,7 +9,7 @@ import { useBrandProducts } from "@/hooks/use-brand-products";
 
 const Printique = () => {
   const [quickAddProduct, setQuickAddProduct] = useState<Product | null>(null);
-  const { data: products = [] } = useBrandProducts("printique");
+  const { data: products, isPending, isError, error } = useBrandProducts("printique");
 
   return (
     <Layout>
@@ -70,7 +70,12 @@ const Printique = () => {
             animate={{ opacity: 1, y: 0 }}
             className="grid gap-7 md:grid-cols-3"
           >
-            {products.map((product, idx) => (
+            {isPending ? (
+              <p className="col-span-full text-center text-sm text-slate-400 py-16">Loading products…</p>
+            ) : isError ? (
+              <p className="col-span-full text-center text-sm text-red-400 py-16">{error?.message || "Could not load products."}</p>
+            ) : null}
+            {(products ?? []).map((product, idx) => (
               <motion.div
                 key={product.id}
                 initial={{ opacity: 0, y: 16 }}
