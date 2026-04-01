@@ -1,4 +1,4 @@
-import { getSupabaseAdmin } from "./supabase-admin.js";
+import { getSupabaseForAdminDb, getSupabaseForAuthVerify } from "./supabase-admin.js";
 import { json } from "./http.js";
 
 function parseAllowedAdminEmails() {
@@ -17,12 +17,12 @@ export async function requireAdmin(event) {
     return { ok: false, response: json(401, { error: "Missing authorization token" }) };
   }
 
-  const supabase = getSupabaseAdmin();
-  if (!supabase) {
+  const authClient = getSupabaseForAuthVerify();
+  if (!authClient) {
     return { ok: false, response: json(500, { error: "Server misconfigured: Supabase env vars are missing" }) };
   }
 
-  const { data, error } = await supabase.auth.getUser(token);
+  const { data, error } = await authClient.auth.getUser(token);
   if (error || !data?.user?.email) {
     return { ok: false, response: json(401, { error: "Invalid or expired token" }) };
   }
@@ -31,6 +31,11 @@ export async function requireAdmin(event) {
   const allowed = parseAllowedAdminEmails();
   if (!allowed.includes(userEmail)) {
     return { ok: false, response: json(403, { error: "Not authorized for admin actions" }) };
+  }
+
+  const supabase = getSupabaseForAdminDb(token);
+  if (!supabase) {
+    return { ok: false, response: json(500, { error: "Server misconfigured: Supabase env vars are missing" }) };
   }
 
   return { ok: true, user: data.user, supabase };
