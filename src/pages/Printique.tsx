@@ -104,28 +104,23 @@ const Printique = () => {
                 </Link>
 
                 <div className="relative flex items-start justify-between mb-4 gap-3">
-                  <div className="flex items-start gap-3">
-                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500/20 to-amber-400/25 text-blue-200">
-                      {product.icon ? <product.icon className="h-5 w-5" /> : null}
-                    </div>
-                    <div className="min-h-[64px]">
-                      <Link to={`/printique/${product.id}`}>
-                        <h3 className="font-heading text-base font-semibold text-slate-50 hover:text-blue-100 transition-colors">
-                          {product.name}
-                        </h3>
-                      </Link>
-                      <p
-                        className="text-xs text-amber-200/90 mt-0.5"
-                        style={{
-                          display: "-webkit-box",
-                          WebkitLineClamp: 2,
-                          WebkitBoxOrient: "vertical",
-                          overflow: "hidden",
-                        }}
-                      >
-                        {product.short}
-                      </p>
-                    </div>
+                  <div className="min-h-[64px] min-w-0 flex-1">
+                    <Link to={`/printique/${product.id}`}>
+                      <h3 className="font-heading text-base font-semibold text-slate-50 hover:text-blue-100 transition-colors">
+                        {product.name}
+                      </h3>
+                    </Link>
+                    <p
+                      className="text-xs text-amber-200/90 mt-0.5"
+                      style={{
+                        display: "-webkit-box",
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: "vertical",
+                        overflow: "hidden",
+                      }}
+                    >
+                      {product.short}
+                    </p>
                   </div>
                   <div className="rounded-full bg-slate-900/90 px-3 py-1.5 text-xs font-semibold text-blue-200 whitespace-nowrap">
                     {product.discount?.enabled && product.discount.price > 0 ? (
