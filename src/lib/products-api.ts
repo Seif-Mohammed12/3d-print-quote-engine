@@ -22,8 +22,19 @@ export type DbProduct = {
 export async function fetchPublicProducts(brand?: BrandId): Promise<DbProduct[]> {
   const url = brand ? `/api/products-catalog?brand=${brand}` : "/api/products-catalog";
   const res = await fetch(url);
-  const data = await res.json();
-  if (!res.ok) throw new Error(data?.error || "Failed to load products");
+  const raw = await res.text();
+  let data: { error?: string; hint?: string; products?: DbProduct[] } = {};
+  try {
+    data = raw ? JSON.parse(raw) : {};
+  } catch {
+    throw new Error(
+      `Catalog API returned non-JSON (${res.status}). If local, run netlify dev. On Netlify, set SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY or SUPABASE_ANON_KEY.`
+    );
+  }
+  if (!res.ok) {
+    const msg = [data?.error, data?.hint].filter(Boolean).join(" ");
+    throw new Error(msg || `Failed to load products (${res.status})`);
+  }
   return (data.products || []) as DbProduct[];
 }
 
@@ -50,7 +61,26 @@ async function adminRequest(path: string, init?: RequestInit) {
       Authorization: `Bearer ${token}`,
     },
   });
-  const data = await res.json();
+  const contentType = res.headers.get("content-type") || "";
+  const raw = await res.text();
+
+  let data: any = null;
+  if (contentType.includes("application/json")) {
+    try {
+      data = raw ? JSON.parse(raw) : {};
+    } catch {
+      throw new Error("API returned invalid JSON. If you are on local dev, run with `netlify dev` so /api routes work.");
+    }
+  } else {
+    // Common local dev issue: Vite dev server returns non-JSON for /api paths.
+    if (!res.ok) {
+      throw new Error(
+        `Admin API failed (${res.status}). If running locally, use 'netlify dev' instead of 'vite' for /api endpoints.`
+      );
+    }
+    throw new Error("Unexpected non-JSON API response. Use `netlify dev` for local admin API calls.");
+  }
+
   if (!res.ok) throw new Error(data?.error || "Request failed");
   return data;
 }
@@ -104,8 +134,11 @@ export async function adminUploadImage(productId: string, file: File) {
     headers: { Authorization: `Bearer ${token}` },
     body: form,
   });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data?.error || "Upload failed");
+  const contentType = res.headers.get("content-type") || "";
+  const raw = await res.text();
+  const data = contentType.includes("application/json") ? JSON.parse(raw || "{}") : null;
+  if (!res.ok) throw new Error(data?.error || `Upload failed (${res.status})`);
+  if (!data) throw new Error("Upload endpoint returned unexpected response");
   return data;
 }
 

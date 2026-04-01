@@ -15,3 +15,9 @@
   from = "/api/*"
   to = "/.netlify/functions/:splat"
   status = 200
+
+# SPA: client-side routes (refresh / deep links) — must be after /api/*
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

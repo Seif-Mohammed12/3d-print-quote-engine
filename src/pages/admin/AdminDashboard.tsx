@@ -123,6 +123,13 @@ export default function AdminDashboard() {
     });
   }, [selectedProductId, selectedProduct]);
 
+  const colorDraftHex = useMemo(() => {
+    const candidate = (colorDraft.hex || "").trim();
+    const validShort = /^#([0-9a-fA-F]{3})$/.test(candidate);
+    const validLong = /^#([0-9a-fA-F]{6})$/.test(candidate);
+    return validShort || validLong ? candidate : "#000000";
+  }, [colorDraft.hex]);
+
   return (
     <Layout>
       <section className="section-padding">
@@ -184,32 +191,53 @@ export default function AdminDashboard() {
             <div className="glass-card p-4 space-y-3 lg:col-span-2">
               <h2 className="font-semibold">Product Editor</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <input className="rounded-lg bg-secondary border border-border px-3 py-2 text-sm" placeholder="Name"
-                  value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-                <input className="rounded-lg bg-secondary border border-border px-3 py-2 text-sm" placeholder="Slug"
-                  value={form.slug} onChange={(e) => setForm({ ...form, slug: e.target.value })} />
-                <select className="rounded-lg bg-secondary border border-border px-3 py-2 text-sm"
-                  value={form.brand} onChange={(e) => setForm({ ...form, brand: e.target.value as Brand })}>
-                  <option value="pforge">Pforge</option>
-                  <option value="printique">Printique</option>
-                </select>
-                <input className="rounded-lg bg-secondary border border-border px-3 py-2 text-sm" placeholder="Short text"
-                  value={form.short} onChange={(e) => setForm({ ...form, short: e.target.value })} />
-                <input type="number" className="rounded-lg bg-secondary border border-border px-3 py-2 text-sm" placeholder="Base price"
-                  value={form.basePrice} onChange={(e) => setForm({ ...form, basePrice: Number(e.target.value) })} />
-                <input type="number" className="rounded-lg bg-secondary border border-border px-3 py-2 text-sm" placeholder="Sort order"
-                  value={form.sortOrder} onChange={(e) => setForm({ ...form, sortOrder: Number(e.target.value) })} />
-                <input type="number" className="rounded-lg bg-secondary border border-border px-3 py-2 text-sm" placeholder="Stock qty"
-                  value={form.stockQty} onChange={(e) => setForm({ ...form, stockQty: Number(e.target.value) })} />
-                <input type="number" className="rounded-lg bg-secondary border border-border px-3 py-2 text-sm" placeholder="Discount price"
-                  value={form.discountPrice} onChange={(e) => setForm({ ...form, discountPrice: Number(e.target.value) })} />
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-muted-foreground">Product Name</label>
+                  <input className="w-full rounded-lg bg-secondary border border-border px-3 py-2 text-sm" placeholder="DualSense Display Stand"
+                    value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-muted-foreground">Slug (URL id)</label>
+                  <input className="w-full rounded-lg bg-secondary border border-border px-3 py-2 text-sm" placeholder="dualsense-display-stand"
+                    value={form.slug} onChange={(e) => setForm({ ...form, slug: e.target.value })} />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-muted-foreground">Brand</label>
+                  <select className="w-full rounded-lg bg-secondary border border-border px-3 py-2 text-sm"
+                    value={form.brand} onChange={(e) => setForm({ ...form, brand: e.target.value as Brand })}>
+                    <option value="pforge">Pforge</option>
+                    <option value="printique">Printique</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-muted-foreground">Short Line</label>
+                  <input className="w-full rounded-lg bg-secondary border border-border px-3 py-2 text-sm" placeholder="Clean desk, hero setup."
+                    value={form.short} onChange={(e) => setForm({ ...form, short: e.target.value })} />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-muted-foreground">Base Price (EGP)</label>
+                  <input type="number" className="w-full rounded-lg bg-secondary border border-border px-3 py-2 text-sm" placeholder="550"
+                    value={form.basePrice} onChange={(e) => setForm({ ...form, basePrice: Number(e.target.value) })} />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-muted-foreground">Discount Price (EGP)</label>
+                  <input type="number" className="w-full rounded-lg bg-secondary border border-border px-3 py-2 text-sm" placeholder="480"
+                    value={form.discountPrice} onChange={(e) => setForm({ ...form, discountPrice: Number(e.target.value) })} />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-muted-foreground">Display Order</label>
+                  <input type="number" className="w-full rounded-lg bg-secondary border border-border px-3 py-2 text-sm" placeholder="0"
+                    value={form.sortOrder} onChange={(e) => setForm({ ...form, sortOrder: Number(e.target.value) })} />
+                  <p className="mt-1 text-[11px] text-muted-foreground">
+                    Lower number shows first on the brand page.
+                  </p>
+                </div>
               </div>
               <textarea className="w-full rounded-lg bg-secondary border border-border px-3 py-2 text-sm min-h-24" placeholder="Description"
                 value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
 
               <div className="flex flex-wrap items-center gap-4 text-sm">
                 <label className="inline-flex items-center gap-2"><input type="checkbox" checked={form.discountEnabled} onChange={(e) => setForm({ ...form, discountEnabled: e.target.checked })} /> Discount enabled</label>
-                <label className="inline-flex items-center gap-2"><input type="checkbox" checked={form.inStock} onChange={(e) => setForm({ ...form, inStock: e.target.checked })} /> In stock</label>
                 <label className="inline-flex items-center gap-2"><input type="checkbox" checked={form.isPublished} onChange={(e) => setForm({ ...form, isPublished: e.target.checked })} /> Published</label>
               </div>
 
@@ -324,6 +352,11 @@ export default function AdminDashboard() {
                     value={colorDraft.name} onChange={(e) => setColorDraft({ ...colorDraft, name: e.target.value })} />
                   <input className="rounded-lg bg-secondary border border-border px-3 py-2 text-sm" placeholder="#hex"
                     value={colorDraft.hex} onChange={(e) => setColorDraft({ ...colorDraft, hex: e.target.value })} />
+                </div>
+                <div className="flex items-center gap-2 rounded-lg border border-border/70 bg-secondary/30 px-3 py-2">
+                  <span className="text-xs text-muted-foreground">Preview</span>
+                  <span className="h-5 w-5 rounded-full border border-border" style={{ backgroundColor: colorDraftHex }} />
+                  <span className="text-xs text-foreground">{colorDraftHex}</span>
                 </div>
                 <button className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
                   onClick={async () => {

@@ -1,5 +1,5 @@
 import { json } from "./_lib/http.js";
-import { getSupabaseAdmin } from "./_lib/supabase-admin.js";
+import { getSupabaseForPublicRead } from "./_lib/supabase-admin.js";
 
 function mapProduct(row, imagesByProduct, colorsByProduct) {
   const colors = colorsByProduct[row.id] || [];
@@ -33,8 +33,14 @@ export const handler = async (event) => {
   if (event.httpMethod === "OPTIONS") return json(200, { ok: true });
   if (event.httpMethod !== "GET") return json(405, { error: "Method not allowed" });
 
-  const supabase = getSupabaseAdmin();
-  if (!supabase) return json(500, { error: "Server misconfigured: Supabase env vars are missing" });
+  try {
+  const supabase = getSupabaseForPublicRead();
+  if (!supabase) {
+    return json(500, {
+      error:
+        "Server misconfigured: set SUPABASE_URL and either SUPABASE_SERVICE_ROLE_KEY or SUPABASE_ANON_KEY (Netlify: Site settings → Environment variables).",
+    });
+  }
 
   const { brand = "" } = event.queryStringParameters || {};
 
@@ -84,5 +90,12 @@ export const handler = async (event) => {
   }
 
   return json(200, { products: (products || []).map((p) => mapProduct(p, imagesByProduct, colorsByProduct)) });
+  } catch (err) {
+    console.error("products-catalog error:", err);
+    return json(500, {
+      error: err?.message || "Catalog request failed",
+      hint: "Check Netlify function logs and Supabase RLS / table names.",
+    });
+  }
 };
 
