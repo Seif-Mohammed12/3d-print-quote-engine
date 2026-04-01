@@ -39,6 +39,13 @@ type ColorRow = {
   hex: string;
   sort_order: number;
 };
+type ColorLibraryRow = {
+  id: string;
+  color_id: string;
+  name: string;
+  hex: string;
+  sort_order: number;
+};
 
 const emptyProduct = {
   id: "",
@@ -62,6 +69,8 @@ export default function AdminDashboard() {
   const [products, setProducts] = useState<ProductRow[]>([]);
   const [images, setImages] = useState<ImageRow[]>([]);
   const [colors, setColors] = useState<ColorRow[]>([]);
+  const [colorLibrary, setColorLibrary] = useState<ColorLibraryRow[]>([]);
+  const [colorLibraryPick, setColorLibraryPick] = useState("");
   const [selectedProductId, setSelectedProductId] = useState<string>("");
   const [form, setForm] = useState(emptyProduct);
   const [colorDraft, setColorDraft] = useState({ role: "primary" as "primary" | "secondary", colorId: "", name: "", hex: "#000000" });
@@ -75,6 +84,7 @@ export default function AdminDashboard() {
       setProducts(data.products || []);
       setImages(data.images || []);
       setColors(data.colors || []);
+      setColorLibrary(data.colorLibrary || []);
       if (!selectedProductId && data.products?.length) setSelectedProductId(data.products[0].id);
     } catch (err: any) {
       setError(err.message || "Failed to load admin catalog");
@@ -360,18 +370,52 @@ export default function AdminDashboard() {
 
               <div className="glass-card p-4 space-y-3">
                 <h2 className="font-semibold">Colors</h2>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-muted-foreground">Color library</label>
+                  <select
+                    className="w-full rounded-lg bg-secondary border border-border px-3 py-2 text-sm"
+                    value={colorLibraryPick}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      setColorLibraryPick(v);
+                      if (!v) return;
+                      const entry = colorLibrary.find((c) => c.color_id === v);
+                      if (entry) {
+                        setColorDraft((d) => ({
+                          ...d,
+                          colorId: entry.color_id,
+                          name: entry.name,
+                          hex: entry.hex,
+                        }));
+                      }
+                    }}
+                  >
+                    <option value="">Custom — type id, name, and hex below</option>
+                    {colorLibrary
+                      .slice()
+                      .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }))
+                      .map((c) => (
+                        <option key={c.id} value={c.color_id}>
+                          {c.name} · {c.color_id} · {c.hex}
+                        </option>
+                      ))}
+                  </select>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Pick a saved swatch to fill the fields, or enter a new color manually. New colors are saved to the library when you add them to the product.
+                  </p>
+                </div>
                 <div className="grid grid-cols-2 gap-2">
                   <select className="rounded-lg bg-secondary border border-border px-3 py-2 text-sm"
-                    value={colorDraft.role} onChange={(e) => setColorDraft({ ...colorDraft, role: e.target.value as any })}>
+                    value={colorDraft.role} onChange={(e) => setColorDraft({ ...colorDraft, role: e.target.value as "primary" | "secondary" })}>
                     <option value="primary">Primary</option>
                     <option value="secondary">Secondary</option>
                   </select>
                   <input className="rounded-lg bg-secondary border border-border px-3 py-2 text-sm" placeholder="color id"
-                    value={colorDraft.colorId} onChange={(e) => setColorDraft({ ...colorDraft, colorId: e.target.value })} />
+                    value={colorDraft.colorId} onChange={(e) => { setColorLibraryPick(""); setColorDraft({ ...colorDraft, colorId: e.target.value }); }} />
                   <input className="rounded-lg bg-secondary border border-border px-3 py-2 text-sm" placeholder="name"
-                    value={colorDraft.name} onChange={(e) => setColorDraft({ ...colorDraft, name: e.target.value })} />
+                    value={colorDraft.name} onChange={(e) => { setColorLibraryPick(""); setColorDraft({ ...colorDraft, name: e.target.value }); }} />
                   <input className="rounded-lg bg-secondary border border-border px-3 py-2 text-sm" placeholder="#hex"
-                    value={colorDraft.hex} onChange={(e) => setColorDraft({ ...colorDraft, hex: e.target.value })} />
+                    value={colorDraft.hex} onChange={(e) => { setColorLibraryPick(""); setColorDraft({ ...colorDraft, hex: e.target.value }); }} />
                 </div>
                 <div className="flex items-center gap-2 rounded-lg border border-border/70 bg-secondary/30 px-3 py-2">
                   <span className="text-xs text-muted-foreground">Preview</span>
@@ -379,17 +423,24 @@ export default function AdminDashboard() {
                   <span className="text-xs text-foreground">{colorDraftHex}</span>
                 </div>
                 <button className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
+                  disabled={busy}
                   onClick={async () => {
-                    await adminUpsertColor({
-                      productId: selectedProductId,
-                      role: colorDraft.role,
-                      colorId: colorDraft.colorId,
-                      name: colorDraft.name,
-                      hex: colorDraft.hex,
-                      sortOrder: selectedColors.length,
-                    });
-                    setColorDraft({ role: colorDraft.role, colorId: "", name: "", hex: "#000000" });
-                    await load();
+                    setBusy(true);
+                    try {
+                      await adminUpsertColor({
+                        productId: selectedProductId,
+                        role: colorDraft.role,
+                        colorId: colorDraft.colorId,
+                        name: colorDraft.name,
+                        hex: colorDraft.hex,
+                        sortOrder: selectedColors.length,
+                      });
+                      setColorLibraryPick("");
+                      setColorDraft({ role: colorDraft.role, colorId: "", name: "", hex: "#000000" });
+                      await load();
+                    } finally {
+                      setBusy(false);
+                    }
                   }}
                 >
                   Add color

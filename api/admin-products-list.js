@@ -22,8 +22,18 @@ export const handler = async (event) => {
   const { data: products, error: productsError } = await productsQuery;
   if (productsError) return json(500, { error: productsError.message });
 
+  const { data: colorLibrary, error: libraryError } = await supabase
+    .from("color_library")
+    .select("*")
+    .order("sort_order", { ascending: true })
+    .order("name", { ascending: true });
+
+  if (libraryError) return json(500, { error: libraryError.message });
+
   const productIds = (products || []).map((p) => p.id);
-  if (!productIds.length) return json(200, { products: [], images: [], colors: [] });
+  if (!productIds.length) {
+    return json(200, { products: [], images: [], colors: [], colorLibrary: colorLibrary || [] });
+  }
 
   const [{ data: images, error: imagesError }, { data: colors, error: colorsError }] = await Promise.all([
     supabase
@@ -43,6 +53,11 @@ export const handler = async (event) => {
   if (imagesError) return json(500, { error: imagesError.message });
   if (colorsError) return json(500, { error: colorsError.message });
 
-  return json(200, { products: products || [], images: images || [], colors: colors || [] });
+  return json(200, {
+    products: products || [],
+    images: images || [],
+    colors: colors || [],
+    colorLibrary: colorLibrary || [],
+  });
 };
 

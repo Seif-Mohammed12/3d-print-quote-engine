@@ -33,11 +33,23 @@ export const handler = async (event) => {
   if (id) {
     const { data, error } = await supabase.from("product_colors").update(row).eq("id", id).select("*").single();
     if (error) return json(500, { error: error.message });
+    const libErr = await upsertColorLibrary(supabase, { colorId, name, hex });
+    if (libErr) return json(500, { error: libErr });
     return json(200, { color: data });
   }
 
   const { data, error } = await supabase.from("product_colors").insert(row).select("*").single();
   if (error) return json(500, { error: error.message });
+  const libErr = await upsertColorLibrary(supabase, { colorId, name, hex });
+  if (libErr) return json(500, { error: libErr });
   return json(200, { color: data });
 };
+
+async function upsertColorLibrary(supabase, { colorId, name, hex }) {
+  const { error } = await supabase.from("color_library").upsert(
+    { color_id: colorId, name, hex, sort_order: 0 },
+    { onConflict: "color_id" }
+  );
+  return error?.message || null;
+}
 

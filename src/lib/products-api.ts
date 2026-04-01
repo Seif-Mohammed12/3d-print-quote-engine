@@ -47,6 +47,7 @@ export type AdminCatalogPayload = {
   products: any[];
   images: any[];
   colors: any[];
+  colorLibrary?: any[];
 };
 
 async function adminRequest(path: string, init?: RequestInit) {
