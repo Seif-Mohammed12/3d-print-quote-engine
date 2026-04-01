@@ -10,7 +10,8 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "seed:supabase": "node scripts/seed-supabase-products.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -44,6 +45,7 @@
     "@react-three/drei": "^9.122.0",
     "@react-three/fiber": "^8.18.0",
     "@sendgrid/mail": "^8.1.6",
+    "@supabase/supabase-js": "^2.101.1",
     "@tanstack/react-query": "^5.83.0",
     "@types/three": "^0.160.0",
     "busboy": "^1.6.0",

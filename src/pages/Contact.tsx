@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Send, MessageCircle, Mail, Phone, MapPin } from "lucide-react";
 import Layout from "@/components/Layout";
@@ -8,10 +8,18 @@ import { toast } from "sonner";
 const Contact = () => {
   const [form, setForm] = useState({ name: "", email: "", message: "" });
 
+  useEffect(() => {
+    const prefill = sessionStorage.getItem("contactMessage");
+    if (prefill) {
+      setForm((prev) => ({ ...prev, message: prefill }));
+    }
+  }, []);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     toast.success("Message sent! We'll get back to you soon.");
     setForm({ name: "", email: "", message: "" });
+    sessionStorage.removeItem("contactMessage");
   };
 
   return (

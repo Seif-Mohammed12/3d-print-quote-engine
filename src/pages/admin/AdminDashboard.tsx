@@ -1,0 +1,379 @@
+import { useEffect, useMemo, useState } from "react";
+import Layout from "@/components/Layout";
+import { supabase } from "@/lib/supabase";
+import {
+  adminDeleteColor,
+  adminDeleteImage,
+  adminDeleteProduct,
+  adminFetchCatalog,
+  adminReorderColors,
+  adminReorderImages,
+  adminUploadImage,
+  adminUpsertColor,
+  adminUpsertProduct,
+} from "@/lib/products-api";
+
+type Brand = "pforge" | "printique";
+type ProductRow = {
+  id: string;
+  brand: Brand;
+  slug: string;
+  name: string;
+  short: string;
+  description: string;
+  base_price: number;
+  discount_enabled: boolean;
+  discount_price: number | null;
+  stock_qty: number;
+  in_stock: boolean;
+  is_published: boolean;
+  sort_order: number;
+};
+type ImageRow = { id: string; product_id: string; image_url: string; sort_order: number };
+type ColorRow = {
+  id: string;
+  product_id: string;
+  role: "primary" | "secondary";
+  color_id: string;
+  name: string;
+  hex: string;
+  sort_order: number;
+};
+
+const emptyProduct = {
+  id: "",
+  brand: "pforge" as Brand,
+  slug: "",
+  name: "",
+  short: "",
+  description: "",
+  basePrice: 0,
+  discountEnabled: false,
+  discountPrice: 0,
+  stockQty: 0,
+  inStock: true,
+  isPublished: false,
+  sortOrder: 0,
+};
+
+export default function AdminDashboard() {
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [products, setProducts] = useState<ProductRow[]>([]);
+  const [images, setImages] = useState<ImageRow[]>([]);
+  const [colors, setColors] = useState<ColorRow[]>([]);
+  const [selectedProductId, setSelectedProductId] = useState<string>("");
+  const [form, setForm] = useState(emptyProduct);
+  const [colorDraft, setColorDraft] = useState({ role: "primary" as "primary" | "secondary", colorId: "", name: "", hex: "#000000" });
+  const [busy, setBusy] = useState(false);
+
+  async function load() {
+    setLoading(true);
+    setError("");
+    try {
+      const data = await adminFetchCatalog();
+      setProducts(data.products || []);
+      setImages(data.images || []);
+      setColors(data.colors || []);
+      if (!selectedProductId && data.products?.length) setSelectedProductId(data.products[0].id);
+    } catch (err: any) {
+      setError(err.message || "Failed to load admin catalog");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    load();
+  }, []);
+
+  const selectedProduct = useMemo(
+    () => products.find((p) => p.id === selectedProductId) || null,
+    [products, selectedProductId]
+  );
+
+  const selectedImages = useMemo(
+    () => images.filter((i) => i.product_id === selectedProductId).sort((a, b) => a.sort_order - b.sort_order),
+    [images, selectedProductId]
+  );
+  const selectedColors = useMemo(
+    () => colors.filter((c) => c.product_id === selectedProductId).sort((a, b) => a.sort_order - b.sort_order),
+    [colors, selectedProductId]
+  );
+
+  useEffect(() => {
+    if (!selectedProduct) {
+      setForm(emptyProduct);
+      return;
+    }
+    setForm({
+      id: selectedProduct.id,
+      brand: selectedProduct.brand,
+      slug: selectedProduct.slug || "",
+      name: selectedProduct.name || "",
+      short: selectedProduct.short || "",
+      description: selectedProduct.description || "",
+      basePrice: Number(selectedProduct.base_price || 0),
+      discountEnabled: Boolean(selectedProduct.discount_enabled),
+      discountPrice: Number(selectedProduct.discount_price || 0),
+      stockQty: Number(selectedProduct.stock_qty || 0),
+      inStock: Boolean(selectedProduct.in_stock),
+      isPublished: Boolean(selectedProduct.is_published),
+      sortOrder: Number(selectedProduct.sort_order || 0),
+    });
+  }, [selectedProductId, selectedProduct]);
+
+  return (
+    <Layout>
+      <section className="section-padding">
+        <div className="container mx-auto max-w-7xl space-y-6">
+          <div className="flex items-center justify-between">
+            <h1 className="font-heading text-3xl font-bold text-foreground">Admin Dashboard</h1>
+            <div className="flex items-center gap-2">
+              <button
+                className="rounded-lg border border-border px-4 py-2 text-sm"
+                onClick={() => load()}
+              >
+                Refresh
+              </button>
+              <button
+                className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
+                onClick={async () => {
+                  await supabase?.auth.signOut();
+                  window.location.href = "/admin/login";
+                }}
+              >
+                Sign out
+              </button>
+            </div>
+          </div>
+
+          {error ? <p className="text-sm text-destructive">{error}</p> : null}
+          {loading ? <p className="text-sm text-muted-foreground">Loading...</p> : null}
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="glass-card p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <h2 className="font-semibold">Products</h2>
+                <button
+                  className="rounded-lg bg-secondary px-3 py-1.5 text-xs"
+                  onClick={() => {
+                    setSelectedProductId("");
+                    setForm({ ...emptyProduct });
+                  }}
+                >
+                  + New
+                </button>
+              </div>
+              <div className="space-y-2 max-h-[65vh] overflow-y-auto pr-1">
+                {products.map((p) => (
+                  <button
+                    key={p.id}
+                    onClick={() => setSelectedProductId(p.id)}
+                    className={`w-full text-left rounded-lg border px-3 py-2 ${
+                      p.id === selectedProductId ? "border-primary bg-primary/10" : "border-border bg-secondary/20"
+                    }`}
+                  >
+                    <p className="text-sm font-semibold">{p.name}</p>
+                    <p className="text-xs text-muted-foreground">{p.brand.toUpperCase()} • {p.is_published ? "Published" : "Draft"}</p>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="glass-card p-4 space-y-3 lg:col-span-2">
+              <h2 className="font-semibold">Product Editor</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <input className="rounded-lg bg-secondary border border-border px-3 py-2 text-sm" placeholder="Name"
+                  value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+                <input className="rounded-lg bg-secondary border border-border px-3 py-2 text-sm" placeholder="Slug"
+                  value={form.slug} onChange={(e) => setForm({ ...form, slug: e.target.value })} />
+                <select className="rounded-lg bg-secondary border border-border px-3 py-2 text-sm"
+                  value={form.brand} onChange={(e) => setForm({ ...form, brand: e.target.value as Brand })}>
+                  <option value="pforge">Pforge</option>
+                  <option value="printique">Printique</option>
+                </select>
+                <input className="rounded-lg bg-secondary border border-border px-3 py-2 text-sm" placeholder="Short text"
+                  value={form.short} onChange={(e) => setForm({ ...form, short: e.target.value })} />
+                <input type="number" className="rounded-lg bg-secondary border border-border px-3 py-2 text-sm" placeholder="Base price"
+                  value={form.basePrice} onChange={(e) => setForm({ ...form, basePrice: Number(e.target.value) })} />
+                <input type="number" className="rounded-lg bg-secondary border border-border px-3 py-2 text-sm" placeholder="Sort order"
+                  value={form.sortOrder} onChange={(e) => setForm({ ...form, sortOrder: Number(e.target.value) })} />
+                <input type="number" className="rounded-lg bg-secondary border border-border px-3 py-2 text-sm" placeholder="Stock qty"
+                  value={form.stockQty} onChange={(e) => setForm({ ...form, stockQty: Number(e.target.value) })} />
+                <input type="number" className="rounded-lg bg-secondary border border-border px-3 py-2 text-sm" placeholder="Discount price"
+                  value={form.discountPrice} onChange={(e) => setForm({ ...form, discountPrice: Number(e.target.value) })} />
+              </div>
+              <textarea className="w-full rounded-lg bg-secondary border border-border px-3 py-2 text-sm min-h-24" placeholder="Description"
+                value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+
+              <div className="flex flex-wrap items-center gap-4 text-sm">
+                <label className="inline-flex items-center gap-2"><input type="checkbox" checked={form.discountEnabled} onChange={(e) => setForm({ ...form, discountEnabled: e.target.checked })} /> Discount enabled</label>
+                <label className="inline-flex items-center gap-2"><input type="checkbox" checked={form.inStock} onChange={(e) => setForm({ ...form, inStock: e.target.checked })} /> In stock</label>
+                <label className="inline-flex items-center gap-2"><input type="checkbox" checked={form.isPublished} onChange={(e) => setForm({ ...form, isPublished: e.target.checked })} /> Published</label>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                <button
+                  className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50"
+                  disabled={busy}
+                  onClick={async () => {
+                    setBusy(true);
+                    try {
+                      await adminUpsertProduct({
+                        id: form.id || undefined,
+                        brand: form.brand,
+                        slug: form.slug,
+                        name: form.name,
+                        short: form.short,
+                        description: form.description,
+                        basePrice: form.basePrice,
+                        discountEnabled: form.discountEnabled,
+                        discountPrice: form.discountPrice,
+                        stockQty: form.stockQty,
+                        inStock: form.inStock,
+                        isPublished: form.isPublished,
+                        sortOrder: form.sortOrder,
+                      });
+                      await load();
+                    } finally {
+                      setBusy(false);
+                    }
+                  }}
+                >
+                  Save product
+                </button>
+                {form.id ? (
+                  <button
+                    className="rounded-lg border border-destructive/40 px-4 py-2 text-sm text-destructive"
+                    onClick={async () => {
+                      if (!confirm("Delete this product?")) return;
+                      setBusy(true);
+                      try {
+                        await adminDeleteProduct(form.id);
+                        setSelectedProductId("");
+                        await load();
+                      } finally {
+                        setBusy(false);
+                      }
+                    }}
+                  >
+                    Delete product
+                  </button>
+                ) : null}
+              </div>
+            </div>
+          </div>
+
+          {selectedProductId ? (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="glass-card p-4 space-y-3">
+                <h2 className="font-semibold">Images</h2>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    await adminUploadImage(selectedProductId, file);
+                    await load();
+                  }}
+                />
+                <div className="space-y-2">
+                  {selectedImages.map((img, idx) => (
+                    <div key={img.id} className="flex items-center gap-2 rounded-lg border border-border p-2">
+                      <img src={img.image_url} alt="Product" className="h-12 w-12 object-cover rounded" />
+                      <div className="flex-1 text-xs truncate">{img.image_url}</div>
+                      <button className="text-xs px-2 py-1 rounded border"
+                        onClick={async () => {
+                          if (idx === 0) return;
+                          const ids = selectedImages.map((i) => i.id);
+                          [ids[idx - 1], ids[idx]] = [ids[idx], ids[idx - 1]];
+                          await adminReorderImages(ids);
+                          await load();
+                        }}>Up</button>
+                      <button className="text-xs px-2 py-1 rounded border"
+                        onClick={async () => {
+                          if (idx === selectedImages.length - 1) return;
+                          const ids = selectedImages.map((i) => i.id);
+                          [ids[idx], ids[idx + 1]] = [ids[idx + 1], ids[idx]];
+                          await adminReorderImages(ids);
+                          await load();
+                        }}>Down</button>
+                      <button className="text-xs px-2 py-1 rounded border border-destructive/40 text-destructive"
+                        onClick={async () => {
+                          await adminDeleteImage(img.id);
+                          await load();
+                        }}>Remove</button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="glass-card p-4 space-y-3">
+                <h2 className="font-semibold">Colors</h2>
+                <div className="grid grid-cols-2 gap-2">
+                  <select className="rounded-lg bg-secondary border border-border px-3 py-2 text-sm"
+                    value={colorDraft.role} onChange={(e) => setColorDraft({ ...colorDraft, role: e.target.value as any })}>
+                    <option value="primary">Primary</option>
+                    <option value="secondary">Secondary</option>
+                  </select>
+                  <input className="rounded-lg bg-secondary border border-border px-3 py-2 text-sm" placeholder="color id"
+                    value={colorDraft.colorId} onChange={(e) => setColorDraft({ ...colorDraft, colorId: e.target.value })} />
+                  <input className="rounded-lg bg-secondary border border-border px-3 py-2 text-sm" placeholder="name"
+                    value={colorDraft.name} onChange={(e) => setColorDraft({ ...colorDraft, name: e.target.value })} />
+                  <input className="rounded-lg bg-secondary border border-border px-3 py-2 text-sm" placeholder="#hex"
+                    value={colorDraft.hex} onChange={(e) => setColorDraft({ ...colorDraft, hex: e.target.value })} />
+                </div>
+                <button className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
+                  onClick={async () => {
+                    await adminUpsertColor({
+                      productId: selectedProductId,
+                      role: colorDraft.role,
+                      colorId: colorDraft.colorId,
+                      name: colorDraft.name,
+                      hex: colorDraft.hex,
+                      sortOrder: selectedColors.length,
+                    });
+                    setColorDraft({ role: colorDraft.role, colorId: "", name: "", hex: "#000000" });
+                    await load();
+                  }}
+                >
+                  Add color
+                </button>
+                <div className="space-y-2">
+                  {selectedColors.map((color, idx) => (
+                    <div key={color.id} className="flex items-center gap-2 rounded-lg border border-border p-2">
+                      <span className="h-5 w-5 rounded-full border border-border" style={{ background: color.hex }} />
+                      <span className="text-xs">{color.role}</span>
+                      <span className="text-xs">{color.name}</span>
+                      <span className="text-xs text-muted-foreground">{color.hex}</span>
+                      <div className="ml-auto flex items-center gap-1">
+                        <button className="text-xs px-2 py-1 rounded border"
+                          onClick={async () => {
+                            const group = selectedColors.filter((c) => c.role === color.role);
+                            const groupIdx = group.findIndex((c) => c.id === color.id);
+                            if (groupIdx <= 0) return;
+                            const ids = [...group.map((c) => c.id)];
+                            [ids[groupIdx - 1], ids[groupIdx]] = [ids[groupIdx], ids[groupIdx - 1]];
+                            await adminReorderColors(ids);
+                            await load();
+                          }}>Up</button>
+                        <button className="text-xs px-2 py-1 rounded border border-destructive/40 text-destructive"
+                          onClick={async () => {
+                            await adminDeleteColor(color.id);
+                            await load();
+                          }}>Remove</button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ) : null}
+        </div>
+      </section>
+    </Layout>
+  );
+}
+

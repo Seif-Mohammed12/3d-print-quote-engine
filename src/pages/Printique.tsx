@@ -1,38 +1,16 @@
 import Layout from "@/components/Layout";
 import { motion } from "framer-motion";
-import { Sparkles, PictureInPicture2, Droplets } from "lucide-react";
-
-const products = [
-  {
-    id: "printique-vase",
-    icon: Droplets,
-    name: "Organic Flow Vase",
-    style: "Modern decor",
-    price: "EGP280",
-    description:
-      "Soft curves and layered contours that look sculpted, not “3D printed”. Perfect for dried flowers and desk styling.",
-  },
-  {
-    id: "printique-panel",
-    icon: PictureInPicture2,
-    name: "Geometric Wall Panel",
-    style: "Wall art",
-    price: "EGP450",
-    description:
-      "Interlocking tiles that create depth and texture on any wall, finished in deep blues with subtle highlights.",
-  },
-  {
-    id: "printique-tray",
-    icon: Sparkles,
-    name: "Halo Catch-All Tray",
-    style: "Everyday objects",
-    price: "EGP230",
-    description:
-      "Elegant tray for keys, watches or jewelry with a soft lip and subtle gold accents.",
-  },
-];
+import { Link } from "react-router-dom";
+import type { Product } from "@/lib/brand-catalog";
+import { Image as ImageIcon } from "lucide-react";
+import { useState } from "react";
+import QuickAddProductDialog from "@/components/QuickAddProductDialog";
+import { useBrandProducts } from "@/hooks/use-brand-products";
 
 const Printique = () => {
+  const [quickAddProduct, setQuickAddProduct] = useState<Product | null>(null);
+  const { data: products = [] } = useBrandProducts("printique");
+
   return (
     <Layout>
       <section className="section-padding relative overflow-hidden">
@@ -60,7 +38,7 @@ const Printique = () => {
               </h1>
             </div>
             <p className="max-w-xl text-sm md:text-base text-slate-300">
-              Dark, elegant 3D printed decor pieces in deep blues and soft gold accents.
+              Dark, elegant 3D printed decor pieces that looks great anywhere
             </p>
           </div>
 
@@ -78,12 +56,11 @@ const Printique = () => {
                   Statement Pieces for Dark Interiors
                 </h2>
                 <p className="text-sm text-slate-300 max-w-xl">
-                  Designed to live on shelves, desks and walls — with finishes that feel closer to
-                  ceramic and metal than raw filament.
+                  Designed to live on shelves, desks and walls — with finishes that feel closer to ceramic and metal than raw filament.
                 </p>
               </div>
               <div className="mt-2 rounded-2xl border border-amber-300/40 bg-slate-900/70 px-6 py-3 text-center text-xs font-semibold uppercase tracking-wide text-amber-200 shadow-[0_0_24px_-10px_rgba(245,158,11,0.9)]">
-                Royal blue &amp; gold finishes
+                Custom sizes and colors on request
               </div>
             </div>
           </motion.div>
@@ -91,7 +68,7 @@ const Printique = () => {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="grid gap-6 md:grid-cols-3"
+            className="grid gap-7 md:grid-cols-3"
           >
             {products.map((product, idx) => (
               <motion.div
@@ -100,43 +77,109 @@ const Printique = () => {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: idx * 0.08 }}
-                className="group relative overflow-hidden rounded-2xl border border-slate-800/80 bg-slate-950/80 p-5 shadow-[0_0_25px_-18px_rgba(15,23,42,1)]"
+                className="group relative h-full overflow-hidden rounded-2xl border border-slate-800/80 bg-slate-950/80 p-6 shadow-[0_0_25px_-18px_rgba(15,23,42,1)] flex flex-col"
               >
                 <div className="pointer-events-none absolute inset-px rounded-2xl bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.25),_transparent)] opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
 
-                <div className="relative flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500/20 to-amber-400/25 text-blue-200">
-                      <product.icon className="h-5 w-5" />
+                <Link to={`/printique/${product.id}`} className="block">
+                  <div className="relative mb-5 h-48 rounded-xl border border-slate-800/80 bg-gradient-to-b from-slate-900/40 to-slate-950/70 overflow-hidden">
+                    {product.images?.[0] ? (
+                      <img
+                        src={product.images[0]}
+                        alt={product.name}
+                        className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+                      />
+                    ) : (
+                      <div className="h-full w-full flex items-center justify-center text-slate-500">
+                        <ImageIcon className="h-7 w-7" />
+                      </div>
+                    )}
+                    <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/25 to-transparent" />
+                  </div>
+                </Link>
+
+                <div className="relative flex items-start justify-between mb-4 gap-3">
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500/20 to-amber-400/25 text-blue-200">
+                      {product.icon ? <product.icon className="h-5 w-5" /> : null}
                     </div>
-                    <div>
-                      <h3 className="font-heading text-sm font-semibold text-slate-50">
-                        {product.name}
-                      </h3>
-                      <p className="text-[11px] text-amber-200/90">{product.style}</p>
+                    <div className="min-h-[64px]">
+                      <Link to={`/printique/${product.id}`}>
+                        <h3 className="font-heading text-base font-semibold text-slate-50 hover:text-blue-100 transition-colors">
+                          {product.name}
+                        </h3>
+                      </Link>
+                      <p
+                        className="text-xs text-amber-200/90 mt-0.5"
+                        style={{
+                          display: "-webkit-box",
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: "vertical",
+                          overflow: "hidden",
+                        }}
+                      >
+                        {product.short}
+                      </p>
                     </div>
                   </div>
-                  <span className="rounded-full bg-slate-900/90 px-3 py-1 text-xs font-semibold text-blue-200">
-                    {product.price}
-                  </span>
+                  <div className="rounded-full bg-slate-900/90 px-3 py-1.5 text-xs font-semibold text-blue-200 whitespace-nowrap">
+                    {product.discount?.enabled && product.discount.price > 0 ? (
+                      <span className="inline-flex items-center gap-2">
+                        <span className="text-slate-400 line-through">EGP{product.basePrice}</span>
+                        <span>EGP{product.discount.price}</span>
+                      </span>
+                    ) : (
+                      <span>EGP{product.basePrice}</span>
+                    )}
+                  </div>
                 </div>
 
-                <p className="relative z-10 mb-4 text-xs text-slate-300">{product.description}</p>
+                <p
+                  className="relative z-10 mb-5 text-sm text-slate-300 min-h-[88px]"
+                  style={{
+                    display: "-webkit-box",
+                    WebkitLineClamp: 4,
+                    WebkitBoxOrient: "vertical",
+                    overflow: "hidden",
+                  }}
+                >
+                  {product.description}
+                </p>
 
-                <button className="relative z-10 inline-flex w-full items-center justify-center rounded-lg bg-gradient-to-r from-blue-500 via-indigo-500 to-amber-400 px-3 py-2 text-xs font-semibold text-slate-950 shadow-[0_0_20px_-6px_rgba(37,99,235,0.9)] transition-transform duration-200 group-hover:translate-y-0.5">
-                  Request this Printique piece
-                </button>
+                <div className="relative z-10 mt-auto flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setQuickAddProduct(product)}
+                    className="inline-flex flex-1 items-center justify-center rounded-lg bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground hover:shadow-[0_0_18px_-5px_hsl(var(--neon-glow)/0.8)] transition-transform duration-200 group-hover:translate-y-0.5"
+                  >
+                    Add to cart
+                  </button>
+                  <Link
+                    to={`/printique/${product.id}`}
+                    className="inline-flex items-center justify-center rounded-lg border border-slate-700 px-3 py-3 text-xs font-semibold text-slate-200 hover:border-blue-300/40 hover:text-blue-100 transition-colors"
+                  >
+                    Details
+                  </Link>
+                </div>
               </motion.div>
             ))}
           </motion.div>
 
           <p className="text-center text-[11px] text-slate-400">
             For custom decor, mention{" "}
-            <span className="font-semibold text-blue-200">“Printique”</span> when you reach out and
-            tell us about your space and colors.
+            <span className="font-semibold text-blue-200">“Printique”</span> when you message us.
           </p>
         </div>
       </section>
+      <QuickAddProductDialog
+        brand="printique"
+        product={quickAddProduct}
+        open={Boolean(quickAddProduct)}
+        onOpenChange={(open) => {
+          if (!open) setQuickAddProduct(null);
+        }}
+        accentClassName="text-blue-200"
+      />
     </Layout>
   );
 };

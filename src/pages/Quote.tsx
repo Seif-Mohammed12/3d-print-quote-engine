@@ -1,25 +1,23 @@
 import { useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
-import { Upload, FileType, Weight, Clock, DollarSign, Download, ShoppingCart, RotateCcw } from "lucide-react";
+import { motion } from "framer-motion";
+import { Upload, FileType, RotateCcw, Send } from "lucide-react";
 import Layout from "@/components/Layout";
 import SectionHeading from "@/components/SectionHeading";
 import ModelViewer from "@/components/ModelViewer";
 import { parseSTL, type STLResult } from "@/lib/stl-parser";
-import { calculateQuote, MATERIALS, type Quality, type QuoteResult } from "@/lib/quote-calculator";
-import { useCart } from "@/lib/cart-context";
+import { calculateQuote, MATERIALS, type Quality } from "@/lib/quote-calculator";
 import { toast } from "sonner";
 
 const Quote = () => {
   const navigate = useNavigate();
-  const { addToCart, cart } = useCart();
   const [fileBuffer, setFileBuffer] = useState<ArrayBuffer | null>(null);
   const [fileName, setFileName] = useState("");
+  const [fileType, setFileType] = useState("application/octet-stream");
   const [stlResult, setStlResult] = useState<STLResult | null>(null);
   const [materialIdx, setMaterialIdx] = useState(0);
   const [quality, setQuality] = useState<Quality>("standard");
   const [infill, setInfill] = useState(20);
-  const [quote, setQuote] = useState<QuoteResult | null>(null);
   const [dragOver, setDragOver] = useState(false);
 
   const processFile = useCallback((file: File) => {
@@ -30,6 +28,7 @@ const Quote = () => {
     }
 
     setFileName(file.name);
+    setFileType(file.type || "application/octet-stream");
     const reader = new FileReader();
     reader.onload = (e) => {
       const buffer = e.target?.result as ArrayBuffer;
@@ -37,7 +36,6 @@ const Quote = () => {
         const result = parseSTL(buffer);
         setFileBuffer(buffer);
         setStlResult(result);
-        setQuote(null);
         toast.success("Model loaded successfully!");
       } catch {
         toast.error("Failed to parse the file. Ensure it's a valid STL.");
@@ -53,17 +51,33 @@ const Quote = () => {
     if (file) processFile(file);
   }, [processFile]);
 
-  const handleCalculate = () => {
-    if (!stlResult) return;
+  const handleGetQuote = () => {
+    if (!stlResult || !fileBuffer) return;
     const result = calculateQuote(stlResult.volume, MATERIALS[materialIdx], quality, infill);
-    setQuote(result);
+    navigate("/quote-request", {
+      state: {
+        fileName,
+        fileType,
+        fileBuffer,
+        settings: {
+          material: MATERIALS[materialIdx].name,
+          quality,
+          infill,
+        },
+        // Kept internal for your admin email, but not shown on website.
+        estimate: {
+          totalPrice: result.totalPrice,
+          weightGrams: result.weightGrams,
+          estimatedTime: result.estimatedTime,
+        },
+      },
+    });
   };
 
   const handleReset = () => {
     setFileBuffer(null);
     setFileName("");
     setStlResult(null);
-    setQuote(null);
   };
 
   return (
@@ -72,7 +86,7 @@ const Quote = () => {
         <div className="container mx-auto max-w-6xl">
           <SectionHeading
             title="Smart Quote"
-            subtitle="Upload your 3D model, configure options, and get an instant price."
+            subtitle="Upload your 3D model, choose settings, and send a quote request."
           />
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -149,7 +163,7 @@ const Quote = () => {
                     {MATERIALS.map((m, i) => (
                       <button
                         key={m.name}
-                        onClick={() => { setMaterialIdx(i); setQuote(null); }}
+                        onClick={() => { setMaterialIdx(i); }}
                         className={`p-3 rounded-lg text-center text-sm transition-all ${
                           materialIdx === i
                             ? "bg-primary/15 border border-primary/50 text-foreground"
@@ -170,7 +184,7 @@ const Quote = () => {
                     {(["draft", "standard", "high"] as Quality[]).map((q) => (
                       <button
                         key={q}
-                        onClick={() => { setQuality(q); setQuote(null); }}
+                        onClick={() => { setQuality(q); }}
                         className={`p-3 rounded-lg text-sm capitalize transition-all ${
                           quality === q
                             ? "bg-primary/15 border border-primary/50 text-foreground"
@@ -194,7 +208,7 @@ const Quote = () => {
                     max={100}
                     step={5}
                     value={infill}
-                    onChange={(e) => { setInfill(Number(e.target.value)); setQuote(null); }}
+                    onChange={(e) => { setInfill(Number(e.target.value)); }}
                     className="w-full accent-primary"
                   />
                   <div className="flex justify-between text-xs text-muted-foreground mt-1">
@@ -203,82 +217,16 @@ const Quote = () => {
                 </div>
 
                 <button
-                  onClick={handleCalculate}
+                  onClick={handleGetQuote}
                   disabled={!stlResult}
                   className="w-full py-3 rounded-lg bg-primary text-primary-foreground font-semibold hover:shadow-[0_0_20px_-5px_hsl(var(--neon-glow)/0.5)] transition-all duration-300 disabled:opacity-40 disabled:cursor-not-allowed"
                 >
-                  Calculate Quote
+                  <span className="inline-flex items-center gap-2">
+                    <Send className="w-4 h-4" />
+                    Get Quote
+                  </span>
                 </button>
               </div>
-
-              {/* Quote Result */}
-              <AnimatePresence>
-                {quote && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    className="glass-card neon-border p-6"
-                  >
-                    <div className="text-center mb-6">
-                      <span className="text-sm text-muted-foreground">Estimated Price</span>
-                      <p className="text-4xl font-heading font-bold neon-text mt-1">
-                        EGP{quote.totalPrice.toFixed(2)}
-                      </p>
-                    </div>
-
-                    <div className="space-y-3 mb-6">
-                      {[
-                        { icon: Weight, label: "Weight", value: `${quote.weightGrams.toFixed(1)}g` },
-                        { icon: Clock, label: "Print Time", value: quote.estimatedTime },
-                        { icon: DollarSign, label: "Material Cost", value: `EGP${quote.materialCost.toFixed(2)}` },
-                        { icon: Clock, label: "Time Cost", value: `EGP${quote.timeCost.toFixed(2)}` },
-                      ].map((row) => (
-                        <div key={row.label} className="flex items-center justify-between text-sm">
-                          <span className="flex items-center gap-2 text-muted-foreground">
-                            <row.icon className="w-3.5 h-3.5" /> {row.label}
-                          </span>
-                          <span className="text-foreground font-medium">{row.value}</span>
-                        </div>
-                      ))}
-                    </div>
-
-                    <p className="text-xs text-muted-foreground text-center mb-4 leading-relaxed">
-                      * This is an approximate estimate. Final pricing may vary after we review your file. We will contact you to confirm the details before proceeding.
-                    </p>
-
-                    <div className="flex gap-3">
-                      <button 
-                        onClick={() => {
-                          const cartItem = {
-                            id: `${Date.now()}-${Math.random()}`,
-                            fileName,
-                            fileBuffer: fileBuffer!,
-                            quote,
-                            material: MATERIALS[materialIdx].name,
-                            quality,
-                            infill,
-                          };
-                          addToCart(cartItem);
-                          toast.success("Added to cart!");
-                        }}
-                        className="flex-1 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:shadow-[0_0_20px_-5px_hsl(var(--neon-glow)/0.5)] transition-all flex items-center justify-center gap-2">
-                        <ShoppingCart className="w-4 h-4" /> Add to Cart
-                      </button>
-                      <button 
-                        onClick={() => navigate("/cart")}
-                        className="py-2.5 px-4 rounded-lg border border-border text-muted-foreground hover:text-foreground transition-colors text-sm flex items-center gap-2 relative">
-                        <ShoppingCart className="w-4 h-4" /> 
-                        {cart.length > 0 && (
-                          <span className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-primary text-white text-xs flex items-center justify-center font-bold">
-                            {cart.length}
-                          </span>
-                        )}
-                      </button>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
             </div>
           </div>
         </div>
