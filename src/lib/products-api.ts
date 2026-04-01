@@ -142,6 +142,17 @@ export async function adminUploadImage(productId: string, file: File) {
   return data;
 }
 
+/** Upload multiple images in order; sequential to avoid sort_order races on the server. */
+export async function adminUploadImages(productId: string, files: File[]) {
+  const out: unknown[] = [];
+  for (const file of files) {
+    if (!file.size) continue;
+    const data = await adminUploadImage(productId, file);
+    out.push(data);
+  }
+  return out;
+}
+
 export async function adminDeleteImage(id: string) {
   return adminRequest("/api/admin-product-images-delete", {
     method: "POST",

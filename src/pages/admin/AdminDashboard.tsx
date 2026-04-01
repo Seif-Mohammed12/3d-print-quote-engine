@@ -8,7 +8,7 @@ import {
   adminFetchCatalog,
   adminReorderColors,
   adminReorderImages,
-  adminUploadImage,
+  adminUploadImages,
   adminUpsertColor,
   adminUpsertProduct,
 } from "@/lib/products-api";
@@ -297,16 +297,36 @@ export default function AdminDashboard() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="glass-card p-4 space-y-3">
                 <h2 className="font-semibold">Images</h2>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={async (e) => {
-                    const file = e.target.files?.[0];
-                    if (!file) return;
-                    await adminUploadImage(selectedProductId, file);
-                    await load();
-                  }}
-                />
+                <label className="block">
+                  <span className="mb-1 block text-xs font-medium text-muted-foreground">Add images</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    disabled={busy}
+                    className="block w-full max-w-md text-sm file:mr-3 file:rounded-lg file:border file:border-border file:bg-secondary file:px-3 file:py-1.5 file:text-xs file:font-medium"
+                    onChange={async (e) => {
+                      const list = e.target.files;
+                      if (!list?.length) return;
+                      const files = Array.from(list).filter((f) => f.size > 0);
+                      e.target.value = "";
+                      if (!files.length) return;
+                      setBusy(true);
+                      setError("");
+                      try {
+                        await adminUploadImages(selectedProductId, files);
+                        await load();
+                      } catch (err: unknown) {
+                        setError(err instanceof Error ? err.message : "Upload failed");
+                      } finally {
+                        setBusy(false);
+                      }
+                    }}
+                  />
+                </label>
+                <p className="text-xs text-muted-foreground">
+                  You can select several files at once; they are appended in the order chosen. Use Up/Down to reorder after upload.
+                </p>
                 <div className="space-y-2">
                   {selectedImages.map((img, idx) => (
                     <div key={img.id} className="flex items-center gap-2 rounded-lg border border-border p-2">
