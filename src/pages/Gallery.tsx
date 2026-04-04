@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { Box } from "lucide-react";
 import Layout from "@/components/Layout";
 import SectionHeading from "@/components/SectionHeading";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const items = [
   { title: "Mechanical Gears", category: "Engineering", gradient: "from-primary/30 to-accent/10" },
@@ -15,7 +16,10 @@ const items = [
   { title: "Robot Parts", category: "Robotics", gradient: "from-primary/20 to-accent/20" },
 ];
 
-const Gallery = () => (
+const Gallery = () => {
+  const isMobile = useIsMobile();
+
+  return (
   <Layout>
     <section className="section-padding">
       <div className="container mx-auto">
@@ -24,9 +28,10 @@ const Gallery = () => (
           {items.map((item, i) => (
             <motion.div
               key={item.title}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
+              initial={isMobile ? false : { opacity: 0, y: 20 }}
+              animate={isMobile ? { opacity: 1, y: 0 } : undefined}
+              whileInView={isMobile ? undefined : { opacity: 1, y: 0 }}
+              viewport={isMobile ? undefined : { once: true }}
               transition={{ delay: i * 0.05, duration: 0.5 }}
               className="glass-card-hover aspect-[4/3] relative overflow-hidden group cursor-pointer"
             >
@@ -44,6 +49,7 @@ const Gallery = () => (
       </div>
     </section>
   </Layout>
-);
+  );
+};
 
 export default Gallery;

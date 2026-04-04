@@ -33,6 +33,14 @@ export default function QuickAddProductDialog({
     if (!product) return 0;
     return getUnitPrice(product, false);
   }, [product]);
+  const selectedPrimary = useMemo(
+    () => product?.primaryColors.find((c) => c.id === primaryColorId) || null,
+    [product, primaryColorId]
+  );
+  const selectedSecondary = useMemo(
+    () => product?.secondaryColors.find((c) => c.id === secondaryColorId) || null,
+    [product, secondaryColorId]
+  );
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -80,6 +88,12 @@ export default function QuickAddProductDialog({
                     </button>
                   ))}
                 </div>
+                <p className="mt-2 text-xs text-slate-400">
+                  Selected:{" "}
+                  <span className={["font-semibold", accentClassName || "text-primary"].join(" ")}>
+                    {selectedPrimary?.name || "Not selected"}
+                  </span>
+                </p>
               </div>
 
               <div>
@@ -103,6 +117,12 @@ export default function QuickAddProductDialog({
                     </button>
                   ))}
                 </div>
+                <p className="mt-2 text-xs text-slate-400">
+                  Selected:{" "}
+                  <span className={["font-semibold", accentClassName || "text-primary"].join(" ")}>
+                    {selectedSecondary?.name || "Not selected"}
+                  </span>
+                </p>
               </div>
 
               <button
@@ -114,6 +134,8 @@ export default function QuickAddProductDialog({
                     qty: 1,
                     primaryColorId,
                     secondaryColorId,
+                    primaryColorName: selectedPrimary?.name,
+                    secondaryColorName: selectedSecondary?.name,
                     ledsEnabled: false,
                     unitPrice,
                   });

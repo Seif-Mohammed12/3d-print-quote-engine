@@ -19,6 +19,8 @@ export interface ProductCartItem {
   qty: number;
   primaryColorId: string;
   secondaryColorId: string;
+  primaryColorName?: string;
+  secondaryColorName?: string;
   ledsEnabled: boolean;
   unitPrice: number;
 }

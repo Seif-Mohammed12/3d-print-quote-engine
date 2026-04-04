@@ -35,10 +35,25 @@ export default function ProductOrderConfirmation() {
           <div className="glass-card p-6 space-y-4">
             <h3 className="font-heading font-semibold text-foreground">Summary</h3>
             <div className="text-sm text-muted-foreground space-y-2">
-              <div>
-                <span className="text-foreground font-medium">Product:</span>{" "}
-                {order.product?.name}
-              </div>
+              {Array.isArray(order.items) && order.items.length > 0 ? (
+                <div className="space-y-3">
+                  <div className="text-foreground font-medium">Items</div>
+                  <ul className="list-disc pl-5 space-y-1">
+                    {order.items.map((it: { name?: string; brand?: string; qty?: number }, i: number) => (
+                      <li key={i}>
+                        {it.name}
+                        {it.brand ? ` (${String(it.brand).toUpperCase()})` : ""}
+                        {it.qty != null ? ` × ${it.qty}` : ""}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : (
+                <div>
+                  <span className="text-foreground font-medium">Product:</span>{" "}
+                  {order.product?.name}
+                </div>
+              )}
               <div>
                 <span className="text-foreground font-medium">Shipping:</span>{" "}
                 {order.shipping?.method === "pickup" ? "Pickup" : "Aramex"}

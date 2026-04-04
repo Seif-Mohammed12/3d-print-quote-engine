@@ -42,11 +42,20 @@ export const handler = async (event) => {
     const adminHtml = createAdminHtml(orderId, parsed);
     const customerHtml = createCustomerHtml(orderId, parsed);
 
+    const subjectProductName = (() => {
+      const items = parsed?.items;
+      if (Array.isArray(items) && items.length > 0) {
+        if (items.length === 1) return items[0]?.name || "Product";
+        return `${items[0]?.name || "Product"} +${items.length - 1} more`;
+      }
+      return parsed?.product?.name || "Product";
+    })();
+
     await Promise.all([
       sgMail.send({
         to: adminTo,
         from,
-        subject: `🛒 Product order ${orderId} — ${parsed?.product?.name || "Product"}`,
+        subject: `🛒 Product order ${orderId} — ${subjectProductName}`,
         html: adminHtml,
       }),
       sgMail.send({
@@ -80,10 +89,44 @@ function createAdminHtml(orderId, payload) {
   const ship = payload?.shipping || {};
   const pay = payload?.payment || {};
   const totals = payload?.totals || {};
+  const items = Array.isArray(payload?.items) ? payload.items : null;
 
   const addr = ship?.address
     ? `${safe(ship.address.line1)}<br/>${safe(ship.address.line2)}<br/>${safe(ship.address.city)}, ${safe(ship.address.governorate)}`
     : "Pickup";
+
+  const orderDetailsTable = (() => {
+    if (items && items.length > 0) {
+      const rows = items
+        .map((it, i) => {
+          const discountRow =
+            it?.discount && it.discount.oldPrice != null
+              ? `<tr><td style="padding: 6px 0; color: #6b7280;">List / sale</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">EGP${safe(it.discount.oldPrice)} → EGP${safe(it.discount.newPrice)}</td></tr>`
+              : "";
+          return `
+          <tr><td colspan="2" style="padding: 10px 0 4px; font-size: 15px; font-weight: 700; color: #1e3a8a; border-top: ${i === 0 ? "none" : "1px solid #e5e7eb"};">Item ${i + 1}</td></tr>
+          <tr><td style="padding: 6px 0; color: #6b7280;">Brand</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${safe(it.brand)}</td></tr>
+          <tr><td style="padding: 6px 0; color: #6b7280;">Product</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${safe(it.name)}</td></tr>
+          <tr><td style="padding: 6px 0; color: #6b7280;">Qty</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${safe(it.qty)}</td></tr>
+          <tr><td style="padding: 6px 0; color: #6b7280;">Unit price</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">EGP${safe(it.unitPrice)}</td></tr>
+          <tr><td style="padding: 6px 0; color: #6b7280;">Line total</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">EGP${safe(it.subtotal)}</td></tr>
+          <tr><td style="padding: 6px 0; color: #6b7280;">Primary color</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${safe(it.primaryColor)}</td></tr>
+          <tr><td style="padding: 6px 0; color: #6b7280;">Secondary color</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${safe(it.secondaryColor)}</td></tr>
+          ${discountRow}
+        `;
+        })
+        .join("");
+      return `<table style="width: 100%; border-collapse: collapse; font-size: 14px; margin-bottom: 14px;">${rows}</table>`;
+    }
+    return `
+        <table style="width: 100%; border-collapse: collapse; font-size: 14px; margin-bottom: 14px;">
+          <tr><td style="padding: 6px 0; color: #6b7280;">Brand</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${safe(payload?.brand)}</td></tr>
+          <tr><td style="padding: 6px 0; color: #6b7280;">Product</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${safe(p.name)}</td></tr>
+          <tr><td style="padding: 6px 0; color: #6b7280;">Qty</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${safe(p.qty)}</td></tr>
+          <tr><td style="padding: 6px 0; color: #6b7280;">Primary color</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${safe(p.primaryColor)}</td></tr>
+          <tr><td style="padding: 6px 0; color: #6b7280;">Secondary color</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${safe(p.secondaryColor)}</td></tr>
+        </table>`;
+  })();
 
   return `
   <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #111827; background: #f8fafc; padding: 24px;">
@@ -103,13 +146,7 @@ function createAdminHtml(orderId, payload) {
         ${c.notes ? `<p style="margin: 0 0 14px; font-size: 14px;"><strong>Notes:</strong><br/>${safe(c.notes)}</p>` : ""}
 
         <h3 style="margin: 0 0 10px; font-size: 17px; color: #1e3a8a;">Order Details</h3>
-        <table style="width: 100%; border-collapse: collapse; font-size: 14px; margin-bottom: 14px;">
-          <tr><td style="padding: 6px 0; color: #6b7280;">Brand</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${safe(payload?.brand)}</td></tr>
-          <tr><td style="padding: 6px 0; color: #6b7280;">Product</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${safe(p.name)}</td></tr>
-          <tr><td style="padding: 6px 0; color: #6b7280;">Qty</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${safe(p.qty)}</td></tr>
-          <tr><td style="padding: 6px 0; color: #6b7280;">Primary color</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${safe(p.primaryColor)}</td></tr>
-          <tr><td style="padding: 6px 0; color: #6b7280;">Secondary color</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${safe(p.secondaryColor)}</td></tr>
-        </table>
+        ${orderDetailsTable}
 
         <h3 style="margin: 0 0 10px; font-size: 17px; color: #1e3a8a;">Shipping & Payment</h3>
         <p style="margin: 0 0 14px; font-size: 14px;">
@@ -135,9 +172,35 @@ function createCustomerHtml(orderId, payload) {
   const ship = payload?.shipping || {};
   const pay = payload?.payment || {};
   const totals = payload?.totals || {};
+  const items = Array.isArray(payload?.items) ? payload.items : null;
 
   const shippingLabel = ship?.method === "pickup" ? "Pickup from store" : "Shipping by Aramex (cost to be confirmed)";
   const paymentLabel = pay?.method === "cod" ? "Cash on delivery" : "Instapay";
+
+  const selectionTable = (() => {
+    if (items && items.length > 0) {
+      const rows = items
+        .map(
+          (it, i) => `
+        <tr><td colspan="2" style="padding: 8px 0 2px; font-weight: 700; color: #1e3a8a; border-top: ${i === 0 ? "none" : "1px solid #e5e7eb"};">Item ${i + 1}</td></tr>
+        <tr><td style="padding: 6px 0; color: #6b7280;">Product</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${safe(it.name)} (${safe(it.brand)})</td></tr>
+        <tr><td style="padding: 6px 0; color: #6b7280;">Qty</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${safe(it.qty)}</td></tr>
+        <tr><td style="padding: 6px 0; color: #6b7280;">Primary color</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${safe(it.primaryColor)}</td></tr>
+        <tr><td style="padding: 6px 0; color: #6b7280;">Secondary color</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${safe(it.secondaryColor)}</td></tr>
+        <tr><td style="padding: 6px 0; color: #6b7280;">Line total</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">EGP${safe(it.subtotal)}</td></tr>
+      `
+        )
+        .join("");
+      return `<table style="width: 100%; border-collapse: collapse; font-size: 14px; margin-bottom: 14px;">${rows}</table>`;
+    }
+    return `
+        <table style="width: 100%; border-collapse: collapse; font-size: 14px; margin-bottom: 14px;">
+          <tr><td style="padding: 6px 0; color: #6b7280;">Product</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${safe(p.name)}</td></tr>
+          <tr><td style="padding: 6px 0; color: #6b7280;">Qty</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${safe(p.qty)}</td></tr>
+          <tr><td style="padding: 6px 0; color: #6b7280;">Primary color</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${safe(p.primaryColor)}</td></tr>
+          <tr><td style="padding: 6px 0; color: #6b7280;">Secondary color</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${safe(p.secondaryColor)}</td></tr>
+        </table>`;
+  })();
 
   return `
   <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #111827; background: #f8fafc; padding: 24px;">
@@ -155,12 +218,7 @@ function createCustomerHtml(orderId, payload) {
         </div>
 
         <h3 style="margin: 0 0 10px; font-size: 17px; color: #1e3a8a;">Your Selection</h3>
-        <table style="width: 100%; border-collapse: collapse; font-size: 14px; margin-bottom: 14px;">
-          <tr><td style="padding: 6px 0; color: #6b7280;">Product</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${safe(p.name)}</td></tr>
-          <tr><td style="padding: 6px 0; color: #6b7280;">Qty</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${safe(p.qty)}</td></tr>
-          <tr><td style="padding: 6px 0; color: #6b7280;">Primary color</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${safe(p.primaryColor)}</td></tr>
-          <tr><td style="padding: 6px 0; color: #6b7280;">Secondary color</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${safe(p.secondaryColor)}</td></tr>
-        </table>
+        ${selectionTable}
 
         <h3 style="margin: 0 0 10px; font-size: 17px; color: #1e3a8a;">Shipping & Payment</h3>
         <p style="margin: 0 0 14px; font-size: 14px;">

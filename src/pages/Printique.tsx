@@ -6,69 +6,72 @@ import { Image as ImageIcon } from "lucide-react";
 import { useState } from "react";
 import QuickAddProductDialog from "@/components/QuickAddProductDialog";
 import { useBrandProducts } from "@/hooks/use-brand-products";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const Printique = () => {
   const [quickAddProduct, setQuickAddProduct] = useState<Product | null>(null);
+  const isMobile = useIsMobile();
   const { data: products, isPending, isError, error } = useBrandProducts("printique");
 
   return (
     <Layout>
       <section className="section-padding relative overflow-hidden">
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[#020617] via-slate-950 to-[#020617]" />
-        <div className="pointer-events-none absolute -top-40 left-1/2 h-80 w-80 -translate-x-1/2 rounded-full bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.55),_transparent)] blur-3xl" />
-        <div className="pointer-events-none absolute bottom-0 right-0 h-64 w-64 rounded-full bg-[radial-gradient(circle_at_bottom,_rgba(250,204,21,0.45),_transparent)] blur-3xl" />
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(59,130,246,0.14),_transparent_52%)]" />
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,_transparent_48%,_rgba(2,6,23,0.82)_100%)]" />
 
-        <div className="relative z-10 container mx-auto max-w-5xl space-y-10">
-          <div className="flex flex-col items-center text-center gap-4 md:gap-5">
+        <div className="relative z-10 container mx-auto max-w-5xl space-y-14">
+          <div className="flex flex-col items-center text-center gap-6 md:gap-8 pt-2 md:pt-5">
             <div className="relative">
-              <div className="pointer-events-none absolute inset-0 blur-2xl bg-[radial-gradient(circle_at_center,_rgba(37,99,235,0.95),_transparent_60%)]" />
-              <div className="pointer-events-none absolute inset-0 blur-3xl bg-[radial-gradient(circle_at_center,_rgba(250,204,21,0.55),_transparent_55%)]" />
+              <div className="pointer-events-none absolute inset-0 blur-xl bg-[radial-gradient(circle_at_center,_rgba(37,99,235,0.45),_transparent_62%)]" />
+              <div className="pointer-events-none absolute inset-0 blur-2xl bg-[radial-gradient(circle_at_center,_rgba(250,204,21,0.22),_transparent_68%)]" />
               <img
                 src="/printique-logo.png"
                 alt="Printique logo"
-                className="relative h-32 w-32 md:h-40 md:w-40 object-contain drop-shadow-[0_0_55px_rgba(37,99,235,0.95)] drop-shadow-[0_0_22px_rgba(250,204,21,0.6)]"
+                className="relative h-32 w-32 md:h-44 md:w-44 object-contain drop-shadow-[0_0_24px_rgba(37,99,235,0.45)]"
               />
             </div>
-            <div>
-              <p className="text-sm md:text-base font-semibold tracking-[0.38em] uppercase text-blue-200/95">
-                Printique
+            <div className="space-y-4 md:space-y-5">
+              <p className="text-sm md:text-base font-semibold tracking-[0.34em] uppercase text-blue-200/85">
+                PRINTIQUE
               </p>
-              <h1 className="mt-1 font-heading text-4xl md:text-6xl font-bold leading-tight bg-gradient-to-r from-blue-200 via-slate-50 to-amber-200 text-transparent bg-clip-text">
-                Aesthetic Line
+              <h1 className="font-heading text-5xl md:text-7xl font-bold leading-[0.95] bg-gradient-to-r from-blue-200 via-slate-100 to-amber-200 text-transparent bg-clip-text">
+                Dark Elegance. Everyday Space.
               </h1>
             </div>
-            <p className="max-w-xl text-sm md:text-base text-slate-300">
-              Dark, elegant 3D printed decor pieces that looks great anywhere
+            <p className="max-w-2xl text-sm md:text-lg text-slate-300/90">
+              Premium decor upgrades that make your space feel intentional and refined.
+            </p>
+            <p className="text-xs md:text-sm uppercase tracking-[0.22em] text-amber-200/70">
+              Refined pieces for modern interiors
+            </p>
+          </div>
+
+          <div className="relative py-2 md:py-4">
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(59,130,246,0.12),_transparent_70%)]" />
+            <div className="relative flex items-center gap-4 md:gap-6">
+              <div className="h-px flex-1 bg-gradient-to-r from-transparent via-blue-300/45 to-amber-200/10" />
+              <p className="text-[11px] md:text-xs font-semibold tracking-[0.28em] uppercase text-blue-200/85">
+                Signature Collection
+              </p>
+              <div className="h-px flex-1 bg-gradient-to-l from-transparent via-blue-300/45 to-amber-200/10" />
+            </div>
+          </div>
+
+          <div className="text-center space-y-2 md:space-y-3">
+            <h2 className="font-heading text-2xl md:text-4xl font-semibold text-slate-100">
+              Signature Objects
+            </h2>
+            <p className="mx-auto max-w-2xl text-sm md:text-base text-slate-300/85">
+              A curated lineup of decor forms designed to add depth, contrast, and character to your space.
             </p>
           </div>
 
           <motion.div
+            id="printique-products"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="glass-card p-6 md:p-8 border border-blue-400/30 bg-gradient-to-br from-slate-950/80 via-slate-950/90 to-slate-900/80 shadow-[0_0_40px_-18px_rgba(30,64,175,0.9)]"
-          >
-            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-              <div className="space-y-2">
-                <p className="text-xs font-semibold tracking-[0.2em] uppercase text-blue-200">
-                  Printique
-                </p>
-                <h2 className="font-heading text-2xl md:text-3xl font-bold text-slate-50">
-                  Statement Pieces for Dark Interiors
-                </h2>
-                <p className="text-sm text-slate-300 max-w-xl">
-                  Designed to live on shelves, desks and walls — with finishes that feel closer to ceramic and metal than raw filament.
-                </p>
-              </div>
-              <div className="mt-2 rounded-2xl border border-amber-300/40 bg-slate-900/70 px-6 py-3 text-center text-xs font-semibold uppercase tracking-wide text-amber-200 shadow-[0_0_24px_-10px_rgba(245,158,11,0.9)]">
-                Custom sizes and colors on request
-              </div>
-            </div>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="grid gap-7 md:grid-cols-3"
+            className="grid gap-7 md:grid-cols-3 pt-2 md:pt-4"
           >
             {isPending ? (
               <p className="col-span-full text-center text-sm text-slate-400 py-16">Loading products…</p>
@@ -78,28 +81,31 @@ const Printique = () => {
             {(products ?? []).map((product, idx) => (
               <motion.div
                 key={product.id}
-                initial={{ opacity: 0, y: 16 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
+                initial={isMobile ? false : { opacity: 0, y: 16 }}
+                animate={isMobile ? { opacity: 1, y: 0 } : undefined}
+                whileInView={isMobile ? undefined : { opacity: 1, y: 0 }}
+                viewport={isMobile ? undefined : { once: true }}
                 transition={{ delay: idx * 0.08 }}
-                className="group relative h-full overflow-hidden rounded-2xl border border-slate-800/80 bg-slate-950/80 p-6 shadow-[0_0_25px_-18px_rgba(15,23,42,1)] flex flex-col"
+                className="group relative h-full overflow-hidden rounded-2xl border border-slate-800/85 bg-slate-950/85 p-6 shadow-[0_0_25px_-18px_rgba(15,23,42,1),0_0_0_1px_rgba(59,130,246,0.06)] hover:-translate-y-0.5 hover:shadow-[0_0_42px_-16px_rgba(59,130,246,0.45),0_0_0_1px_rgba(250,204,21,0.24)] transition-all duration-300 flex flex-col"
               >
-                <div className="pointer-events-none absolute inset-px rounded-2xl bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.25),_transparent)] opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+                <div className="pointer-events-none absolute -inset-10 rounded-[2rem] bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.2),_transparent_60%)] opacity-40 blur-2xl transition-opacity duration-300 group-hover:opacity-70" />
+                <div className="pointer-events-none absolute inset-px rounded-2xl bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.2),_transparent)] opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
 
                 <Link to={`/printique/${product.id}`} className="block">
-                  <div className="relative mb-5 h-48 rounded-xl border border-slate-800/80 bg-gradient-to-b from-slate-900/40 to-slate-950/70 overflow-hidden">
+                  <div className="relative mb-6 h-52 rounded-xl border border-slate-800/80 bg-gradient-to-b from-slate-900/40 to-slate-950/70 overflow-hidden">
                     {product.images?.[0] ? (
                       <img
                         src={product.images[0]}
                         alt={product.name}
-                        className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.05]"
                       />
                     ) : (
                       <div className="h-full w-full flex items-center justify-center text-slate-500">
                         <ImageIcon className="h-7 w-7" />
                       </div>
                     )}
-                    <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/25 to-transparent" />
+                    <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/35 via-black/10 to-transparent" />
+                    <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_10%,_rgba(59,130,246,0.2),_transparent_45%)] opacity-60" />
                   </div>
                 </Link>
 
@@ -135,7 +141,7 @@ const Printique = () => {
                 </div>
 
                 <p
-                  className="relative z-10 mb-5 text-sm text-slate-300 min-h-[88px]"
+                  className="relative z-10 mb-6 text-sm leading-6 text-slate-300 min-h-[96px]"
                   style={{
                     display: "-webkit-box",
                     WebkitLineClamp: 4,

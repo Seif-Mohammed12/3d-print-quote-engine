@@ -42,19 +42,36 @@ const Navbar = () => {
           </span>
         </Link>
 
+        {/* Mobile quick links (avoid having to open menu) */}
+        <div className="md:hidden flex items-center gap-2">
+          <Link
+            to="/pforge"
+            className="px-2 py-1 rounded-lg text-xs font-semibold bg-cyan-400/10 border border-cyan-300/30 text-cyan-200 hover:bg-cyan-400/15 transition-colors"
+            onClick={() => setOpen(false)}
+          >
+            Pforge
+          </Link>
+          <Link
+            to="/printique"
+            className="px-2 py-1 rounded-lg text-xs font-semibold bg-blue-400/10 border border-blue-300/30 text-blue-200 hover:bg-blue-400/15 transition-colors"
+            onClick={() => setOpen(false)}
+          >
+            Printique
+          </Link>
+        </div>
+
         {/* Desktop */}
         <div className="hidden md:flex items-center gap-1">
           {navLinks.map((link) => (
             <Link
               key={link.to}
               to={link.to}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${
-                link.highlight
-                  ? "bg-primary text-primary-foreground hover:shadow-[0_0_20px_-5px_hsl(var(--neon-glow)/0.5)]"
-                  : location.pathname === link.to
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${link.highlight
+                ? "bg-primary text-primary-foreground hover:shadow-[0_0_20px_-5px_hsl(var(--neon-glow)/0.5)]"
+                : location.pathname === link.to
                   ? "text-primary bg-primary/10"
                   : "text-muted-foreground hover:text-foreground hover:bg-secondary"
-              }`}
+                }`}
             >
               {link.label}
             </Link>
@@ -97,13 +114,12 @@ const Navbar = () => {
                   key={link.to}
                   to={link.to}
                   onClick={() => setOpen(false)}
-                  className={`px-4 py-3 rounded-lg text-sm font-medium transition-all ${
-                    link.highlight
-                      ? "bg-primary text-primary-foreground"
-                      : location.pathname === link.to
+                  className={`px-4 py-3 rounded-lg text-sm font-medium transition-all ${link.highlight
+                    ? "bg-primary text-primary-foreground"
+                    : location.pathname === link.to
                       ? "text-primary bg-primary/10"
                       : "text-muted-foreground hover:text-foreground hover:bg-secondary"
-                  }`}
+                    }`}
                 >
                   {link.label}
                 </Link>

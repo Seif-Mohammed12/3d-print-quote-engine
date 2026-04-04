@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { ArrowRight, Zap, Shield, Clock, Layers, Box, Cpu } from "lucide-react";
 import Layout from "@/components/Layout";
 import SectionHeading from "@/components/SectionHeading";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const features = [
   { icon: Zap, title: "Lightning Fast", desc: "48-hour turnaround on most orders" },
@@ -20,7 +21,10 @@ const galleryItems = [
   { title: "Product Prototypes", color: "from-neon-purple/20 to-primary/20" },
 ];
 
-const Home = () => (
+const Home = () => {
+  const isMobile = useIsMobile();
+
+  return (
   <Layout>
     {/* Hero */}
     <section className="relative min-h-[90vh] flex items-center justify-center section-padding grid-background overflow-hidden">
@@ -66,9 +70,10 @@ const Home = () => (
     <section className="section-padding">
       <div className="container mx-auto grid gap-6 md:grid-cols-2">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
+          initial={isMobile ? false : { opacity: 0, y: 20 }}
+          animate={isMobile ? { opacity: 1, y: 0 } : undefined}
+          whileInView={isMobile ? undefined : { opacity: 1, y: 0 }}
+          viewport={isMobile ? undefined : { once: true }}
           transition={{ duration: 0.5 }}
           className="relative overflow-hidden rounded-2xl border border-cyan-500/30 bg-gradient-to-br from-slate-950/90 via-slate-950 to-slate-900 shadow-[0_0_30px_-12px_rgba(56,189,248,0.8)] p-6 md:p-7"
         >
@@ -94,9 +99,10 @@ const Home = () => (
         </motion.div>
 
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
+          initial={isMobile ? false : { opacity: 0, y: 20 }}
+          animate={isMobile ? { opacity: 1, y: 0 } : undefined}
+          whileInView={isMobile ? undefined : { opacity: 1, y: 0 }}
+          viewport={isMobile ? undefined : { once: true }}
           transition={{ duration: 0.5, delay: 0.1 }}
           className="relative overflow-hidden rounded-2xl border border-blue-400/30 bg-gradient-to-br from-slate-950/90 via-slate-950 to-slate-900 shadow-[0_0_30px_-16px_rgba(37,99,235,0.8)] p-6 md:p-7"
         >
@@ -132,9 +138,10 @@ const Home = () => (
           {features.map((f, i) => (
             <motion.div
               key={f.title}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
+              initial={isMobile ? false : { opacity: 0, y: 20 }}
+              animate={isMobile ? { opacity: 1, y: 0 } : undefined}
+              whileInView={isMobile ? undefined : { opacity: 1, y: 0 }}
+              viewport={isMobile ? undefined : { once: true }}
               transition={{ delay: i * 0.1, duration: 0.5 }}
               className="glass-card-hover p-6"
             >
@@ -157,9 +164,10 @@ const Home = () => (
           {galleryItems.map((item, i) => (
             <motion.div
               key={item.title}
-              initial={{ opacity: 0, scale: 0.95 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              viewport={{ once: true }}
+              initial={isMobile ? false : { opacity: 0, scale: 0.95 }}
+              animate={isMobile ? { opacity: 1, scale: 1 } : undefined}
+              whileInView={isMobile ? undefined : { opacity: 1, scale: 1 }}
+              viewport={isMobile ? undefined : { once: true }}
               transition={{ delay: i * 0.1, duration: 0.5 }}
               className="glass-card-hover aspect-square flex items-end p-5 overflow-hidden relative"
             >
@@ -183,9 +191,10 @@ const Home = () => (
     <section className="section-padding">
       <div className="container mx-auto">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
+          initial={isMobile ? false : { opacity: 0, y: 20 }}
+          animate={isMobile ? { opacity: 1, y: 0 } : undefined}
+          whileInView={isMobile ? undefined : { opacity: 1, y: 0 }}
+          viewport={isMobile ? undefined : { once: true }}
           className="glass-card neon-border p-10 md:p-16 text-center"
         >
           <h2 className="text-3xl md:text-4xl font-heading font-bold text-foreground mb-4">
@@ -204,6 +213,7 @@ const Home = () => (
       </div>
     </section>
   </Layout>
-);
+  );
+};
 
 export default Home;

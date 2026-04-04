@@ -4,7 +4,8 @@ import { motion } from "framer-motion";
 import Layout from "@/components/Layout";
 import SectionHeading from "@/components/SectionHeading";
 import { toast } from "sonner";
-import { useCart } from "@/lib/cart-context";
+import { useCart, type ProductCartItem } from "@/lib/cart-context";
+import type { Product } from "@/lib/brand-catalog";
 import {
   getProduct,
   getUnitPrice,
@@ -13,8 +14,19 @@ import {
   type ProductOrderDraft,
   type ShippingMethod,
 } from "@/lib/product-order";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueries } from "@tanstack/react-query";
 import { fetchProductByBrandAndId, mapDbProductToLegacyProduct } from "@/lib/products-api";
+
+type CheckoutMode = "loading" | "single" | "cart" | "empty";
+
+type CartLineResolved = {
+  item: ProductCartItem;
+  product: Product | null;
+  primary: { name: string } | null;
+  secondary: { name: string } | null;
+  unitPrice: number;
+  lineSubtotal: number;
+};
 
 async function sendProductOrderEmail(payload: any) {
   const response = await fetch("/api/send-product-order-email", {
@@ -42,7 +54,8 @@ async function sendProductOrderEmail(payload: any) {
 
 export default function ProductCheckout() {
   const navigate = useNavigate();
-  const { clearProductCart } = useCart();
+  const { clearProductCart, productCart } = useCart();
+  const [checkoutMode, setCheckoutMode] = useState<CheckoutMode>("loading");
   const [draft, setDraft] = useState<ProductOrderDraft | null>(null);
   const [shipping, setShipping] = useState<ShippingMethod>("pickup");
   const [payment, setPayment] = useState<PaymentMethod>("cod");
@@ -60,18 +73,38 @@ export default function ProductCheckout() {
   });
 
   useEffect(() => {
-    const raw = sessionStorage.getItem("productOrderDraft");
-    if (!raw) return;
-    try {
-      setDraft(JSON.parse(raw));
-    } catch {
-      // ignore
+    const cartFlag = sessionStorage.getItem("productCartCheckout") === "true";
+    sessionStorage.removeItem("productCartCheckout");
+
+    if (cartFlag && productCart.length > 0) {
+      setCheckoutMode("cart");
+      return;
     }
+
+    const raw = sessionStorage.getItem("productOrderDraft");
+    if (raw) {
+      try {
+        setDraft(JSON.parse(raw) as ProductOrderDraft);
+        setCheckoutMode("single");
+        return;
+      } catch {
+        // fall through
+      }
+    }
+
+    if (productCart.length > 0) {
+      setCheckoutMode("cart");
+      return;
+    }
+
+    setCheckoutMode("empty");
+    // Intentionally read `productCart` once on entry (modal sets session flag, then navigates here).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const { data: liveProduct } = useQuery({
     queryKey: ["checkout-product", draft?.brand, draft?.productId],
-    enabled: Boolean(draft?.brand && draft?.productId),
+    enabled: checkoutMode === "single" && Boolean(draft?.brand && draft?.productId),
     queryFn: async () => {
       if (!draft) return null;
       return fetchProductByBrandAndId(draft.brand, draft.productId);
@@ -79,11 +112,54 @@ export default function ProductCheckout() {
     retry: 1,
   });
 
+  const cartQueries = useQueries({
+    queries:
+      checkoutMode === "cart"
+        ? productCart.map((item) => ({
+            queryKey: ["checkout-cart-line", item.brand, item.productId] as const,
+            queryFn: () => fetchProductByBrandAndId(item.brand, item.productId),
+            enabled: checkoutMode === "cart",
+            retry: 1,
+          }))
+        : [],
+  });
+
   const product = useMemo(() => {
-    if (!draft) return null;
+    if (checkoutMode !== "single" || !draft) return null;
     if (liveProduct) return mapDbProductToLegacyProduct(liveProduct);
     return getProduct(draft.brand, draft.productId);
-  }, [draft, liveProduct]);
+  }, [checkoutMode, draft, liveProduct]);
+
+  const cartLines: CartLineResolved[] = useMemo(() => {
+    if (checkoutMode !== "cart") return [];
+    return productCart.map((item, idx) => {
+      const live = cartQueries[idx]?.data;
+      const legacy = live ? mapDbProductToLegacyProduct(live) : getProduct(item.brand, item.productId);
+      const qty = Math.max(1, item.qty || 1);
+      const unitPrice = item.unitPrice;
+      const lineSubtotal = unitPrice * qty;
+      if (!legacy) {
+        return {
+          item,
+          product: null,
+          primary: null,
+          secondary: null,
+          unitPrice,
+          lineSubtotal,
+        };
+      }
+      const primary = legacy.primaryColors.find((c) => c.id === item.primaryColorId) || null;
+      const secondary = legacy.secondaryColors.find((c) => c.id === item.secondaryColorId) || null;
+      return {
+        item,
+        product: legacy,
+        primary,
+        secondary,
+        unitPrice,
+        lineSubtotal,
+      };
+    });
+  }, [checkoutMode, productCart, cartQueries]);
 
   const primary = useMemo(() => {
     if (!draft || !product) return null;
@@ -100,24 +176,77 @@ export default function ProductCheckout() {
     return getUnitPrice(product, false);
   }, [draft, product]);
 
-  const subtotal = useMemo(() => {
+  const singleSubtotal = useMemo(() => {
     if (!draft) return 0;
     return unitPrice * Math.max(1, draft.qty || 1);
   }, [draft, unitPrice]);
+
+  const cartSubtotal = useMemo(() => {
+    if (checkoutMode !== "cart") return 0;
+    return cartLines.reduce((sum, line) => sum + line.lineSubtotal, 0);
+  }, [checkoutMode, cartLines]);
+
+  const subtotal = checkoutMode === "cart" ? cartSubtotal : singleSubtotal;
 
   // For now, treat shipping cost as "to be confirmed" (especially for Aramex).
   const shippingCost = 0;
   const total = subtotal + shippingCost;
 
+  const cartPending = checkoutMode === "cart" && cartQueries.some((q) => q.isPending);
+  const cartReady = checkoutMode === "cart" && !cartPending;
+
   useEffect(() => {
-    if (!draft) return;
+    if (checkoutMode !== "single" || !draft) return;
     if (!product) {
       toast.error("Product not found");
       navigate(draft.brand === "pforge" ? "/pforge" : "/printique", { replace: true });
     }
-  }, [draft, product, navigate]);
+  }, [checkoutMode, draft, product, navigate]);
 
-  if (!draft || !product) {
+  useEffect(() => {
+    if (!cartReady) return;
+    const missing = cartLines.filter((l) => !l.product);
+    if (missing.length > 0) {
+      toast.error("One or more products could not be loaded.");
+      navigate("/product-cart", { replace: true });
+    }
+  }, [cartReady, cartLines, navigate]);
+
+  if (checkoutMode === "loading" || (checkoutMode === "cart" && cartPending)) {
+    return (
+      <Layout>
+        <section className="section-padding">
+          <div className="container mx-auto max-w-3xl">
+            <SectionHeading title="Checkout" subtitle="Loading your order…" />
+          </div>
+        </section>
+      </Layout>
+    );
+  }
+
+  if (
+    checkoutMode === "empty" ||
+    (checkoutMode === "cart" && productCart.length === 0)
+  ) {
+    return (
+      <Layout>
+        <section className="section-padding">
+          <div className="container mx-auto max-w-3xl">
+            <SectionHeading title="Checkout" subtitle="No products in your cart yet." />
+            <button
+              type="button"
+              onClick={() => navigate("/product-cart")}
+              className="mt-6 rounded-lg bg-primary px-5 py-2.5 font-semibold text-primary-foreground"
+            >
+              View cart
+            </button>
+          </div>
+        </section>
+      </Layout>
+    );
+  }
+
+  if (checkoutMode === "single" && (!draft || !product)) {
     return (
       <Layout>
         <section className="section-padding">
@@ -135,6 +264,10 @@ export default function ProductCheckout() {
     );
   }
 
+  if (checkoutMode === "cart" && cartReady && !cartLines.every((l) => l.product)) {
+    return null;
+  }
+
   const requiresAddress = shipping === "aramex";
 
   const placeOrder = async (e: React.FormEvent) => {
@@ -150,50 +283,85 @@ export default function ProductCheckout() {
 
     setIsSubmitting(true);
     try {
-      const payload = {
-        orderType: "product",
-        createdAt: new Date().toISOString(),
-        brand: draft.brand,
-        product: {
-          id: product.id,
-          name: product.name,
-          qty: draft.qty,
-          unitPrice,
-          subtotal,
-          primaryColor: primary?.name || "",
-          secondaryColor: secondary?.name || "",
-          discount: product.discount?.enabled ? { oldPrice: product.basePrice, newPrice: product.discount.price } : null,
-        },
-        shipping: {
-          method: shipping,
-          provider: shipping === "aramex" ? "Aramex" : "Pickup",
-          cost: shippingCost,
-          address:
-            shipping === "aramex"
-              ? {
-                  line1: customer.addressLine1,
-                  line2: customer.addressLine2,
-                  city: customer.city,
-                  governorate: customer.governorate,
-                }
-              : null,
-        },
-        payment: {
-          method: payment,
-        },
-        customer: {
-          name: customer.name,
-          email: customer.email,
-          phone: customer.phone,
-          notes: customer.notes,
-        },
-        totals: {
-          subtotal,
-          shipping: shippingCost,
-          total,
-          currency: "EGP",
-        },
+      const shippingPayload = {
+        method: shipping,
+        provider: shipping === "aramex" ? "Aramex" : "Pickup",
+        cost: shippingCost,
+        address:
+          shipping === "aramex"
+            ? {
+                line1: customer.addressLine1,
+                line2: customer.addressLine2,
+                city: customer.city,
+                governorate: customer.governorate,
+              }
+            : null,
       };
+
+      const customerPayload = {
+        name: customer.name,
+        email: customer.email,
+        phone: customer.phone,
+        notes: customer.notes,
+      };
+
+      const totalsPayload = {
+        subtotal,
+        shipping: shippingCost,
+        total,
+        currency: "EGP",
+      };
+
+      const payload =
+        checkoutMode === "cart"
+          ? {
+              orderType: "product",
+              createdAt: new Date().toISOString(),
+              isMultiItem: true,
+              items: cartLines
+                .filter((l) => l.product)
+                .map((line) => ({
+                  brand: line.item.brand,
+                  productId: line.product!.id,
+                  name: line.product!.name,
+                  qty: line.item.qty,
+                  unitPrice: line.unitPrice,
+                  subtotal: line.lineSubtotal,
+                  primaryColor: line.primary?.name || "",
+                  secondaryColor: line.secondary?.name || "",
+                  discount:
+                    line.product!.discount?.enabled && line.product!.discount.price
+                      ? { oldPrice: line.product!.basePrice, newPrice: line.product!.discount.price }
+                      : null,
+                })),
+              brand: cartLines[0]?.item.brand ?? "",
+              product: null,
+              shipping: shippingPayload,
+              payment: { method: payment },
+              customer: customerPayload,
+              totals: totalsPayload,
+            }
+          : {
+              orderType: "product",
+              createdAt: new Date().toISOString(),
+              brand: draft!.brand,
+              product: {
+                id: product!.id,
+                name: product!.name,
+                qty: draft!.qty,
+                unitPrice,
+                subtotal,
+                primaryColor: primary?.name || "",
+                secondaryColor: secondary?.name || "",
+                discount: product!.discount?.enabled
+                  ? { oldPrice: product!.basePrice, newPrice: product!.discount.price }
+                  : null,
+              },
+              shipping: shippingPayload,
+              payment: { method: payment },
+              customer: customerPayload,
+              totals: totalsPayload,
+            };
 
       const result = await sendProductOrderEmail(payload);
       if (!result.ok || !result.data?.success) {
@@ -208,10 +376,9 @@ export default function ProductCheckout() {
 
       sessionStorage.setItem("lastProductOrder", JSON.stringify(payload));
       sessionStorage.removeItem("productOrderDraft");
-      clearProductCart();
-
       toast.success("Order placed! Confirmation sent to your email.");
       navigate("/product-order-confirmation", { replace: true });
+      clearProductCart();
     } catch (err: any) {
       toast.error("Failed to place order");
     } finally {
@@ -243,31 +410,65 @@ export default function ProductCheckout() {
               >
                 <h3 className="font-heading font-semibold text-foreground">Order Summary</h3>
 
-                <div className="flex items-start justify-between gap-4 border-b border-border/50 pb-4">
-                  <div>
-                    <p className="font-semibold text-foreground">{product.name}</p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {draft.brand.toUpperCase()} • Primary: {primary?.name || "—"} • Secondary:{" "}
-                      {secondary?.name || "—"}
-                    </p>
+                {checkoutMode === "cart" ? (
+                  <div className="space-y-4">
+                    {cartLines
+                      .filter((l) => l.product)
+                      .map((line, idx, arr) => (
+                        <div
+                          key={line.item.id}
+                          className={`flex items-start justify-between gap-4 ${
+                            idx < arr.length - 1 ? "border-b border-border/50 pb-4" : ""
+                          }`}
+                        >
+                          <div className="min-w-0">
+                            <p className="font-semibold text-foreground">{line.product!.name}</p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {line.item.brand.toUpperCase()} • Qty {line.item.qty} • Primary:{" "}
+                              {line.primary?.name || "—"} • Secondary: {line.secondary?.name || "—"}
+                            </p>
+                          </div>
+                          <p className="font-semibold text-primary shrink-0">
+                            EGP{line.lineSubtotal.toFixed(0)}
+                          </p>
+                        </div>
+                      ))}
+                    <div className="flex items-center justify-between text-sm pt-1">
+                      <span className="text-muted-foreground">Shipping</span>
+                      <span className="text-foreground font-medium">
+                        {shipping === "pickup" ? "Pickup (free)" : "Aramex (to be confirmed)"}
+                      </span>
+                    </div>
                   </div>
-                  <p className="font-semibold text-primary">EGP{subtotal.toFixed(0)}</p>
-                </div>
+                ) : (
+                  <>
+                    <div className="flex items-start justify-between gap-4 border-b border-border/50 pb-4">
+                      <div>
+                        <p className="font-semibold text-foreground">{product!.name}</p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {draft!.brand.toUpperCase()} • Primary: {primary?.name || "—"} • Secondary:{" "}
+                          {secondary?.name || "—"}
+                        </p>
+                      </div>
+                      <p className="font-semibold text-primary">EGP{subtotal.toFixed(0)}</p>
+                    </div>
 
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Qty</span>
-                  <span className="text-foreground font-medium">{draft.qty}</span>
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Unit price</span>
-                  <span className="text-foreground font-medium">EGP{unitPrice.toFixed(0)}</span>
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Shipping</span>
-                  <span className="text-foreground font-medium">
-                    {shipping === "pickup" ? "Pickup (free)" : "Aramex (to be confirmed)"}
-                  </span>
-                </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">Qty</span>
+                      <span className="text-foreground font-medium">{draft!.qty}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">Unit price</span>
+                      <span className="text-foreground font-medium">EGP{unitPrice.toFixed(0)}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">Shipping</span>
+                      <span className="text-foreground font-medium">
+                        {shipping === "pickup" ? "Pickup (free)" : "Aramex (to be confirmed)"}
+                      </span>
+                    </div>
+                  </>
+                )}
               </motion.div>
 
               <motion.form

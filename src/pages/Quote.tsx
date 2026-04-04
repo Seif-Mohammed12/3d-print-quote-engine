@@ -171,7 +171,6 @@ const Quote = () => {
                         }`}
                       >
                         <span className={`font-semibold ${m.color}`}>{m.name}</span>
-                        <span className="block text-xs mt-0.5">EGP{m.costPerGram}/g</span>
                       </button>
                     ))}
                   </div>
