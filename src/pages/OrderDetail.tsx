@@ -174,12 +174,16 @@ export default function OrderDetail() {
                           <MetadataRow label="Product ID" value={extractItemData(item).productId} />
                           <MetadataRow label="Primary color" value={extractItemData(item).primaryColor} />
                           <MetadataRow label="Secondary color" value={extractItemData(item).secondaryColor} />
-                          <MetadataRow label="Unit price" value={extractItemData(item).unitPrice != null ? `EGP${Number(extractItemData(item).unitPrice).toFixed(0)}` : null} />
-                          <MetadataRow label="Subtotal" value={extractItemData(item).subtotal != null ? `EGP${Number(extractItemData(item).subtotal).toFixed(0)}` : null} />
+                          {data.order.order_type !== "quote" && (
+                            <>
+                              <MetadataRow label="Unit price" value={extractItemData(item).unitPrice != null ? `EGP${Number(extractItemData(item).unitPrice).toFixed(0)}` : null} />
+                              <MetadataRow label="Subtotal" value={extractItemData(item).subtotal != null ? `EGP${Number(extractItemData(item).subtotal).toFixed(0)}` : null} />
+                            </>
+                          )}
                           <MetadataRow label="Discount" value={extractItemData(item).discount ? "Applied" : null} />
                           <MetadataRow label="Item notes" value={extractItemData(item).notes} />
                         </div>
-                        {item.subtotal != null ? (
+                        {data.order.order_type !== "quote" && item.subtotal != null ? (
                           <p className="text-sm text-primary font-semibold mt-1">EGP{Number(item.subtotal).toFixed(0)}</p>
                         ) : null}
                       </div>
@@ -195,19 +199,23 @@ export default function OrderDetail() {
                     <MetadataRow label="Material" value={metadata?.settings?.material} />
                     <MetadataRow label="Quality" value={metadata?.settings?.quality} />
                     <MetadataRow label="Infill" value={metadata?.settings?.infill != null ? `${metadata.settings.infill}%` : null} />
-                    <MetadataRow label="Estimate" value={metadata?.estimate?.totalPrice != null ? `EGP${Number(metadata.estimate.totalPrice).toFixed(0)}` : null} />
+                    {data.order.order_type !== "quote" && (
+                      <MetadataRow label="Estimate" value={metadata?.estimate?.totalPrice != null ? `EGP${Number(metadata.estimate.totalPrice).toFixed(0)}` : null} />
+                    )}
                     <MetadataRow label="Address" value={shipping?.address ? [shipping.address.line1, shipping.address.line2, shipping.address.city, shipping.address.governorate].filter(Boolean).join(", ") : null} />
                   </div>
                 </div>
               </div>
 
               <div className="space-y-6">
-                <div className="glass-card p-6 space-y-2">
-                  <h3 className="font-heading text-lg font-semibold text-foreground">Totals</h3>
-                  <div className="flex justify-between text-sm"><span className="text-muted-foreground">Subtotal</span><span className="text-foreground">EGP{Number(totals.subtotal || 0).toFixed(0)}</span></div>
-                  <div className="flex justify-between text-sm"><span className="text-muted-foreground">Shipping</span><span className="text-foreground">EGP{Number(totals.shipping || 0).toFixed(0)}</span></div>
-                  <div className="flex justify-between text-base font-semibold"><span className="text-foreground">Total</span><span className="text-primary">EGP{Number(totals.total || 0).toFixed(0)}</span></div>
-                </div>
+                {data.order.order_type !== "quote" && (
+                  <div className="glass-card p-6 space-y-2">
+                    <h3 className="font-heading text-lg font-semibold text-foreground">Totals</h3>
+                    <div className="flex justify-between text-sm"><span className="text-muted-foreground">Subtotal</span><span className="text-foreground">EGP{Number(totals.subtotal || 0).toFixed(0)}</span></div>
+                    <div className="flex justify-between text-sm"><span className="text-muted-foreground">Shipping</span><span className="text-foreground">EGP{Number(totals.shipping || 0).toFixed(0)}</span></div>
+                    <div className="flex justify-between text-base font-semibold"><span className="text-foreground">Total</span><span className="text-primary">EGP{Number(totals.total || 0).toFixed(0)}</span></div>
+                  </div>
+                )}
 
                 <div className="glass-card p-6">
                   <h3 className="font-heading text-lg font-semibold text-foreground mb-4">Status timeline</h3>
