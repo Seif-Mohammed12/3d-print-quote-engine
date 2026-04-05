@@ -1,4 +1,4 @@
-import { supabase } from "@/lib/supabase";
+import { getAccessToken } from "@/lib/auth-session";
 
 export type OrderStatus = "pending" | "confirmed" | "processing" | "shipped" | "completed" | "cancelled";
 
@@ -14,7 +14,7 @@ export type UserOrderRow = {
 };
 
 export async function createOrderRecord(payload: Record<string, unknown>) {
-  const token = (await supabase?.auth.getSession())?.data?.session?.access_token;
+  const token = await getAccessToken();
   const guestToken = getOrCreateGuestToken();
 
   const response = await fetch("/api/orders-create", {
@@ -34,7 +34,7 @@ export async function createOrderRecord(payload: Record<string, unknown>) {
 }
 
 export async function listMyOrders(): Promise<UserOrderRow[]> {
-  const token = (await supabase?.auth.getSession())?.data?.session?.access_token;
+  const token = await getAccessToken();
   if (!token) return [];
 
   const response = await fetch("/api/orders-list", {
@@ -51,7 +51,7 @@ export async function claimGuestOrders() {
   const guestToken = localStorage.getItem("guest_order_token");
   if (!guestToken) return { updated: 0 };
 
-  const token = (await supabase?.auth.getSession())?.data?.session?.access_token;
+  const token = await getAccessToken();
   if (!token) return { updated: 0 };
 
   const response = await fetch("/api/orders-claim-guest", {
@@ -76,7 +76,7 @@ export async function claimGuestOrders() {
 }
 
 export async function listAdminOrders() {
-  const token = (await supabase?.auth.getSession())?.data?.session?.access_token;
+  const token = await getAccessToken();
   if (!token) throw new Error("Not authenticated");
 
   const response = await fetch("/api/admin-orders-list", {
@@ -90,7 +90,7 @@ export async function listAdminOrders() {
 }
 
 export async function updateAdminOrderStatus(orderId: string, status: OrderStatus, adminNotes?: string) {
-  const token = (await supabase?.auth.getSession())?.data?.session?.access_token;
+  const token = await getAccessToken();
   if (!token) throw new Error("Not authenticated");
 
   const response = await fetch("/api/admin-orders-update", {

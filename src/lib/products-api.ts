@@ -1,5 +1,5 @@
 import type { BrandId, Product, ProductColor } from "@/lib/brand-catalog";
-import { supabase } from "@/lib/supabase";
+import { getAccessToken } from "@/lib/auth-session";
 
 export type DbProduct = {
   id: string;
@@ -51,8 +51,7 @@ export type AdminCatalogPayload = {
 };
 
 async function adminRequest(path: string, init?: RequestInit) {
-  const session = await supabase?.auth.getSession();
-  const token = session?.data?.session?.access_token;
+  const token = await getAccessToken();
   if (!token) throw new Error("Not authenticated");
 
   const res = await fetch(path, {
@@ -122,8 +121,7 @@ export async function adminDeleteProduct(id: string) {
 }
 
 export async function adminUploadImage(productId: string, file: File) {
-  const session = await supabase?.auth.getSession();
-  const token = session?.data?.session?.access_token;
+  const token = await getAccessToken();
   if (!token) throw new Error("Not authenticated");
 
   const form = new FormData();
