@@ -18,6 +18,28 @@ export default function Login() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [resetLoading, setResetLoading] = useState(false);
+  const [resetCooldownSeconds, setResetCooldownSeconds] = useState(0);
+
+  useEffect(() => {
+    const key = "password-reset-cooldown-until";
+    const raw = localStorage.getItem(key);
+    if (!raw) return;
+
+    const until = Number(raw);
+    if (!Number.isFinite(until)) return;
+
+    const tick = () => {
+      const remaining = Math.max(0, Math.ceil((until - Date.now()) / 1000));
+      setResetCooldownSeconds(remaining);
+      if (remaining <= 0) {
+        localStorage.removeItem(key);
+      }
+    };
+
+    tick();
+    const timer = window.setInterval(tick, 1000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   const nextPath = (location.state as { from?: string } | null)?.from;
 
@@ -133,8 +155,10 @@ export default function Login() {
                   />
                   <button
                     type="button"
-                    disabled={resetLoading || !forgotEmail}
+                    disabled={resetLoading || !forgotEmail || resetCooldownSeconds > 0}
                     onClick={async () => {
+                      if (resetCooldownSeconds > 0) return;
+
                       setResetLoading(true);
                       setError("");
                       const result = await requestPasswordReset(forgotEmail.trim());
@@ -142,15 +166,30 @@ export default function Login() {
 
                       if (result.error) {
                         setError(result.error);
+
+                        // Back off locally if provider reports rate limiting.
+                        if (result.error.toLowerCase().includes("too many") || result.error.toLowerCase().includes("wait")) {
+                          const until = Date.now() + 60_000;
+                          localStorage.setItem("password-reset-cooldown-until", String(until));
+                          setResetCooldownSeconds(60);
+                        }
                         return;
                       }
+
+                      const until = Date.now() + 60_000;
+                      localStorage.setItem("password-reset-cooldown-until", String(until));
+                      setResetCooldownSeconds(60);
 
                       toast.success("Password reset email sent. Check your inbox.");
                       setShowForgotPassword(false);
                     }}
                     className="w-full rounded-lg border border-border px-4 py-2.5 text-sm font-semibold text-foreground hover:bg-background disabled:opacity-50"
                   >
-                    {resetLoading ? "Sending reset link..." : "Send reset link"}
+                    {resetLoading
+                      ? "Sending reset link..."
+                      : resetCooldownSeconds > 0
+                        ? `Try again in ${resetCooldownSeconds}s`
+                        : "Send reset link"}
                   </button>
                 </div>
               ) : null}

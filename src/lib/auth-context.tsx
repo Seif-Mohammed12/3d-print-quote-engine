@@ -586,7 +586,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         const redirectTo = getPasswordResetRedirectTo();
         const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
-        if (error) return { error: error.message };
+        if (error) {
+          const msg = error.message?.toLowerCase() || "";
+          const isRateLimited =
+            msg.includes("rate limit") ||
+            msg.includes("too many") ||
+            msg.includes("over_email_send_rate_limit") ||
+            // Supabase may use status 429 on AuthApiError
+            (typeof (error as { status?: number }).status === "number" &&
+              (error as { status?: number }).status === 429);
+
+          if (isRateLimited) {
+            return {
+              error:
+                "Too many reset attempts. Please wait about 60 seconds and try again, or use the last reset email already sent.",
+            };
+          }
+
+          return { error: error.message };
+        }
 
         return {};
       },
