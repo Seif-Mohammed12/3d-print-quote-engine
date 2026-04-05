@@ -5,6 +5,31 @@ import Layout from "@/components/Layout";
 import SectionHeading from "@/components/SectionHeading";
 import { supabase } from "@/lib/supabase";
 
+function MetadataRow({ label, value }: { label: string; value?: string | number | null }) {
+  if (value === undefined || value === null || value === "") return null;
+  return (
+    <div className="flex items-start justify-between gap-4 text-sm">
+      <span className="text-muted-foreground">{label}</span>
+      <span className="text-foreground font-medium text-right break-words max-w-[60%]">{value}</span>
+    </div>
+  );
+}
+
+function extractItemData(item: any) {
+  const data = item?.item_data || {};
+  return {
+    primaryColor: data.primaryColor || data.primaryColorId || data.primary_color || null,
+    secondaryColor: data.secondaryColor || data.secondaryColorId || data.secondary_color || null,
+    productId: data.productId || data.product_id || null,
+    brand: data.brand || null,
+    qty: data.qty ?? item.qty ?? null,
+    unitPrice: data.unitPrice ?? item.unit_price ?? null,
+    subtotal: data.subtotal ?? item.subtotal ?? null,
+    discount: data.discount || null,
+    notes: data.notes || data.note || null,
+  };
+}
+
 async function getOrderById(orderId: string) {
   const { data: order, error: orderError } = await supabase
     ?.from("orders")
@@ -61,6 +86,9 @@ export default function OrderDetail() {
   }, [orderId, refetch]);
 
   const totals = useMemo(() => data?.order?.totals || {}, [data?.order?.totals]);
+  const shipping = useMemo(() => data?.order?.shipping || {}, [data?.order?.shipping]);
+  const payment = useMemo(() => data?.order?.payment || {}, [data?.order?.payment]);
+  const metadata = useMemo(() => data?.order?.metadata || {}, [data?.order?.metadata]);
 
   return (
     <Layout>
@@ -90,6 +118,20 @@ export default function OrderDetail() {
                   <p className="text-sm text-muted-foreground">Placed: {new Date(data.order.created_at).toLocaleString()}</p>
                 </div>
 
+                <div className="glass-card p-6 space-y-4">
+                  <h3 className="font-heading text-lg font-semibold text-foreground">Order Info</h3>
+                  <div className="space-y-2">
+                    <MetadataRow label="Customer" value={data.order.customer_name} />
+                    <MetadataRow label="Email" value={data.order.customer_email} />
+                    <MetadataRow label="Phone" value={data.order.customer_phone} />
+                    <MetadataRow label="Notes" value={data.order.customer_notes} />
+                    <MetadataRow label="Order type" value={data.order.order_type} />
+                    <MetadataRow label="Payment method" value={payment?.method} />
+                    <MetadataRow label="Shipping method" value={shipping?.method} />
+                    <MetadataRow label="Shipping provider" value={shipping?.provider} />
+                  </div>
+                </div>
+
                 <div className="glass-card p-6">
                   <h3 className="font-heading text-lg font-semibold text-foreground mb-4">Items</h3>
                   <div className="space-y-3">
@@ -97,11 +139,33 @@ export default function OrderDetail() {
                       <div key={item.id} className="rounded-lg border border-border p-4">
                         <p className="font-semibold text-foreground">{item.name}</p>
                         <p className="text-xs text-muted-foreground mt-1">Qty {item.qty} • {item.brand || "custom"}</p>
+                        <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                          <MetadataRow label="Product ID" value={extractItemData(item).productId} />
+                          <MetadataRow label="Primary color" value={extractItemData(item).primaryColor} />
+                          <MetadataRow label="Secondary color" value={extractItemData(item).secondaryColor} />
+                          <MetadataRow label="Unit price" value={extractItemData(item).unitPrice != null ? `EGP${Number(extractItemData(item).unitPrice).toFixed(0)}` : null} />
+                          <MetadataRow label="Subtotal" value={extractItemData(item).subtotal != null ? `EGP${Number(extractItemData(item).subtotal).toFixed(0)}` : null} />
+                          <MetadataRow label="Discount" value={extractItemData(item).discount ? "Applied" : null} />
+                          <MetadataRow label="Item notes" value={extractItemData(item).notes} />
+                        </div>
                         {item.subtotal != null ? (
                           <p className="text-sm text-primary font-semibold mt-1">EGP{Number(item.subtotal).toFixed(0)}</p>
                         ) : null}
                       </div>
                     ))}
+                  </div>
+                </div>
+
+                <div className="glass-card p-6">
+                  <h3 className="font-heading text-lg font-semibold text-foreground mb-4">Submission Metadata</h3>
+                  <div className="space-y-2">
+                    <MetadataRow label="Brand" value={metadata?.brand} />
+                    <MetadataRow label="Product file" value={metadata?.file?.name} />
+                    <MetadataRow label="Material" value={metadata?.settings?.material} />
+                    <MetadataRow label="Quality" value={metadata?.settings?.quality} />
+                    <MetadataRow label="Infill" value={metadata?.settings?.infill != null ? `${metadata.settings.infill}%` : null} />
+                    <MetadataRow label="Estimate" value={metadata?.estimate?.totalPrice != null ? `EGP${Number(metadata.estimate.totalPrice).toFixed(0)}` : null} />
+                    <MetadataRow label="Address" value={shipping?.address ? [shipping.address.line1, shipping.address.line2, shipping.address.city, shipping.address.governorate].filter(Boolean).join(", ") : null} />
                   </div>
                 </div>
               </div>
