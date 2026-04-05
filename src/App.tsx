@@ -1,8 +1,11 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { CartProvider } from "@/lib/cart-context";
+import { AuthProvider } from "@/lib/auth-context";
+import ProtectedRoute from "@/components/ProtectedRoute";
+import AdminRoleRoute from "@/components/AdminRoleRoute";
 import Index from "./pages/Index";
 import Services from "./pages/Services";
 import Pforge from "./pages/Pforge";
@@ -20,20 +23,26 @@ import OrderConfirmation from "./pages/OrderConfirmation";
 import ProductCheckout from "./pages/ProductCheckout";
 import ProductOrderConfirmation from "./pages/ProductOrderConfirmation";
 import ProductCart from "./pages/ProductCart";
-import AdminLogin from "./pages/admin/AdminLogin";
+import Login from "./pages/Login";
+import Signup from "./pages/Signup";
+import AuthCallback from "./pages/AuthCallback";
+import Account from "./pages/Account";
+import Orders from "./pages/Orders";
+import OrderDetail from "./pages/OrderDetail";
 import AdminDashboard from "./pages/admin/AdminDashboard";
-import AdminGuard from "./components/admin/AdminGuard";
+import AdminOrders from "./pages/admin/AdminOrders";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <CartProvider>
-      <TooltipProvider>
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
+    <AuthProvider>
+      <CartProvider>
+        <TooltipProvider>
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/services" element={<Services />} />
             <Route path="/pforge" element={<Pforge />} />
@@ -61,20 +70,56 @@ const App = () => (
               path="/product-order-confirmation"
               element={<ProductOrderConfirmation />}
             />
-            <Route path="/admin/login" element={<AdminLogin />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<Signup />} />
+            <Route path="/auth/callback" element={<AuthCallback />} />
+            <Route
+              path="/account"
+              element={
+                <ProtectedRoute>
+                  <Account />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/orders"
+              element={
+                <ProtectedRoute>
+                  <Orders />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/orders/:orderId"
+              element={
+                <ProtectedRoute>
+                  <OrderDetail />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="/admin/login" element={<Navigate to="/login" replace />} />
             <Route
               path="/admin"
               element={
-                <AdminGuard>
+                <AdminRoleRoute>
                   <AdminDashboard />
-                </AdminGuard>
+                </AdminRoleRoute>
+              }
+            />
+            <Route
+              path="/admin/orders"
+              element={
+                <AdminRoleRoute>
+                  <AdminOrders />
+                </AdminRoleRoute>
               }
             />
             <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
-    </CartProvider>
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </CartProvider>
+    </AuthProvider>
   </QueryClientProvider>
 );
 

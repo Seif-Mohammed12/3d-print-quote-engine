@@ -16,6 +16,9 @@ import {
 } from "@/lib/product-order";
 import { useQuery, useQueries } from "@tanstack/react-query";
 import { fetchProductByBrandAndId, mapDbProductToLegacyProduct } from "@/lib/products-api";
+import { createOrderRecord } from "@/lib/orders-api";
+import { useAuth } from "@/lib/auth-context";
+import { supabase } from "@/lib/supabase";
 
 type CheckoutMode = "loading" | "single" | "cart" | "empty";
 
@@ -55,6 +58,7 @@ async function sendProductOrderEmail(payload: any) {
 export default function ProductCheckout() {
   const navigate = useNavigate();
   const { clearProductCart, productCart } = useCart();
+  const { user } = useAuth();
   const [checkoutMode, setCheckoutMode] = useState<CheckoutMode>("loading");
   const [draft, setDraft] = useState<ProductOrderDraft | null>(null);
   const [shipping, setShipping] = useState<ShippingMethod>("pickup");
@@ -101,6 +105,34 @@ export default function ProductCheckout() {
     // Intentionally read `productCart` once on entry (modal sets session flag, then navigates here).
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const bootstrapCustomer = async () => {
+      if (!supabase || !user?.id) return;
+
+      const { data } = await supabase
+        .from("customer_profiles")
+        .select("full_name, phone")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      if (cancelled) return;
+
+      setCustomer((prev) => ({
+        ...prev,
+        name: prev.name || data?.full_name || user.user_metadata?.full_name || "",
+        email: prev.email || user.email || "",
+        phone: prev.phone || data?.phone || "",
+      }));
+    };
+
+    void bootstrapCustomer();
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id, user?.email, user?.user_metadata?.full_name]);
 
   const { data: liveProduct } = useQuery({
     queryKey: ["checkout-product", draft?.brand, draft?.productId],
@@ -363,7 +395,16 @@ export default function ProductCheckout() {
               totals: totalsPayload,
             };
 
-      const result = await sendProductOrderEmail(payload);
+      const created = await createOrderRecord(payload);
+      const persistedOrder = created?.order || null;
+
+      const payloadWithOrder = {
+        ...payload,
+        orderId: persistedOrder?.id,
+        orderCode: persistedOrder?.order_code,
+      };
+
+      const result = await sendProductOrderEmail(payloadWithOrder);
       if (!result.ok || !result.data?.success) {
         const apiError =
           result.data?.error ||
@@ -374,7 +415,7 @@ export default function ProductCheckout() {
         return;
       }
 
-      sessionStorage.setItem("lastProductOrder", JSON.stringify(payload));
+      sessionStorage.setItem("lastProductOrder", JSON.stringify(payloadWithOrder));
       sessionStorage.removeItem("productOrderDraft");
       toast.success("Order placed! Confirmation sent to your email.");
       navigate("/product-order-confirmation", { replace: true });

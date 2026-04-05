@@ -120,7 +120,7 @@ export const handler = async (event) => {
         const customerEmail = quoteDetails?.customer?.email;
         if (!customerEmail) return resolve(json(400, { error: "Missing customer email" }));
 
-        const requestId = `Q-${Date.now()}`;
+        const requestId = quoteDetails?.orderCode || `Q-${Date.now()}`;
 
         try {
           await Promise.all([

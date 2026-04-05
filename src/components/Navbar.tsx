@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Menu, X, ShoppingCart, Minus, Plus, Trash2 } from "lucide-react";
+import { Menu, X, ShoppingCart, Minus, Plus, Trash2, UserCircle2, LayoutDashboard, ClipboardList, Shield, LogOut } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCart } from "@/lib/cart-context";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { getProduct } from "@/lib/product-order";
+import { useAuth } from "@/lib/auth-context";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 const navLinks = [
   { to: "/", label: "Home" },
@@ -22,6 +24,7 @@ const Navbar = () => {
   const [cartPreviewOpen, setCartPreviewOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
+  const { isAuthenticated, isAdmin, signOut, user } = useAuth();
   const { productCart, getProductSubtotal, removeProductFromCart, updateProductQty } = useCart();
   const productCount = productCart.reduce((sum, item) => sum + Math.max(1, item.qty || 1), 0);
   const subtotal = getProductSubtotal();
@@ -88,15 +91,134 @@ const Navbar = () => {
               </span>
             )}
           </button>
+          {isAuthenticated ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  className="ml-4 inline-flex h-10 w-10 items-center justify-center rounded-full border border-border/70 text-muted-foreground hover:text-foreground hover:bg-secondary transition-all duration-300"
+                  aria-label="Open user menu"
+                >
+                  <UserCircle2 className="h-5 w-5" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-52">
+                <DropdownMenuLabel>
+                  <p className="text-xs text-muted-foreground">Signed in as</p>
+                  <p className="truncate">{user?.email || "My account"}</p>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link to={isAdmin ? "/admin" : "/account"} className="cursor-pointer">
+                    <LayoutDashboard className="mr-2 h-4 w-4" />
+                    {isAdmin ? "Admin Dashboard" : "Dashboard"}
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/orders" className="cursor-pointer">
+                    <ClipboardList className="mr-2 h-4 w-4" />
+                    Orders
+                  </Link>
+                </DropdownMenuItem>
+                {isAdmin ? (
+                  <DropdownMenuItem asChild>
+                    <Link to="/admin/orders" className="cursor-pointer">
+                      <Shield className="mr-2 h-4 w-4" />
+                      Admin
+                    </Link>
+                  </DropdownMenuItem>
+                ) : null}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={async () => {
+                    await signOut();
+                    navigate("/");
+                  }}
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Sign out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <Link
+              to="/login"
+              className="ml-4 px-4 py-2 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:shadow-[0_0_20px_-5px_hsl(var(--neon-glow)/0.5)] transition-all duration-300"
+            >
+              Login
+            </Link>
+          )}
         </div>
 
         {/* Mobile toggle */}
-        <button
-          onClick={() => setOpen(!open)}
-          className="md:hidden text-foreground p-2"
-        >
-          {open ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-        </button>
+        <div className="md:hidden flex items-center gap-2">
+          {isAuthenticated ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border/70 text-muted-foreground hover:text-foreground hover:bg-secondary"
+                  aria-label="Open user menu"
+                >
+                  <UserCircle2 className="h-5 w-5" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-52">
+                <DropdownMenuLabel>
+                  <p className="text-xs text-muted-foreground">Signed in as</p>
+                  <p className="truncate">{user?.email || "My account"}</p>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link to={isAdmin ? "/admin" : "/account"} onClick={() => setOpen(false)} className="cursor-pointer">
+                    <LayoutDashboard className="mr-2 h-4 w-4" />
+                    {isAdmin ? "Admin Dashboard" : "Dashboard"}
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/orders" onClick={() => setOpen(false)} className="cursor-pointer">
+                    <ClipboardList className="mr-2 h-4 w-4" />
+                    Orders
+                  </Link>
+                </DropdownMenuItem>
+                {isAdmin ? (
+                  <DropdownMenuItem asChild>
+                    <Link to="/admin/orders" onClick={() => setOpen(false)} className="cursor-pointer">
+                      <Shield className="mr-2 h-4 w-4" />
+                      Admin
+                    </Link>
+                  </DropdownMenuItem>
+                ) : null}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={async () => {
+                    setOpen(false);
+                    await signOut();
+                    navigate("/");
+                  }}
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Sign out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <Link
+              to="/login"
+              className="px-3 py-2 rounded-lg text-xs font-semibold bg-primary text-primary-foreground"
+              onClick={() => setOpen(false)}
+            >
+              Login
+            </Link>
+          )}
+
+          <button
+            onClick={() => setOpen(!open)}
+            className="text-foreground p-2"
+          >
+            {open ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </button>
+        </div>
       </div>
 
       {/* Mobile menu */}
@@ -139,6 +261,15 @@ const Navbar = () => {
                   </span>
                 )}
               </button>
+              {!isAuthenticated ? (
+                <Link
+                  to="/login"
+                  onClick={() => setOpen(false)}
+                  className="px-4 py-3 rounded-lg text-sm font-medium bg-primary text-primary-foreground transition-all"
+                >
+                  Login
+                </Link>
+              ) : null}
             </div>
           </motion.div>
         )}

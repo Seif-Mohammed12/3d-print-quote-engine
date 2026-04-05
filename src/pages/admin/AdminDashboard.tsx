@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import Layout from "@/components/Layout";
 import { supabase } from "@/lib/supabase";
 import {
@@ -147,6 +148,12 @@ export default function AdminDashboard() {
           <div className="flex items-center justify-between">
             <h1 className="font-heading text-3xl font-bold text-foreground">Admin Dashboard</h1>
             <div className="flex items-center gap-2">
+              <Link
+                to="/admin/orders"
+                className="rounded-lg border border-border px-4 py-2 text-sm"
+              >
+                Orders
+              </Link>
               <button
                 className="rounded-lg border border-border px-4 py-2 text-sm"
                 onClick={() => load()}
@@ -157,7 +164,7 @@ export default function AdminDashboard() {
                 className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
                 onClick={async () => {
                   await supabase?.auth.signOut();
-                  window.location.href = "/admin/login";
+                  window.location.href = "/login";
                 }}
               >
                 Sign out

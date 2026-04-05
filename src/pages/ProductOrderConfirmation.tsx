@@ -35,6 +35,12 @@ export default function ProductOrderConfirmation() {
           <div className="glass-card p-6 space-y-4">
             <h3 className="font-heading font-semibold text-foreground">Summary</h3>
             <div className="text-sm text-muted-foreground space-y-2">
+              {order.orderCode ? (
+                <div>
+                  <span className="text-foreground font-medium">Order:</span>{" "}
+                  {order.orderCode}
+                </div>
+              ) : null}
               {Array.isArray(order.items) && order.items.length > 0 ? (
                 <div className="space-y-3">
                   <div className="text-foreground font-medium">Items</div>

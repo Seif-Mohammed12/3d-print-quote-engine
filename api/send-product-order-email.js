@@ -37,7 +37,7 @@ export const handler = async (event) => {
     const customerEmail = parsed?.customer?.email;
     if (!customerEmail) return json(400, { error: "Missing customer email" });
 
-    const orderId = `PO-${Date.now()}`;
+    const orderId = parsed?.orderCode || `PO-${Date.now()}`;
 
     const adminHtml = createAdminHtml(orderId, parsed);
     const customerHtml = createCustomerHtml(orderId, parsed);

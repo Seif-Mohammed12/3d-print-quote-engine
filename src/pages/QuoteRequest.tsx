@@ -4,6 +4,9 @@ import { motion } from "framer-motion";
 import Layout from "@/components/Layout";
 import SectionHeading from "@/components/SectionHeading";
 import { toast } from "sonner";
+import { createOrderRecord } from "@/lib/orders-api";
+import { useAuth } from "@/lib/auth-context";
+import { supabase } from "@/lib/supabase";
 
 type QuoteRequestState = {
   fileName: string;
@@ -40,6 +43,7 @@ async function sendQuoteEmail(details: any, file: { name: string; buffer: ArrayB
 export default function QuoteRequest() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
   const state = (location.state || null) as QuoteRequestState | null;
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -56,6 +60,34 @@ export default function QuoteRequest() {
       navigate("/quote", { replace: true });
     }
   }, [state, navigate]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const bootstrapCustomer = async () => {
+      if (!supabase || !user?.id) return;
+
+      const { data } = await supabase
+        .from("customer_profiles")
+        .select("full_name, phone")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      if (cancelled) return;
+
+      setForm((prev) => ({
+        ...prev,
+        name: prev.name || data?.full_name || user.user_metadata?.full_name || "",
+        email: prev.email || user.email || "",
+        phone: prev.phone || data?.phone || "",
+      }));
+    };
+
+    void bootstrapCustomer();
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id, user?.email, user?.user_metadata?.full_name]);
 
   const summary = useMemo(() => {
     if (!state) return null;
@@ -76,6 +108,7 @@ export default function QuoteRequest() {
 
     try {
       const payload = {
+        orderType: "quote",
         createdAt: new Date().toISOString(),
         file: { name: state.fileName, type: state.fileType },
         settings: state.settings,
@@ -93,7 +126,16 @@ export default function QuoteRequest() {
         },
       };
 
-      const result = await sendQuoteEmail(payload, {
+      const created = await createOrderRecord(payload);
+      const persistedOrder = created?.order || null;
+
+      const payloadWithOrder = {
+        ...payload,
+        orderId: persistedOrder?.id,
+        orderCode: persistedOrder?.order_code,
+      };
+
+      const result = await sendQuoteEmail(payloadWithOrder, {
         name: state.fileName,
         buffer: state.fileBuffer,
         type: state.fileType,
@@ -106,8 +148,8 @@ export default function QuoteRequest() {
       }
 
       sessionStorage.setItem("lastQuoteRequest", JSON.stringify({
-        ...payload,
-        requestId: result.data.requestId,
+        ...payloadWithOrder,
+        requestId: result.data.requestId || persistedOrder?.order_code,
       }));
 
       toast.success("Request sent! We'll contact you soon.");
