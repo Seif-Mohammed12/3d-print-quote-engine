@@ -4,6 +4,7 @@ import { isSupabaseConfigured, supabase } from "@/lib/supabase";
 import { claimGuestOrders } from "@/lib/orders-api";
 
 type AdminRole = "viewer" | "manager" | "admin";
+type VerificationMethod = "email" | "phone";
 
 // Debug mode tracking
 let isDebugMode = false;
@@ -19,11 +20,19 @@ type AuthContextValue = {
   isAuthenticated: boolean;
   isAdmin: boolean;
   adminRole: AdminRole | null;
-  signUpWithPassword: (email: string, password: string, fullName: string) => Promise<{ error?: string }>;
+  signUpWithPassword: (
+    email: string,
+    password: string,
+    fullName: string,
+    phone: string,
+    verificationMethod: VerificationMethod
+  ) => Promise<{ error?: string; needsPhoneVerification?: boolean; message?: string }>;
   signInWithPassword: (email: string, password: string) => Promise<{ error?: string; role?: AdminRole | null }>;
   signInWithProvider: (provider: "google") => Promise<{ error?: string }>;
   requestPasswordReset: (email: string) => Promise<{ error?: string }>;
   updatePassword: (newPassword: string) => Promise<{ error?: string }>;
+  startPhoneVerification: (phone: string) => Promise<{ error?: string }>;
+  completePhoneVerification: (phone: string, code: string) => Promise<{ error?: string }>;
   signOut: () => Promise<void>;
   refreshRole: () => Promise<AdminRole | null>;
 };
@@ -506,13 +515,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       isAuthenticated: Boolean(user),
       isAdmin: Boolean(adminRole),
       adminRole,
-      signUpWithPassword: async (email: string, password: string, fullName: string) => {
+      signUpWithPassword: async (
+        email: string,
+        password: string,
+        fullName: string,
+        phone: string,
+        verificationMethod: VerificationMethod
+      ) => {
         if (!supabase) return { error: "Supabase is not configured." };
+        const normalizedPhone = phone.trim();
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
-            data: { full_name: fullName },
+            data: {
+              full_name: fullName,
+              phone: normalizedPhone || null,
+              preferred_verification: verificationMethod,
+            },
           },
         });
         if (error) return { error: error.message };
@@ -521,7 +541,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           await supabase.from("customer_profiles").upsert({
             id: data.user.id,
             full_name: fullName,
+            phone: normalizedPhone || null,
           });
+        }
+
+        if (verificationMethod === "phone") {
+          if (!normalizedPhone) {
+            return { error: "A mobile phone number is required for SMS verification." };
+          }
+
+          if (data.session) {
+            const start = await supabase.auth.updateUser({ phone: normalizedPhone });
+            if (start.error) {
+              return {
+                error:
+                  start.error.message ||
+                  "Unable to send SMS verification right now. Please try again from your account page.",
+              };
+            }
+            return {
+              needsPhoneVerification: true,
+              message: "We sent an SMS code to verify your phone number.",
+            };
+          }
+
+          // If email confirmation is required before a session exists, phone verification must happen after login.
+          return {
+            message:
+              "Account created. Please confirm your email first, then sign in to verify your phone by SMS.",
+          };
         }
 
         return {};
@@ -613,6 +661,56 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         const { error } = await supabase.auth.updateUser({ password: newPassword });
         if (error) return { error: error.message };
+
+        return {};
+      },
+      startPhoneVerification: async (phone: string) => {
+        if (!supabase) return { error: "Supabase is not configured." };
+
+        const normalizedPhone = phone.trim();
+        if (!normalizedPhone) return { error: "Phone number is required." };
+
+        const { error } = await supabase.auth.updateUser({ phone: normalizedPhone });
+        if (error) {
+          const msg = error.message?.toLowerCase() || "";
+          const isRateLimited =
+            msg.includes("rate limit") ||
+            msg.includes("too many") ||
+            msg.includes("over_sms_send_rate_limit") ||
+            (typeof (error as { status?: number }).status === "number" &&
+              (error as { status?: number }).status === 429);
+
+          if (isRateLimited) {
+            return { error: "Too many SMS attempts. Please wait a minute and try again." };
+          }
+
+          return { error: error.message };
+        }
+
+        return {};
+      },
+      completePhoneVerification: async (phone: string, code: string) => {
+        if (!supabase) return { error: "Supabase is not configured." };
+
+        const normalizedPhone = phone.trim();
+        const normalizedCode = code.trim();
+        if (!normalizedPhone) return { error: "Phone number is required." };
+        if (!normalizedCode) return { error: "SMS code is required." };
+
+        const { error } = await supabase.auth.verifyOtp({
+          phone: normalizedPhone,
+          token: normalizedCode,
+          type: "phone_change",
+        });
+        if (error) return { error: error.message };
+
+        const currentUserId = latestUserIdRef.current;
+        if (currentUserId) {
+          await supabase.from("customer_profiles").upsert({
+            id: currentUserId,
+            phone: normalizedPhone,
+          });
+        }
 
         return {};
       },

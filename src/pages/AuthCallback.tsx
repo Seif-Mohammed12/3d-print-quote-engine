@@ -32,6 +32,7 @@ export default function AuthCallback() {
         await supabase?.from("customer_profiles").upsert({
           id: user.id,
           full_name: user.user_metadata?.full_name || user.user_metadata?.name || null,
+          phone: user.phone || user.user_metadata?.phone || null,
         });
 
         const { data: adminData } = await supabase
@@ -39,6 +40,24 @@ export default function AuthCallback() {
           .select("id")
           .eq("id", user.id)
           .maybeSingle();
+
+        const provider = user.app_metadata?.provider;
+        const phoneVerified = Boolean(user.phone_confirmed_at);
+        const knownPhone = user.phone || user.user_metadata?.phone || "";
+
+        if (provider === "google" && !phoneVerified) {
+          if (!cancelled) {
+            navigate("/verify-phone", {
+              replace: true,
+              state: {
+                source: "google",
+                initialPhone: knownPhone,
+                nextPath: adminData?.id ? "/admin" : "/account",
+              },
+            });
+            return;
+          }
+        }
 
         if (!cancelled) {
           navigate(adminData?.id ? "/admin" : "/account", { replace: true });

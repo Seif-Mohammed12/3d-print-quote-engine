@@ -3,6 +3,9 @@ import { Link, useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
 import { useAuth } from "@/lib/auth-context";
 import { Eye, EyeOff } from "lucide-react";
+import { toast } from "sonner";
+
+type VerificationMethod = "email" | "phone";
 
 export default function Signup() {
   const navigate = useNavigate();
@@ -10,8 +13,12 @@ export default function Signup() {
 
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [verificationMethod, setVerificationMethod] = useState<VerificationMethod>("email");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -29,14 +36,39 @@ export default function Signup() {
               className="space-y-4"
               onSubmit={async (e) => {
                 e.preventDefault();
+                if (password !== confirmPassword) {
+                  setError("Passwords do not match.");
+                  return;
+                }
+
+                if (verificationMethod === "phone" && !phone.trim()) {
+                  setError("Please enter your mobile phone number for SMS verification.");
+                  return;
+                }
+
                 setLoading(true);
                 setError("");
-                const result = await signUpWithPassword(email, password, fullName);
+                const result = await signUpWithPassword(email, password, fullName, phone, verificationMethod);
                 if (result.error) {
                   setError(result.error);
                   setLoading(false);
                   return;
                 }
+
+                if (result.message) {
+                  toast.success(result.message);
+                }
+
+                setLoading(false);
+
+                if (result.needsPhoneVerification) {
+                  navigate("/verify-phone", {
+                    replace: true,
+                    state: { source: "signup", initialPhone: phone },
+                  });
+                  return;
+                }
+
                 navigate("/account", { replace: true });
               }}
             >
@@ -61,6 +93,17 @@ export default function Signup() {
                 />
               </div>
               <div>
+                <label className="text-sm text-muted-foreground mb-1 block">Mobile phone</label>
+                <input
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  className="w-full rounded-lg bg-secondary border border-border px-3 py-2 text-sm"
+                  placeholder="+1 555 123 4567"
+                  required={verificationMethod === "phone"}
+                />
+              </div>
+              <div>
                 <label className="text-sm text-muted-foreground mb-1 block">Password</label>
                 <div className="relative">
                   <input
@@ -80,6 +123,50 @@ export default function Signup() {
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
+              </div>
+              <div>
+                <label className="text-sm text-muted-foreground mb-1 block">Confirm password</label>
+                <div className="relative">
+                  <input
+                    type={showConfirmPassword ? "text" : "password"}
+                    minLength={6}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="w-full rounded-lg bg-secondary border border-border px-3 py-2 pr-10 text-sm"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword((prev) => !prev)}
+                    className="absolute inset-y-0 right-0 px-3 text-muted-foreground hover:text-foreground"
+                    aria-label={showConfirmPassword ? "Hide confirm password" : "Show confirm password"}
+                  >
+                    {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+              </div>
+              <div className="space-y-2 rounded-lg border border-border bg-secondary/40 p-3">
+                <p className="text-sm font-medium text-foreground">Confirmation method</p>
+                <label className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <input
+                    type="radio"
+                    name="verification-method"
+                    value="email"
+                    checked={verificationMethod === "email"}
+                    onChange={() => setVerificationMethod("email")}
+                  />
+                  Confirm with email link
+                </label>
+                <label className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <input
+                    type="radio"
+                    name="verification-method"
+                    value="phone"
+                    checked={verificationMethod === "phone"}
+                    onChange={() => setVerificationMethod("phone")}
+                  />
+                  Confirm with SMS code
+                </label>
               </div>
               <button
                 type="submit"
