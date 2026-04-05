@@ -6,6 +6,7 @@ import { CartProvider } from "@/lib/cart-context";
 import { AuthProvider } from "@/lib/auth-context";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import AdminRoleRoute from "@/components/AdminRoleRoute";
+import ScrollToTop from "@/components/ScrollToTop";
 import Index from "./pages/Index";
 import Services from "./pages/Services";
 import Pforge from "./pages/Pforge";
@@ -45,6 +46,7 @@ const App = () => (
         <TooltipProvider>
           <Sonner />
           <BrowserRouter>
+            <ScrollToTop />
             <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/services" element={<Services />} />

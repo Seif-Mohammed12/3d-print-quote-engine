@@ -12,11 +12,13 @@ export function useBrandProducts(brand: BrandId) {
       cacheProducts(brand, mapped);
       return mapped;
     },
-    staleTime: 60_000,
+    staleTime: 5 * 60_000,
+    gcTime: 30 * 60_000,
     retry: 1,
     // Do not use placeholderData from static catalog — it caused a flash of old products,
     // then a second paint when live Supabase data arrived.
     refetchOnWindowFocus: false,
+    refetchOnMount: false,
   });
 }
 

@@ -77,23 +77,19 @@ export default function Login() {
             <div className="grid grid-cols-1 gap-2">
               <button
                 type="button"
-                className="w-full rounded-lg border border-border px-4 py-2.5 text-sm font-semibold text-foreground hover:bg-secondary"
+                className="w-full rounded-lg border border-border px-4 py-2.5 text-sm font-semibold text-foreground hover:bg-secondary inline-flex items-center justify-center gap-2"
                 onClick={async () => {
                   const result = await signInWithProvider("google");
                   if (result.error) setError(result.error);
                 }}
               >
+                <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden="true">
+                  <path fill="#EA4335" d="M12 10.2v3.9h5.4c-.24 1.26-.96 2.32-2.04 3.02l3.3 2.56c1.92-1.77 3.03-4.38 3.03-7.49 0-.7-.06-1.38-.18-2.03H12z" />
+                  <path fill="#34A853" d="M12 22c2.7 0 4.96-.9 6.61-2.44l-3.3-2.56c-.92.62-2.1.99-3.31.99-2.55 0-4.72-1.72-5.49-4.03H3.11v2.64A9.99 9.99 0 0 0 12 22z" />
+                  <path fill="#4A90E2" d="M6.51 13.96A5.98 5.98 0 0 1 6.2 12c0-.68.12-1.33.31-1.96V7.4H3.11A10 10 0 0 0 2 12c0 1.62.39 3.15 1.11 4.6l3.4-2.64z" />
+                  <path fill="#FBBC05" d="M12 5.99c1.47 0 2.79.51 3.82 1.5l2.86-2.86C16.95 2.99 14.69 2 12 2A9.99 9.99 0 0 0 3.11 7.4l3.4 2.64c.77-2.31 2.94-4.05 5.49-4.05z" />
+                </svg>
                 Continue with Google
-              </button>
-              <button
-                type="button"
-                className="w-full rounded-lg border border-border px-4 py-2.5 text-sm font-semibold text-foreground hover:bg-secondary"
-                onClick={async () => {
-                  const result = await signInWithProvider("apple");
-                  if (result.error) setError(result.error);
-                }}
-              >
-                Continue with Apple
               </button>
             </div>
 

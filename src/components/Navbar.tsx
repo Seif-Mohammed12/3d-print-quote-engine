@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Menu, X, ShoppingCart, Minus, Plus, Trash2, UserCircle2, LayoutDashboard, ClipboardList, Shield, LogOut } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -7,6 +7,10 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { getProduct } from "@/lib/product-order";
 import { useAuth } from "@/lib/auth-context";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { useQueries } from "@tanstack/react-query";
+import { fetchPublicProducts, mapDbProductToLegacyProduct } from "@/lib/products-api";
+import { cacheProducts } from "@/lib/runtime-product-cache";
+import type { BrandId, Product } from "@/lib/brand-catalog";
 
 const navLinks = [
   { to: "/", label: "Home" },
@@ -28,6 +32,44 @@ const Navbar = () => {
   const { productCart, getProductSubtotal, removeProductFromCart, updateProductQty } = useCart();
   const productCount = productCart.reduce((sum, item) => sum + Math.max(1, item.qty || 1), 0);
   const subtotal = getProductSubtotal();
+
+  const brandsInCart = useMemo(
+    () => Array.from(new Set(productCart.map((item) => item.brand))) as BrandId[],
+    [productCart]
+  );
+
+  const brandQueries = useQueries({
+    queries: brandsInCart.map((brand) => ({
+      queryKey: ["brand-products", brand],
+      queryFn: async () => {
+        const live = await fetchPublicProducts(brand);
+        const mapped = live.map(mapDbProductToLegacyProduct);
+        cacheProducts(brand, mapped);
+        return mapped;
+      },
+      staleTime: 5 * 60_000,
+      gcTime: 30 * 60_000,
+      retry: 1,
+      refetchOnWindowFocus: false,
+      refetchOnMount: false,
+      enabled: cartPreviewOpen && productCart.length > 0,
+    })),
+  });
+
+  const liveProductMap = useMemo(() => {
+    const map = new Map<string, Product>();
+    brandsInCart.forEach((brand, idx) => {
+      const rows = brandQueries[idx]?.data || [];
+      rows.forEach((p) => map.set(`${brand}:${p.id}`, p));
+    });
+    return map;
+  }, [brandsInCart, brandQueries]);
+
+  const isCatalogLoading = brandQueries.some((query) => query.isPending);
+
+  const resolveProduct = (brand: BrandId, productId: string) => {
+    return liveProductMap.get(`${brand}:${productId}`) || getProduct(brand, productId);
+  };
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/50">
@@ -299,15 +341,15 @@ const Navbar = () => {
             <div className="space-y-4">
               <div className="max-h-[50vh] space-y-3 overflow-y-auto pr-1">
                 {productCart.map((item) => {
-                  const product = getProduct(item.brand, item.productId);
-                  const primary = product?.primaryColors.find((c) => c.id === item.primaryColorId)?.name || item.primaryColorId;
+                  const product = resolveProduct(item.brand, item.productId);
+                  const primary = product?.primaryColors.find((c) => c.id === item.primaryColorId)?.name || (isCatalogLoading ? "Loading..." : "N/A");
                   const secondary =
-                    product?.secondaryColors.find((c) => c.id === item.secondaryColorId)?.name || item.secondaryColorId;
+                    product?.secondaryColors.find((c) => c.id === item.secondaryColorId)?.name || (isCatalogLoading ? "Loading..." : "N/A");
                   return (
                     <div key={item.id} className="rounded-xl border border-slate-800 bg-slate-900/40 p-4">
                       <div className="flex items-start justify-between gap-3">
                         <div>
-                          <p className="text-sm font-semibold text-slate-100">{product?.name || item.productId}</p>
+                          <p className="text-sm font-semibold text-slate-100">{product?.name || (isCatalogLoading ? "Loading product..." : "Product unavailable")}</p>
                           <p className="mt-1 text-xs text-slate-400">{item.brand.toUpperCase()}</p>
                           <p className="mt-1 text-xs text-slate-400">
                             Primary: {primary} • Secondary: {secondary}

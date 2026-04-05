@@ -10,6 +10,7 @@ import { getUnitPrice } from "@/lib/product-order";
 import { useQuery } from "@tanstack/react-query";
 import { fetchProductByBrandAndId, mapDbProductToLegacyProduct } from "@/lib/products-api";
 import { cacheProducts } from "@/lib/runtime-product-cache";
+import { getProduct } from "@/lib/product-order";
 
 const imageSlideVariants = {
   enter: (direction: number) => ({
@@ -46,7 +47,7 @@ export default function BrandProductDetail({ brand }: { brand: BrandId }) {
   const params = useParams();
   const productId = params.productId || "";
 
-  const { data: liveProduct } = useQuery({
+  const { data: liveProduct, isPending } = useQuery({
     queryKey: ["brand-product", brand, productId],
     queryFn: () => fetchProductByBrandAndId(brand, productId),
     retry: 1,
@@ -54,12 +55,14 @@ export default function BrandProductDetail({ brand }: { brand: BrandId }) {
 
   const product = useMemo(() => {
     if (liveProduct) return mapDbProductToLegacyProduct(liveProduct);
-    return brandCatalog[brand].products.find((p) => p.id === productId) || null;
+    return getProduct(brand, productId);
   }, [brand, productId, liveProduct]);
 
-  if (product) {
-    cacheProducts(brand, [product]);
-  }
+  useEffect(() => {
+    if (product) {
+      cacheProducts(brand, [product]);
+    }
+  }, [brand, product]);
 
   const [selectedPrimaryId, setSelectedPrimaryId] = useState<string>("");
   const [selectedSecondaryId, setSelectedSecondaryId] = useState<string>("");
@@ -81,6 +84,19 @@ export default function BrandProductDetail({ brand }: { brand: BrandId }) {
   useEffect(() => {
     setActiveImageIdx(0);
   }, [productId]);
+
+  if (isPending && !product) {
+    return (
+      <Layout>
+        <div className="section-padding">
+          <div className="container mx-auto max-w-3xl">
+            <h1 className="text-2xl font-heading font-bold text-foreground">Loading product...</h1>
+            <p className="text-sm text-muted-foreground mt-2">Fetching product details.</p>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
 
   if (!product) {
     return (

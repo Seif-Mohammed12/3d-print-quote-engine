@@ -14,7 +14,7 @@ type AuthContextValue = {
   adminRole: AdminRole | null;
   signUpWithPassword: (email: string, password: string, fullName: string) => Promise<{ error?: string }>;
   signInWithPassword: (email: string, password: string) => Promise<{ error?: string; role?: AdminRole | null }>;
-  signInWithProvider: (provider: "google" | "apple") => Promise<{ error?: string }>;
+  signInWithProvider: (provider: "google") => Promise<{ error?: string }>;
   signOut: () => Promise<void>;
   refreshRole: () => Promise<AdminRole | null>;
 };
@@ -40,6 +40,21 @@ async function fetchAdminRoleWithTimeout(userId: string, timeoutMs = 5000): Prom
       window.setTimeout(() => resolve(null), timeoutMs);
     }),
   ]);
+}
+
+function getOAuthRedirectTo() {
+  const fallback = `${window.location.origin}/auth/callback`;
+  const configured = (import.meta.env.VITE_AUTH_REDIRECT_URL as string | undefined)?.trim();
+
+  if (!configured) return fallback;
+
+  const isProductionHost = !["localhost", "127.0.0.1"].includes(window.location.hostname);
+  const configuredIsLocal = configured.includes("localhost") || configured.includes("127.0.0.1");
+
+  // Prevent production builds from accidentally redirecting users to local dev callback URLs.
+  if (isProductionHost && configuredIsLocal) return fallback;
+
+  return configured;
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -141,9 +156,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setAdminRole(role);
         return { role };
       },
-      signInWithProvider: async (provider: "google" | "apple") => {
+      signInWithProvider: async (provider: "google") => {
         if (!supabase) return { error: "Supabase is not configured." };
-        const redirectTo = `${window.location.origin}/auth/callback`;
+        const redirectTo = getOAuthRedirectTo();
         const { error } = await supabase.auth.signInWithOAuth({ provider, options: { redirectTo } });
         if (error) {
           const isUnsupportedProvider =
@@ -151,9 +166,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             error.message?.toLowerCase().includes("provider is not enabled");
 
           if (isUnsupportedProvider) {
-            const providerLabel = provider === "google" ? "Google" : "Apple";
             return {
-              error: `${providerLabel} sign-in is not enabled in Supabase yet. Enable it in Authentication > Providers, then add ${window.location.origin}/auth/callback as an allowed redirect URL.`,
+              error: `Google sign-in is not enabled in Supabase yet. Enable it in Authentication > Providers, then add ${window.location.origin}/auth/callback as an allowed redirect URL.`,
             };
           }
 

@@ -5,12 +5,55 @@ import { useCart } from "@/lib/cart-context";
 import { getProduct } from "@/lib/product-order";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
+import { useMemo } from "react";
+import { useQueries } from "@tanstack/react-query";
+import { fetchPublicProducts, mapDbProductToLegacyProduct } from "@/lib/products-api";
+import { cacheProducts } from "@/lib/runtime-product-cache";
+import type { BrandId, Product } from "@/lib/brand-catalog";
 
 export default function ProductCart() {
   const navigate = useNavigate();
   const { productCart, removeProductFromCart, clearProductCart, getProductSubtotal } = useCart();
   const items = productCart;
   const subtotal = getProductSubtotal();
+
+  const brandsInCart = useMemo(
+    () => Array.from(new Set(items.map((item) => item.brand))) as BrandId[],
+    [items]
+  );
+
+  const brandQueries = useQueries({
+    queries: brandsInCart.map((brand) => ({
+      queryKey: ["brand-products", brand],
+      queryFn: async () => {
+        const live = await fetchPublicProducts(brand);
+        const mapped = live.map(mapDbProductToLegacyProduct);
+        cacheProducts(brand, mapped);
+        return mapped;
+      },
+      staleTime: 5 * 60_000,
+      gcTime: 30 * 60_000,
+      retry: 1,
+      refetchOnWindowFocus: false,
+      refetchOnMount: false,
+      enabled: items.length > 0,
+    })),
+  });
+
+  const liveProductMap = useMemo(() => {
+    const map = new Map<string, Product>();
+    brandsInCart.forEach((brand, idx) => {
+      const rows = brandQueries[idx]?.data || [];
+      rows.forEach((p) => map.set(`${brand}:${p.id}`, p));
+    });
+    return map;
+  }, [brandsInCart, brandQueries]);
+
+  const isCatalogLoading = brandQueries.some((query) => query.isPending);
+
+  const resolveProduct = (brand: BrandId, productId: string) => {
+    return liveProductMap.get(`${brand}:${productId}`) || getProduct(brand, productId);
+  };
 
   return (
     <Layout>
@@ -41,10 +84,10 @@ export default function ProductCart() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               <div className="lg:col-span-2 space-y-4">
                 {items.map((item, idx) => {
-                  const product = getProduct(item.brand, item.productId);
-                  const primary = product?.primaryColors.find((c) => c.id === item.primaryColorId)?.name || item.primaryColorId;
+                  const product = resolveProduct(item.brand, item.productId);
+                  const primary = product?.primaryColors.find((c) => c.id === item.primaryColorId)?.name || (isCatalogLoading ? "Loading..." : "N/A");
                   const secondary =
-                    product?.secondaryColors.find((c) => c.id === item.secondaryColorId)?.name || item.secondaryColorId;
+                    product?.secondaryColors.find((c) => c.id === item.secondaryColorId)?.name || (isCatalogLoading ? "Loading..." : "N/A");
                   return (
                     <motion.div
                       key={item.id}
@@ -55,7 +98,7 @@ export default function ProductCart() {
                     >
                       <div className="flex items-start justify-between gap-4">
                         <div>
-                          <p className="font-semibold text-foreground">{product?.name || item.productId}</p>
+                          <p className="font-semibold text-foreground">{product?.name || (isCatalogLoading ? "Loading product..." : "Product unavailable")}</p>
                           <p className="text-xs text-muted-foreground mt-1">
                             {item.brand.toUpperCase()} • Qty: {item.qty}
                           </p>
