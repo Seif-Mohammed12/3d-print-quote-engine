@@ -144,6 +144,7 @@ export default function BrandProductDetail({ brand }: { brand: BrandId }) {
   const totalPrice = effectiveBasePrice;
   const selectedPrimary = product.primaryColors.find((c) => c.id === selectedPrimaryId);
   const selectedSecondary = product.secondaryColors.find((c) => c.id === selectedSecondaryId);
+  const hasSecondaryColors = product.secondaryColors.length > 0;
   const hasMultipleImages = images.length > 1;
 
   const nextImage = () => {
@@ -308,34 +309,36 @@ export default function BrandProductDetail({ brand }: { brand: BrandId }) {
                     </p>
                   </div>
 
-                  <div className="mt-6 space-y-3">
-                    <div className="flex items-center justify-between gap-3">
-                      <h3 className="font-heading font-semibold text-foreground">Choose secondary color</h3>
+                  {hasSecondaryColors ? (
+                    <div className="mt-6 space-y-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <h3 className="font-heading font-semibold text-foreground">Choose secondary color</h3>
+                      </div>
+                      <div className="flex flex-wrap gap-3">
+                        {product.secondaryColors.map((color) => (
+                          <button
+                            key={color.id}
+                            type="button"
+                            onClick={() => setSelectedSecondaryId(color.id)}
+                            className={`h-8 w-8 rounded-full border-2 transition-all ${color.id === selectedSecondaryId
+                              ? "border-primary/60 bg-primary/10"
+                              : "border-border/60 hover:border-primary/40"
+                              }`}
+                            style={{ backgroundColor: color.hex }}
+                            title={color.name}
+                          >
+                            <span className="sr-only">{color.name}</span>
+                          </button>
+                        ))}
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Secondary selected:{" "}
+                        <span className="font-semibold text-foreground">
+                          {selectedSecondary?.name || "Not selected"}
+                        </span>
+                      </p>
                     </div>
-                    <div className="flex flex-wrap gap-3">
-                      {product.secondaryColors.map((color) => (
-                        <button
-                          key={color.id}
-                          type="button"
-                          onClick={() => setSelectedSecondaryId(color.id)}
-                          className={`h-8 w-8 rounded-full border-2 transition-all ${color.id === selectedSecondaryId
-                            ? "border-primary/60 bg-primary/10"
-                            : "border-border/60 hover:border-primary/40"
-                            }`}
-                          style={{ backgroundColor: color.hex }}
-                          title={color.name}
-                        >
-                          <span className="sr-only">{color.name}</span>
-                        </button>
-                      ))}
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Secondary selected:{" "}
-                      <span className="font-semibold text-foreground">
-                        {selectedSecondary?.name || "Not selected"}
-                      </span>
-                    </p>
-                  </div>
+                  ) : null}
 
                   <button
                     type="button"

@@ -343,8 +343,10 @@ const Navbar = () => {
                 {productCart.map((item) => {
                   const product = resolveProduct(item.brand, item.productId);
                   const primary = product?.primaryColors.find((c) => c.id === item.primaryColorId)?.name || (isCatalogLoading ? "Loading..." : "N/A");
-                  const secondary =
-                    product?.secondaryColors.find((c) => c.id === item.secondaryColorId)?.name || (isCatalogLoading ? "Loading..." : "N/A");
+                  const hasSecondaryColors = (product?.secondaryColors.length || 0) > 0;
+                  const secondary = hasSecondaryColors
+                    ? product?.secondaryColors.find((c) => c.id === item.secondaryColorId)?.name || (isCatalogLoading ? "Loading..." : "N/A")
+                    : null;
                   return (
                     <div key={item.id} className="rounded-xl border border-slate-800 bg-slate-900/40 p-4">
                       <div className="flex items-start justify-between gap-3">
@@ -352,7 +354,8 @@ const Navbar = () => {
                           <p className="text-sm font-semibold text-slate-100">{product?.name || (isCatalogLoading ? "Loading product..." : "Product unavailable")}</p>
                           <p className="mt-1 text-xs text-slate-400">{item.brand.toUpperCase()}</p>
                           <p className="mt-1 text-xs text-slate-400">
-                            Primary: {primary} • Secondary: {secondary}
+                            Primary: {primary}
+                            {hasSecondaryColors ? ` • Secondary: ${secondary}` : ""}
                           </p>
                           <div className="mt-3 inline-flex items-center rounded-lg border border-slate-700 bg-slate-900/70">
                             <button

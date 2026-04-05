@@ -86,8 +86,10 @@ export default function ProductCart() {
                 {items.map((item, idx) => {
                   const product = resolveProduct(item.brand, item.productId);
                   const primary = product?.primaryColors.find((c) => c.id === item.primaryColorId)?.name || (isCatalogLoading ? "Loading..." : "N/A");
-                  const secondary =
-                    product?.secondaryColors.find((c) => c.id === item.secondaryColorId)?.name || (isCatalogLoading ? "Loading..." : "N/A");
+                  const hasSecondaryColors = (product?.secondaryColors.length || 0) > 0;
+                  const secondary = hasSecondaryColors
+                    ? product?.secondaryColors.find((c) => c.id === item.secondaryColorId)?.name || (isCatalogLoading ? "Loading..." : "N/A")
+                    : null;
                   return (
                     <motion.div
                       key={item.id}
@@ -103,7 +105,8 @@ export default function ProductCart() {
                             {item.brand.toUpperCase()} • Qty: {item.qty}
                           </p>
                           <p className="text-xs text-muted-foreground mt-1">
-                            Primary: {primary} • Secondary: {secondary}
+                            Primary: {primary}
+                            {hasSecondaryColors ? ` • Secondary: ${secondary}` : ""}
                           </p>
                         </div>
 

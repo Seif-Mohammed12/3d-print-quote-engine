@@ -28,6 +28,7 @@ type CartLineResolved = {
   product: Product | null;
   primary: { name: string } | null;
   secondary: { name: string } | null;
+  hasSecondaryColors: boolean;
   unitPrice: number;
   lineSubtotal: number;
 };
@@ -182,6 +183,7 @@ export default function ProductCheckout() {
           product: null,
           primary: null,
           secondary: null,
+          hasSecondaryColors: false,
           unitPrice,
           lineSubtotal,
         };
@@ -193,6 +195,7 @@ export default function ProductCheckout() {
         product: legacy,
         primary,
         secondary,
+        hasSecondaryColors: legacy.secondaryColors.length > 0,
         unitPrice,
         lineSubtotal,
       };
@@ -208,6 +211,10 @@ export default function ProductCheckout() {
     if (!draft || !product) return null;
     return product.secondaryColors.find((c) => c.id === draft.secondaryColorId) || null;
   }, [draft, product]);
+  const hasSingleSecondaryColors = useMemo(() => {
+    if (!product) return false;
+    return product.secondaryColors.length > 0;
+  }, [product]);
 
   const unitPrice = useMemo(() => {
     if (!draft || !product) return 0;
@@ -494,7 +501,8 @@ export default function ProductCheckout() {
                             <p className="font-semibold text-foreground">{line.product!.name}</p>
                             <p className="text-xs text-muted-foreground mt-1">
                               {line.item.brand.toUpperCase()} • Qty {line.item.qty} • Primary:{" "}
-                              {line.primary?.name || "—"} • Secondary: {line.secondary?.name || "—"}
+                              {line.primary?.name || "—"}
+                              {line.hasSecondaryColors ? ` • Secondary: ${line.secondary?.name || "—"}` : ""}
                             </p>
                           </div>
                           <p className="font-semibold text-primary shrink-0">
@@ -515,8 +523,8 @@ export default function ProductCheckout() {
                       <div>
                         <p className="font-semibold text-foreground">{product!.name}</p>
                         <p className="text-xs text-muted-foreground mt-1">
-                          {draft!.brand.toUpperCase()} • Primary: {primary?.name || "—"} • Secondary:{" "}
-                          {secondary?.name || "—"}
+                          {draft!.brand.toUpperCase()} • Primary: {primary?.name || "—"}
+                          {hasSingleSecondaryColors ? ` • Secondary: ${secondary?.name || "—"}` : ""}
                         </p>
                       </div>
                       <p className="font-semibold text-primary">EGP{subtotal.toFixed(0)}</p>

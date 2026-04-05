@@ -41,6 +41,7 @@ export default function QuickAddProductDialog({
     () => product?.secondaryColors.find((c) => c.id === secondaryColorId) || null,
     [product, secondaryColorId]
   );
+  const hasSecondaryColors = (product?.secondaryColors.length || 0) > 0;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -96,34 +97,36 @@ export default function QuickAddProductDialog({
                 </p>
               </div>
 
-              <div>
-                <p className="text-sm font-semibold text-slate-200">Secondary color</p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {product.secondaryColors.map((color) => (
-                    <button
-                      key={color.id}
-                      type="button"
-                      onClick={() => setSecondaryColorId(color.id)}
-                      className={[
-                        "h-9 w-9 rounded-full border-2 transition-all",
-                        color.id === secondaryColorId
-                          ? "border-white/70 ring-2 ring-white/25"
-                          : "border-slate-600 hover:border-slate-400",
-                      ].join(" ")}
-                      style={{ backgroundColor: color.hex }}
-                      title={color.name}
-                    >
-                      <span className="sr-only">{color.name}</span>
-                    </button>
-                  ))}
+              {hasSecondaryColors ? (
+                <div>
+                  <p className="text-sm font-semibold text-slate-200">Secondary color</p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {product.secondaryColors.map((color) => (
+                      <button
+                        key={color.id}
+                        type="button"
+                        onClick={() => setSecondaryColorId(color.id)}
+                        className={[
+                          "h-9 w-9 rounded-full border-2 transition-all",
+                          color.id === secondaryColorId
+                            ? "border-white/70 ring-2 ring-white/25"
+                            : "border-slate-600 hover:border-slate-400",
+                        ].join(" ")}
+                        style={{ backgroundColor: color.hex }}
+                        title={color.name}
+                      >
+                        <span className="sr-only">{color.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                  <p className="mt-2 text-xs text-slate-400">
+                    Selected:{" "}
+                    <span className={["font-semibold", accentClassName || "text-primary"].join(" ")}>
+                      {selectedSecondary?.name || "Not selected"}
+                    </span>
+                  </p>
                 </div>
-                <p className="mt-2 text-xs text-slate-400">
-                  Selected:{" "}
-                  <span className={["font-semibold", accentClassName || "text-primary"].join(" ")}>
-                    {selectedSecondary?.name || "Not selected"}
-                  </span>
-                </p>
-              </div>
+              ) : null}
 
               <button
                 type="button"

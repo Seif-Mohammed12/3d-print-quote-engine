@@ -48,6 +48,16 @@ type ColorLibraryRow = {
   sort_order: number;
 };
 
+function reindexSortOrder<T extends { sort_order: number }>(rows: T[]): T[] {
+  return rows.map((row, idx) => ({ ...row, sort_order: idx }));
+}
+
+function swapRows<T>(rows: T[], from: number, to: number): T[] {
+  const next = [...rows];
+  [next[from], next[to]] = [next[to], next[from]];
+  return next;
+}
+
 const emptyProduct = {
   id: "",
   brand: "pforge" as Brand,
@@ -76,6 +86,8 @@ export default function AdminDashboard() {
   const [form, setForm] = useState(emptyProduct);
   const [colorDraft, setColorDraft] = useState({ role: "primary" as "primary" | "secondary", colorId: "", name: "", hex: "#000000" });
   const [busy, setBusy] = useState(false);
+  const [mediaBusy, setMediaBusy] = useState(false);
+  const [colorBusy, setColorBusy] = useState(false);
 
   async function load() {
     setLoading(true);
@@ -140,6 +152,14 @@ export default function AdminDashboard() {
     const validLong = /^#([0-9a-fA-F]{6})$/.test(candidate);
     return validShort || validLong ? candidate : "#000000";
   }, [colorDraft.hex]);
+
+  const setProductImages = (productId: string, rows: ImageRow[]) => {
+    setImages((prev) => [...prev.filter((img) => img.product_id !== productId), ...rows]);
+  };
+
+  const setProductColors = (productId: string, rows: ColorRow[]) => {
+    setColors((prev) => [...prev.filter((color) => color.product_id !== productId), ...rows]);
+  };
 
   return (
     <Layout>
@@ -324,7 +344,7 @@ export default function AdminDashboard() {
                     type="file"
                     accept="image/*"
                     multiple
-                    disabled={busy}
+                    disabled={mediaBusy}
                     className="block w-full max-w-md text-sm file:mr-3 file:rounded-lg file:border file:border-border file:bg-secondary file:px-3 file:py-1.5 file:text-xs file:font-medium"
                     onChange={async (e) => {
                       const list = e.target.files;
@@ -332,15 +352,22 @@ export default function AdminDashboard() {
                       const files = Array.from(list).filter((f) => f.size > 0);
                       e.target.value = "";
                       if (!files.length) return;
-                      setBusy(true);
+                      setMediaBusy(true);
                       setError("");
                       try {
-                        await adminUploadImages(selectedProductId, files);
-                        await load();
+                        const uploaded = await adminUploadImages(selectedProductId, files);
+                        const newRows = uploaded
+                          .map((entry: any) => entry?.image)
+                          .filter(Boolean) as ImageRow[];
+                        if (newRows.length) {
+                          const merged = reindexSortOrder([...selectedImages, ...newRows]);
+                          setProductImages(selectedProductId, merged);
+                        }
                       } catch (err: unknown) {
                         setError(err instanceof Error ? err.message : "Upload failed");
+                        await load();
                       } finally {
-                        setBusy(false);
+                        setMediaBusy(false);
                       }
                     }}
                   />
@@ -354,25 +381,54 @@ export default function AdminDashboard() {
                       <img src={img.image_url} alt="Product" className="h-12 w-12 object-cover rounded" />
                       <div className="flex-1 text-xs truncate">{img.image_url}</div>
                       <button className="text-xs px-2 py-1 rounded border"
+                        disabled={mediaBusy}
                         onClick={async () => {
                           if (idx === 0) return;
-                          const ids = selectedImages.map((i) => i.id);
-                          [ids[idx - 1], ids[idx]] = [ids[idx], ids[idx - 1]];
-                          await adminReorderImages(ids);
-                          await load();
+                          const reordered = reindexSortOrder(swapRows(selectedImages, idx, idx - 1));
+                          setProductImages(selectedProductId, reordered);
+                          setMediaBusy(true);
+                          try {
+                            await adminReorderImages(reordered.map((i) => i.id));
+                          } catch (err: unknown) {
+                            setError(err instanceof Error ? err.message : "Failed to reorder images");
+                            await load();
+                          } finally {
+                            setMediaBusy(false);
+                          }
                         }}>Up</button>
                       <button className="text-xs px-2 py-1 rounded border"
+                        disabled={mediaBusy}
                         onClick={async () => {
                           if (idx === selectedImages.length - 1) return;
-                          const ids = selectedImages.map((i) => i.id);
-                          [ids[idx], ids[idx + 1]] = [ids[idx + 1], ids[idx]];
-                          await adminReorderImages(ids);
-                          await load();
+                          const reordered = reindexSortOrder(swapRows(selectedImages, idx, idx + 1));
+                          setProductImages(selectedProductId, reordered);
+                          setMediaBusy(true);
+                          try {
+                            await adminReorderImages(reordered.map((i) => i.id));
+                          } catch (err: unknown) {
+                            setError(err instanceof Error ? err.message : "Failed to reorder images");
+                            await load();
+                          } finally {
+                            setMediaBusy(false);
+                          }
                         }}>Down</button>
                       <button className="text-xs px-2 py-1 rounded border border-destructive/40 text-destructive"
+                        disabled={mediaBusy}
                         onClick={async () => {
-                          await adminDeleteImage(img.id);
-                          await load();
+                          const remaining = reindexSortOrder(selectedImages.filter((i) => i.id !== img.id));
+                          setProductImages(selectedProductId, remaining);
+                          setMediaBusy(true);
+                          try {
+                            await adminDeleteImage(img.id);
+                            if (remaining.length) {
+                              await adminReorderImages(remaining.map((i) => i.id));
+                            }
+                          } catch (err: unknown) {
+                            setError(err instanceof Error ? err.message : "Failed to remove image");
+                            await load();
+                          } finally {
+                            setMediaBusy(false);
+                          }
                         }}>Remove</button>
                     </div>
                   ))}
@@ -434,11 +490,11 @@ export default function AdminDashboard() {
                   <span className="text-xs text-foreground">{colorDraftHex}</span>
                 </div>
                 <button className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
-                  disabled={busy}
+                  disabled={colorBusy}
                   onClick={async () => {
-                    setBusy(true);
+                    setColorBusy(true);
                     try {
-                      await adminUpsertColor({
+                      const res = await adminUpsertColor({
                         productId: selectedProductId,
                         role: colorDraft.role,
                         colorId: colorDraft.colorId,
@@ -446,11 +502,20 @@ export default function AdminDashboard() {
                         hex: colorDraft.hex,
                         sortOrder: selectedColors.length,
                       });
+                      const inserted = res?.color as ColorRow | undefined;
+                      if (inserted) {
+                        const sameRole = selectedColors.filter((c) => c.role === inserted.role);
+                        const otherRole = selectedColors.filter((c) => c.role !== inserted.role);
+                        const nextRole = reindexSortOrder([...sameRole, inserted]);
+                        setProductColors(selectedProductId, [...otherRole, ...nextRole]);
+                      }
                       setColorLibraryPick("");
                       setColorDraft({ role: colorDraft.role, colorId: "", name: "", hex: "#000000" });
+                    } catch (err: unknown) {
+                      setError(err instanceof Error ? err.message : "Failed to add color");
                       await load();
                     } finally {
-                      setBusy(false);
+                      setColorBusy(false);
                     }
                   }}
                 >
@@ -465,19 +530,62 @@ export default function AdminDashboard() {
                       <span className="text-xs text-muted-foreground">{color.hex}</span>
                       <div className="ml-auto flex items-center gap-1">
                         <button className="text-xs px-2 py-1 rounded border"
+                          disabled={colorBusy}
                           onClick={async () => {
                             const group = selectedColors.filter((c) => c.role === color.role);
                             const groupIdx = group.findIndex((c) => c.id === color.id);
                             if (groupIdx <= 0) return;
-                            const ids = [...group.map((c) => c.id)];
-                            [ids[groupIdx - 1], ids[groupIdx]] = [ids[groupIdx], ids[groupIdx - 1]];
-                            await adminReorderColors(ids);
-                            await load();
+                            const reorderedRole = reindexSortOrder(swapRows(group, groupIdx, groupIdx - 1));
+                            const otherRole = selectedColors.filter((c) => c.role !== color.role);
+                            setProductColors(selectedProductId, [...otherRole, ...reorderedRole]);
+                            setColorBusy(true);
+                            try {
+                              await adminReorderColors(reorderedRole.map((c) => c.id));
+                            } catch (err: unknown) {
+                              setError(err instanceof Error ? err.message : "Failed to reorder colors");
+                              await load();
+                            } finally {
+                              setColorBusy(false);
+                            }
                           }}>Up</button>
-                        <button className="text-xs px-2 py-1 rounded border border-destructive/40 text-destructive"
+                        <button className="text-xs px-2 py-1 rounded border"
+                          disabled={colorBusy}
                           onClick={async () => {
-                            await adminDeleteColor(color.id);
-                            await load();
+                            const group = selectedColors.filter((c) => c.role === color.role);
+                            const groupIdx = group.findIndex((c) => c.id === color.id);
+                            if (groupIdx < 0 || groupIdx >= group.length - 1) return;
+                            const reorderedRole = reindexSortOrder(swapRows(group, groupIdx, groupIdx + 1));
+                            const otherRole = selectedColors.filter((c) => c.role !== color.role);
+                            setProductColors(selectedProductId, [...otherRole, ...reorderedRole]);
+                            setColorBusy(true);
+                            try {
+                              await adminReorderColors(reorderedRole.map((c) => c.id));
+                            } catch (err: unknown) {
+                              setError(err instanceof Error ? err.message : "Failed to reorder colors");
+                              await load();
+                            } finally {
+                              setColorBusy(false);
+                            }
+                          }}>Down</button>
+                        <button className="text-xs px-2 py-1 rounded border border-destructive/40 text-destructive"
+                          disabled={colorBusy}
+                          onClick={async () => {
+                            const roleGroup = selectedColors.filter((c) => c.role === color.role && c.id !== color.id);
+                            const otherRole = selectedColors.filter((c) => c.role !== color.role);
+                            const nextRole = reindexSortOrder(roleGroup);
+                            setProductColors(selectedProductId, [...otherRole, ...nextRole]);
+                            setColorBusy(true);
+                            try {
+                              await adminDeleteColor(color.id);
+                              if (nextRole.length) {
+                                await adminReorderColors(nextRole.map((c) => c.id));
+                              }
+                            } catch (err: unknown) {
+                              setError(err instanceof Error ? err.message : "Failed to remove color");
+                              await load();
+                            } finally {
+                              setColorBusy(false);
+                            }
                           }}>Remove</button>
                       </div>
                     </div>
