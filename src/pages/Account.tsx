@@ -227,15 +227,6 @@ export default function Account() {
           </div>
 
           <div className="glass-card p-6 space-y-4">
-            <h3 className="font-heading text-xl font-semibold text-foreground">Quick actions</h3>
-            <div className="flex flex-wrap gap-3">
-              <Link to="/orders" className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">View order history</Link>
-              <Link to="/quote" className="rounded-lg border border-border px-4 py-2 text-sm font-semibold text-foreground hover:bg-secondary">New quote</Link>
-              <Link to="/product-cart" className="rounded-lg border border-border px-4 py-2 text-sm font-semibold text-foreground hover:bg-secondary">Product cart</Link>
-            </div>
-          </div>
-
-          <div className="glass-card p-6 space-y-4">
             <div className="flex items-center justify-between gap-3">
               <h3 className="font-heading text-xl font-semibold text-foreground">Order history</h3>
               <Link to="/orders" className="text-sm font-semibold text-primary hover:underline">Open full page</Link>

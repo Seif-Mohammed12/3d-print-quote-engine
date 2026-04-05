@@ -7,6 +7,7 @@ import { AuthProvider } from "@/lib/auth-context";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import AdminRoleRoute from "@/components/AdminRoleRoute";
 import ScrollToTop from "@/components/ScrollToTop";
+import CookieConsentBanner from "@/components/CookieConsentBanner";
 import Index from "./pages/Index";
 import Services from "./pages/Services";
 import Pforge from "./pages/Pforge";
@@ -48,6 +49,7 @@ const App = () => (
           <Sonner />
           <BrowserRouter>
             <ScrollToTop />
+            <CookieConsentBanner />
             <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/services" element={<Services />} />
