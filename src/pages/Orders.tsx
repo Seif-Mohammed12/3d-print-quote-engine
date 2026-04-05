@@ -1,8 +1,9 @@
-import { useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
 import SectionHeading from "@/components/SectionHeading";
+import CancelOrderDialog from "@/components/CancelOrderDialog";
 import { cancelMyOrder, CUSTOMER_CANCELLABLE_STATUSES, listMyOrders } from "@/lib/orders-api";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
@@ -19,21 +20,39 @@ const statusClass: Record<string, string> = {
 export default function Orders() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+  const [cancelingOrderId, setCancelingOrderId] = useState<string | null>(null);
   const { data: orders = [], refetch, isLoading, error } = useQuery({
     queryKey: ["my-orders"],
     queryFn: listMyOrders,
   });
+
+  const selectedOrder = useMemo(
+    () => orders.find((order) => order.id === selectedOrderId) ?? null,
+    [orders, selectedOrderId],
+  );
 
   const cancelOrder = useMutation({
     mutationFn: async (orderId: string) => cancelMyOrder(orderId),
     onSuccess: () => {
       toast.success("Order cancelled successfully");
       queryClient.invalidateQueries({ queryKey: ["my-orders"] });
+      setSelectedOrderId(null);
     },
     onError: (err: any) => {
       toast.error(err?.message || "Unable to cancel this order");
     },
   });
+
+  async function confirmCancelSelectedOrder() {
+    if (!selectedOrderId) return;
+    try {
+      setCancelingOrderId(selectedOrderId);
+      await cancelOrder.mutateAsync(selectedOrderId);
+    } finally {
+      setCancelingOrderId(null);
+    }
+  }
 
   useEffect(() => {
     const channel = supabase
@@ -100,14 +119,12 @@ export default function Orders() {
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation();
-                              const confirmed = window.confirm("Cancel this order? This action cannot be undone.");
-                              if (!confirmed) return;
-                              cancelOrder.mutate(order.id);
+                              setSelectedOrderId(order.id);
                             }}
-                            disabled={cancelOrder.isPending}
+                            disabled={cancelOrder.isPending && cancelingOrderId === order.id}
                             className="rounded-lg border border-rose-500/50 px-3 py-1.5 text-xs font-semibold text-rose-300 hover:bg-rose-500/10 disabled:opacity-60"
                           >
-                            {cancelOrder.isPending ? "Cancelling..." : "Cancel"}
+                            {cancelOrder.isPending && cancelingOrderId === order.id ? "Cancelling..." : "Cancel"}
                           </button>
                         ) : (
                           <span className="text-xs text-muted-foreground">Not available</span>
@@ -119,6 +136,16 @@ export default function Orders() {
               </table>
             </div>
           ) : null}
+
+          <CancelOrderDialog
+            open={Boolean(selectedOrderId)}
+            orderCode={selectedOrder?.order_code}
+            isPending={cancelOrder.isPending}
+            onOpenChange={(open) => {
+              if (!open && !cancelOrder.isPending) setSelectedOrderId(null);
+            }}
+            onConfirm={confirmCancelSelectedOrder}
+          />
         </div>
       </section>
     </Layout>

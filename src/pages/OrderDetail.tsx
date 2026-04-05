@@ -1,8 +1,9 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Layout from "@/components/Layout";
 import SectionHeading from "@/components/SectionHeading";
+import CancelOrderDialog from "@/components/CancelOrderDialog";
 import { supabase } from "@/lib/supabase";
 import { cancelMyOrder, CUSTOMER_CANCELLABLE_STATUSES } from "@/lib/orders-api";
 import { toast } from "sonner";
@@ -65,6 +66,7 @@ export default function OrderDetail() {
   const { orderId = "" } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
 
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["order-detail", orderId],
@@ -138,11 +140,7 @@ export default function OrderDetail() {
                   {canCancel ? (
                     <button
                       type="button"
-                      onClick={() => {
-                        const confirmed = window.confirm("Cancel this order? This action cannot be undone.");
-                        if (!confirmed) return;
-                        cancelOrder.mutate();
-                      }}
+                      onClick={() => setCancelDialogOpen(true)}
                       disabled={cancelOrder.isPending}
                       className="mt-2 rounded-lg border border-rose-500/50 px-3 py-2 text-xs font-semibold text-rose-300 hover:bg-rose-500/10 disabled:opacity-60"
                     >
@@ -226,6 +224,16 @@ export default function OrderDetail() {
               </div>
             </div>
           ) : null}
+
+          <CancelOrderDialog
+            open={cancelDialogOpen}
+            orderCode={data?.order?.order_code}
+            isPending={cancelOrder.isPending}
+            onOpenChange={(open) => {
+              if (!open && !cancelOrder.isPending) setCancelDialogOpen(false);
+            }}
+            onConfirm={() => cancelOrder.mutate()}
+          />
         </div>
       </section>
     </Layout>

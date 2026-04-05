@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Layout from "@/components/Layout";
 import SectionHeading from "@/components/SectionHeading";
+import CancelOrderDialog from "@/components/CancelOrderDialog";
 import { useAuth } from "@/lib/auth-context";
 import { cancelMyOrder, CUSTOMER_CANCELLABLE_STATUSES, listMyOrders } from "@/lib/orders-api";
 import { supabase } from "@/lib/supabase";
@@ -31,6 +32,8 @@ export default function Account() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+  const [cancelingOrderId, setCancelingOrderId] = useState<string | null>(null);
 
   const { data: orders = [] } = useQuery({
     queryKey: ["my-account-orders"],
@@ -90,6 +93,7 @@ export default function Account() {
   });
 
   const pendingCount = orders.filter((o) => ["pending", "confirmed", "processing"].includes(o.status)).length;
+  const selectedOrder = orders.find((order) => order.id === selectedOrderId) ?? null;
 
   const cancelOrder = useMutation({
     mutationFn: async (orderId: string) => cancelMyOrder(orderId),
@@ -98,11 +102,22 @@ export default function Account() {
       queryClient.invalidateQueries({ queryKey: ["my-account-orders"] });
       queryClient.invalidateQueries({ queryKey: ["my-orders"] });
       queryClient.invalidateQueries({ queryKey: ["order-detail"] });
+      setSelectedOrderId(null);
     },
     onError: (err: any) => {
       toast.error(err?.message || "Unable to cancel this order");
     },
   });
+
+  async function confirmCancelSelectedOrder() {
+    if (!selectedOrderId) return;
+    try {
+      setCancelingOrderId(selectedOrderId);
+      await cancelOrder.mutateAsync(selectedOrderId);
+    } finally {
+      setCancelingOrderId(null);
+    }
+  }
 
   const changePassword = useMutation({
     mutationFn: async () => {
@@ -268,14 +283,12 @@ export default function Account() {
                             <button
                               type="button"
                               onClick={() => {
-                                const confirmed = window.confirm("Cancel this order? This action cannot be undone.");
-                                if (!confirmed) return;
-                                cancelOrder.mutate(order.id);
+                                setSelectedOrderId(order.id);
                               }}
-                              disabled={cancelOrder.isPending}
+                              disabled={cancelOrder.isPending && cancelingOrderId === order.id}
                               className="rounded-lg border border-rose-500/50 px-2.5 py-1.5 text-xs font-semibold text-rose-300 hover:bg-rose-500/10 disabled:opacity-60"
                             >
-                              {cancelOrder.isPending ? "Cancelling..." : "Cancel"}
+                              {cancelOrder.isPending && cancelingOrderId === order.id ? "Cancelling..." : "Cancel"}
                             </button>
                           ) : (
                             <span className="text-xs text-muted-foreground">-</span>
@@ -288,6 +301,16 @@ export default function Account() {
               </div>
             )}
           </div>
+
+          <CancelOrderDialog
+            open={Boolean(selectedOrderId)}
+            orderCode={selectedOrder?.order_code}
+            isPending={cancelOrder.isPending}
+            onOpenChange={(open) => {
+              if (!open && !cancelOrder.isPending) setSelectedOrderId(null);
+            }}
+            onConfirm={confirmCancelSelectedOrder}
+          />
 
           <div className="glass-card p-6 space-y-4">
             <h3 className="font-heading text-xl font-semibold text-foreground">Change password</h3>
