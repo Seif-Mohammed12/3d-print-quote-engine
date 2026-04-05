@@ -139,18 +139,6 @@ const Pforge = () => {
                   </div>
                 </div>
 
-                <p
-                  className="relative z-10 mb-6 text-sm leading-6 text-slate-300 min-h-[96px]"
-                  style={{
-                    display: "-webkit-box",
-                    WebkitLineClamp: 4,
-                    WebkitBoxOrient: "vertical",
-                    overflow: "hidden",
-                  }}
-                >
-                  {product.description}
-                </p>
-
                 <div className="relative z-10 mt-auto flex items-center gap-2">
                   <button
                     type="button"

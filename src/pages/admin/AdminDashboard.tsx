@@ -227,9 +227,12 @@ export default function AdminDashboard() {
                   </select>
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs font-medium text-muted-foreground">Short Line</label>
+                  <label className="mb-1 block text-xs font-medium text-muted-foreground">Card Hook (outside)</label>
                   <input className="w-full rounded-lg bg-secondary border border-border px-3 py-2 text-sm" placeholder="Clean desk, hero setup."
                     value={form.short} onChange={(e) => setForm({ ...form, short: e.target.value })} />
+                  <p className="mt-1 text-[11px] text-muted-foreground">
+                    This is the short line shown on product cards.
+                  </p>
                 </div>
                 <div>
                   <label className="mb-1 block text-xs font-medium text-muted-foreground">Base Price (EGP)</label>
@@ -250,7 +253,8 @@ export default function AdminDashboard() {
                   </p>
                 </div>
               </div>
-              <textarea className="w-full rounded-lg bg-secondary border border-border px-3 py-2 text-sm min-h-24" placeholder="Description"
+              <label className="mb-1 block text-xs font-medium text-muted-foreground">About This Product Description (inside)</label>
+              <textarea className="w-full rounded-lg bg-secondary border border-border px-3 py-2 text-sm min-h-24" placeholder="Detailed description shown in About this product on the product details page."
                 value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
 
               <div className="flex flex-wrap items-center gap-4 text-sm">
