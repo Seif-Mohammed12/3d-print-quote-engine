@@ -5,6 +5,57 @@ import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
 import { Eye, EyeOff } from "lucide-react";
 
+const PASSWORD_RESET_COOLDOWN_MS = 60_000;
+const PASSWORD_RESET_COOLDOWNS_KEY = "password-reset-cooldowns";
+
+function normalizeEmail(value: string) {
+  return value.trim().toLowerCase();
+}
+
+function readResetCooldowns(): Record<string, number> {
+  try {
+    const raw = localStorage.getItem(PASSWORD_RESET_COOLDOWNS_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw) as Record<string, number>;
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function writeResetCooldowns(cooldowns: Record<string, number>) {
+  try {
+    localStorage.setItem(PASSWORD_RESET_COOLDOWNS_KEY, JSON.stringify(cooldowns));
+  } catch {
+    // Ignore storage failures.
+  }
+}
+
+function getResetCooldownSeconds(email: string) {
+  const normalized = normalizeEmail(email);
+  if (!normalized) return 0;
+
+  const cooldowns = readResetCooldowns();
+  const until = cooldowns[normalized];
+  if (!until) return 0;
+
+  const remaining = Math.max(0, Math.ceil((until - Date.now()) / 1000));
+  if (remaining <= 0) {
+    delete cooldowns[normalized];
+    writeResetCooldowns(cooldowns);
+  }
+  return remaining;
+}
+
+function setResetCooldown(email: string, ms = PASSWORD_RESET_COOLDOWN_MS) {
+  const normalized = normalizeEmail(email);
+  if (!normalized) return;
+
+  const cooldowns = readResetCooldowns();
+  cooldowns[normalized] = Date.now() + ms;
+  writeResetCooldowns(cooldowns);
+}
+
 export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -21,25 +72,14 @@ export default function Login() {
   const [resetCooldownSeconds, setResetCooldownSeconds] = useState(0);
 
   useEffect(() => {
-    const key = "password-reset-cooldown-until";
-    const raw = localStorage.getItem(key);
-    if (!raw) return;
-
-    const until = Number(raw);
-    if (!Number.isFinite(until)) return;
-
     const tick = () => {
-      const remaining = Math.max(0, Math.ceil((until - Date.now()) / 1000));
-      setResetCooldownSeconds(remaining);
-      if (remaining <= 0) {
-        localStorage.removeItem(key);
-      }
+      setResetCooldownSeconds(getResetCooldownSeconds(forgotEmail));
     };
 
     tick();
     const timer = window.setInterval(tick, 1000);
     return () => window.clearInterval(timer);
-  }, []);
+  }, [forgotEmail]);
 
   const nextPath = (location.state as { from?: string } | null)?.from;
 
@@ -145,10 +185,16 @@ export default function Login() {
                   <p className="text-xs text-muted-foreground/80">
                     We now send reset links directly to the in-app reset page. Your email app may still choose whether the link opens in the same tab or a new tab.
                   </p>
+                  <p className="text-xs text-muted-foreground/80">
+                    Reset emails are rate-limited per email address. If you already requested one, use the latest email instead of requesting another immediately.
+                  </p>
                   <input
                     type="email"
                     value={forgotEmail}
-                    onChange={(e) => setForgotEmail(e.target.value)}
+                    onChange={(e) => {
+                      setForgotEmail(e.target.value);
+                      setError("");
+                    }}
                     className="w-full rounded-lg bg-background border border-border px-3 py-2 text-sm"
                     placeholder="you@example.com"
                     required
@@ -157,11 +203,17 @@ export default function Login() {
                     type="button"
                     disabled={resetLoading || !forgotEmail || resetCooldownSeconds > 0}
                     onClick={async () => {
-                      if (resetCooldownSeconds > 0) return;
+                      const remaining = getResetCooldownSeconds(forgotEmail);
+                      if (remaining > 0) {
+                        setResetCooldownSeconds(remaining);
+                        setError(`Please wait ${remaining}s before sending another reset email for this address.`);
+                        return;
+                      }
 
                       setResetLoading(true);
                       setError("");
-                      const result = await requestPasswordReset(forgotEmail.trim());
+                      const emailForReset = forgotEmail.trim();
+                      const result = await requestPasswordReset(emailForReset);
                       setResetLoading(false);
 
                       if (result.error) {
@@ -169,16 +221,14 @@ export default function Login() {
 
                         // Back off locally if provider reports rate limiting.
                         if (result.error.toLowerCase().includes("too many") || result.error.toLowerCase().includes("wait")) {
-                          const until = Date.now() + 60_000;
-                          localStorage.setItem("password-reset-cooldown-until", String(until));
-                          setResetCooldownSeconds(60);
+                          setResetCooldown(emailForReset);
+                          setResetCooldownSeconds(getResetCooldownSeconds(emailForReset));
                         }
                         return;
                       }
 
-                      const until = Date.now() + 60_000;
-                      localStorage.setItem("password-reset-cooldown-until", String(until));
-                      setResetCooldownSeconds(60);
+                      setResetCooldown(emailForReset);
+                      setResetCooldownSeconds(getResetCooldownSeconds(emailForReset));
 
                       toast.success("Password reset email sent. Check your inbox.");
                       setShowForgotPassword(false);
@@ -188,7 +238,7 @@ export default function Login() {
                     {resetLoading
                       ? "Sending reset link..."
                       : resetCooldownSeconds > 0
-                        ? `Try again in ${resetCooldownSeconds}s`
+                        ? `Try again in ${resetCooldownSeconds}s for this email`
                         : "Send reset link"}
                   </button>
                 </div>
