@@ -51,8 +51,8 @@ export const handler = async (event) => {
 
   try {
     if (!isResendConfigured()) {
-      console.error('❌ RESEND_API_KEY is missing!');
-      return json(500, { error: 'Server misconfigured: RESEND_API_KEY is not set' });
+      console.error('❌ Resend config missing (RESEND_API_KEY and/or RESEND_FROM_EMAIL)');
+      return json(500, { error: 'Server misconfigured: RESEND_API_KEY and RESEND_FROM_EMAIL must be set' });
     }
 
     // Log headers for debugging

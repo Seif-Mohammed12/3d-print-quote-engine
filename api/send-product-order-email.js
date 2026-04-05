@@ -23,7 +23,7 @@ export const handler = async (event) => {
 
   try {
     if (!isResendConfigured()) {
-      return json(500, { error: "Server misconfigured: RESEND_API_KEY is not set" });
+      return json(500, { error: "Server misconfigured: RESEND_API_KEY and RESEND_FROM_EMAIL must be set" });
     }
 
     const bodyRaw = event?.body || "";

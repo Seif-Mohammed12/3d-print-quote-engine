@@ -31,6 +31,17 @@ export const handler = async (event) => {
     .split(',')
     .map(e => e.trim().toLowerCase())
     .filter(Boolean);
+
+  const resendFromRaw = (process.env.RESEND_FROM_EMAIL || '').trim();
+  const resendFromAddress = (() => {
+    if (!resendFromRaw) return '';
+    const match = resendFromRaw.match(/<([^>]+)>$/);
+    return (match ? match[1] : resendFromRaw).trim().toLowerCase();
+  })();
+  const resendFromDomain = resendFromAddress.includes('@') ? resendFromAddress.split('@').pop() : '';
+
+  const likelyPersonalDomains = ['gmail.com', 'yahoo.com', 'outlook.com', 'hotmail.com', 'icloud.com'];
+  const resendDomainLooksPersonal = Boolean(resendFromDomain && likelyPersonalDomains.includes(resendFromDomain));
   
   const diagnostics = {
     timestamp,
@@ -46,6 +57,14 @@ export const handler = async (event) => {
       emailsCount: adminEmails.length,
       sampleEmails: adminEmails.slice(0, 3), // Only show first 3 for privacy
     },
+    resend: {
+      apiKeyConfigured: Boolean(process.env.RESEND_API_KEY),
+      fromConfigured: Boolean(resendFromRaw),
+      fromAddressPreview: resendFromAddress || null,
+      fromDomain: resendFromDomain || null,
+      fromDomainLooksPersonal: resendDomainLooksPersonal,
+      ready: Boolean(process.env.RESEND_API_KEY && resendFromRaw && !resendDomainLooksPersonal),
+    },
     notes: {
       buildEnv: 'These are Functions-level environment variables',
       frontendVars: 'Build environment vars (VITE_*) are separate and set during build',
@@ -54,6 +73,8 @@ export const handler = async (event) => {
         'SUPABASE_SERVICE_ROLE_KEY',
         'SUPABASE_ANON_KEY or VITE_SUPABASE_ANON_KEY',
         'ADMIN_EMAILS (for email fallback)',
+        'RESEND_API_KEY (for transactional emails)',
+        'RESEND_FROM_EMAIL (must be verified domain in Resend)',
       ],
     },
   };
