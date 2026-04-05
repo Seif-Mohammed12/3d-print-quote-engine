@@ -9,9 +9,11 @@ import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 
 export default function Account() {
-  const { user, signOut } = useAuth();
+  const { user, signOut, updatePassword } = useAuth();
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
 
   const { data: orders = [] } = useQuery({
     queryKey: ["my-account-orders"],
@@ -63,6 +65,24 @@ export default function Account() {
   });
 
   const pendingCount = orders.filter((o) => ["pending", "confirmed", "processing"].includes(o.status)).length;
+
+  const changePassword = useMutation({
+    mutationFn: async () => {
+      const trimmedPassword = newPassword.trim();
+      if (!trimmedPassword) throw new Error("Please enter a new password.");
+      if (trimmedPassword.length < 8) throw new Error("Password must be at least 8 characters.");
+      if (trimmedPassword !== confirmPassword.trim()) throw new Error("Passwords do not match.");
+
+      const result = await updatePassword(trimmedPassword);
+      if (result.error) throw new Error(result.error);
+    },
+    onSuccess: () => {
+      setNewPassword("");
+      setConfirmPassword("");
+      toast.success("Password updated successfully");
+    },
+    onError: (error: any) => toast.error(error?.message || "Failed to update password"),
+  });
 
   return (
     <Layout>
@@ -139,6 +159,45 @@ export default function Account() {
               <Link to="/quote" className="rounded-lg border border-border px-4 py-2 text-sm font-semibold text-foreground hover:bg-secondary">New quote</Link>
               <Link to="/product-cart" className="rounded-lg border border-border px-4 py-2 text-sm font-semibold text-foreground hover:bg-secondary">Product cart</Link>
             </div>
+          </div>
+
+          <div className="glass-card p-6 space-y-4">
+            <h3 className="font-heading text-xl font-semibold text-foreground">Change password</h3>
+            <p className="text-sm text-muted-foreground">
+              Use a strong password with at least 8 characters. This applies to email/password sign-in.
+            </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium text-foreground mb-1.5 block">New password</label>
+                <input
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-lg bg-secondary border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  placeholder="At least 8 characters"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-foreground mb-1.5 block">Confirm password</label>
+                <input
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-lg bg-secondary border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  placeholder="Re-enter password"
+                />
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => changePassword.mutate()}
+              disabled={changePassword.isPending}
+              className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-60"
+            >
+              {changePassword.isPending ? "Updating..." : "Update password"}
+            </button>
           </div>
         </div>
       </section>

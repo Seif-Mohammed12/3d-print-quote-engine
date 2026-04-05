@@ -2,16 +2,20 @@ import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
 import { useAuth } from "@/lib/auth-context";
+import { toast } from "sonner";
 
 export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { signInWithPassword, signInWithProvider, isAuthenticated, isAdmin, adminRole } = useAuth();
+  const { signInWithPassword, signInWithProvider, requestPasswordReset, isAuthenticated, isAdmin, adminRole } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
 
   const nextPath = (location.state as { from?: string } | null)?.from;
 
@@ -86,7 +90,56 @@ export default function Login() {
                   className="w-full rounded-lg bg-secondary border border-border px-3 py-2 text-sm"
                   required
                 />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowForgotPassword((prev) => !prev);
+                    setError("");
+                    if (!forgotEmail) setForgotEmail(email);
+                  }}
+                  className="mt-2 text-sm text-primary hover:underline"
+                >
+                  Forgot password?
+                </button>
               </div>
+
+              {showForgotPassword ? (
+                <div className="rounded-lg border border-border bg-secondary/50 p-3 space-y-3">
+                  <p className="text-sm text-muted-foreground">
+                    Enter your account email and we will send a secure password reset link.
+                  </p>
+                  <input
+                    type="email"
+                    value={forgotEmail}
+                    onChange={(e) => setForgotEmail(e.target.value)}
+                    className="w-full rounded-lg bg-background border border-border px-3 py-2 text-sm"
+                    placeholder="you@example.com"
+                    required
+                  />
+                  <button
+                    type="button"
+                    disabled={resetLoading || !forgotEmail}
+                    onClick={async () => {
+                      setResetLoading(true);
+                      setError("");
+                      const result = await requestPasswordReset(forgotEmail.trim());
+                      setResetLoading(false);
+
+                      if (result.error) {
+                        setError(result.error);
+                        return;
+                      }
+
+                      toast.success("Password reset email sent. Check your inbox.");
+                      setShowForgotPassword(false);
+                    }}
+                    className="w-full rounded-lg border border-border px-4 py-2.5 text-sm font-semibold text-foreground hover:bg-background disabled:opacity-50"
+                  >
+                    {resetLoading ? "Sending reset link..." : "Send reset link"}
+                  </button>
+                </div>
+              ) : null}
+
               <button
                 type="submit"
                 disabled={loading}

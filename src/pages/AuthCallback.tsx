@@ -9,6 +9,10 @@ export default function AuthCallback() {
   useEffect(() => {
     let cancelled = false;
     const run = async () => {
+      const searchParams = new URLSearchParams(window.location.search);
+      const hashParams = new URLSearchParams(window.location.hash.startsWith("#") ? window.location.hash.slice(1) : window.location.hash);
+      const authFlowType = searchParams.get("type") || hashParams.get("type");
+
       if (!supabase) {
         if (!cancelled) navigate("/account", { replace: true });
         return;
@@ -16,6 +20,14 @@ export default function AuthCallback() {
 
       const session = await supabase?.auth.getSession();
       const user = session?.data?.session?.user;
+
+      if (authFlowType === "recovery") {
+        if (!cancelled) {
+          navigate("/reset-password", { replace: true });
+          return;
+        }
+      }
+
       if (user?.id) {
         await supabase?.from("customer_profiles").upsert({
           id: user.id,
