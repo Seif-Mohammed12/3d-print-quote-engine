@@ -5,8 +5,6 @@ import { useAuth } from "@/lib/auth-context";
 import { Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 
-type VerificationMethod = "email" | "phone";
-
 export default function Signup() {
   const navigate = useNavigate();
   const { signUpWithPassword, signInWithProvider } = useAuth();
@@ -18,7 +16,6 @@ export default function Signup() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [verificationMethod, setVerificationMethod] = useState<VerificationMethod>("email");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -41,14 +38,14 @@ export default function Signup() {
                   return;
                 }
 
-                if (verificationMethod === "phone" && !phone.trim()) {
-                  setError("Please enter your mobile phone number for SMS verification.");
+                if (!phone.trim()) {
+                  setError("Please enter your mobile phone number.");
                   return;
                 }
 
                 setLoading(true);
                 setError("");
-                const result = await signUpWithPassword(email, password, fullName, phone, verificationMethod);
+                const result = await signUpWithPassword(email, password, fullName, phone);
                 if (result.error) {
                   setError(result.error);
                   setLoading(false);
@@ -60,14 +57,6 @@ export default function Signup() {
                 }
 
                 setLoading(false);
-
-                if (result.needsPhoneVerification) {
-                  navigate("/verify-phone", {
-                    replace: true,
-                    state: { source: "signup", initialPhone: phone },
-                  });
-                  return;
-                }
 
                 navigate("/account", { replace: true });
               }}
@@ -99,9 +88,12 @@ export default function Signup() {
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   className="w-full rounded-lg bg-secondary border border-border px-3 py-2 text-sm"
-                  placeholder="+1 555 123 4567"
-                  required={verificationMethod === "phone"}
+                  placeholder="0109928486 or +20109928486"
+                  required
                 />
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Enter your mobile number in your usual format and we will save it to your profile.
+                </p>
               </div>
               <div>
                 <label className="text-sm text-muted-foreground mb-1 block">Password</label>
@@ -144,29 +136,6 @@ export default function Signup() {
                     {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
-              </div>
-              <div className="space-y-2 rounded-lg border border-border bg-secondary/40 p-3">
-                <p className="text-sm font-medium text-foreground">Confirmation method</p>
-                <label className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <input
-                    type="radio"
-                    name="verification-method"
-                    value="email"
-                    checked={verificationMethod === "email"}
-                    onChange={() => setVerificationMethod("email")}
-                  />
-                  Confirm with email link
-                </label>
-                <label className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <input
-                    type="radio"
-                    name="verification-method"
-                    value="phone"
-                    checked={verificationMethod === "phone"}
-                    onChange={() => setVerificationMethod("phone")}
-                  />
-                  Confirm with SMS code
-                </label>
               </div>
               <button
                 type="submit"

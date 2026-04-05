@@ -31,7 +31,6 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import AuthCallback from "./pages/AuthCallback";
 import ResetPassword from "./pages/ResetPassword";
-import VerifyPhone from "./pages/VerifyPhone";
 import Account from "./pages/Account";
 import Orders from "./pages/Orders";
 import OrderDetail from "./pages/OrderDetail";
@@ -84,14 +83,6 @@ const App = () => (
             <Route path="/signup" element={<Signup />} />
             <Route path="/auth/callback" element={<AuthCallback />} />
             <Route path="/reset-password" element={<ResetPassword />} />
-            <Route
-              path="/verify-phone"
-              element={
-                <ProtectedRoute>
-                  <VerifyPhone />
-                </ProtectedRoute>
-              }
-            />
             <Route
               path="/account"
               element={

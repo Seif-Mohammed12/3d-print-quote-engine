@@ -1,4 +1,4 @@
-import sgMail from '@sendgrid/mail';
+import { getResendFromEmail, isResendConfigured, sendResendEmail } from './_lib/resend.js';
 import busboy from 'busboy';
 import { Readable } from 'node:stream';
 
@@ -50,11 +50,10 @@ export const handler = async (event) => {
   }
 
   try {
-    if (!process.env.SENDGRID_API_KEY) {
-      console.error('❌ SENDGRID_API_KEY is missing!');
-      return json(500, { error: 'Server misconfigured: SENDGRID_API_KEY is not set' });
+    if (!isResendConfigured()) {
+      console.error('❌ RESEND_API_KEY is missing!');
+      return json(500, { error: 'Server misconfigured: RESEND_API_KEY is not set' });
     }
-    sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
     // Log headers for debugging
     const headers = normalizeHeaders(event?.headers);
@@ -172,7 +171,7 @@ export const handler = async (event) => {
           const adminEmailHTML = createAdminEmailHTML(orderDetails);
           const adminEmail = {
             to: process.env.ADMIN_EMAIL || '3d.print.ittt@gmail.com',
-            from: process.env.SENDGRID_FROM_EMAIL || '3d.print.ittt@gmail.com',
+            from: getResendFromEmail(),
             subject: `🎉 New Order - ${orderDetails.customer} (${orderDetails.items.length} files)`,
             html: adminEmailHTML,
             attachments: files,
@@ -183,26 +182,26 @@ export const handler = async (event) => {
           const customerEmailHTML = createCustomerEmailHTML(orderDetails);
           const customerEmail = {
             to: orderDetails.email,
-            from: process.env.SENDGRID_FROM_EMAIL || '3d.print.ittt@gmail.com',
+            from: getResendFromEmail(),
             subject: `✓ Order Confirmed - 3D Print It (${orderDetails.items.length} files)`,
             html: customerEmailHTML,
           };
 
           // Send both emails
           console.log('📤 Sending emails to admin:', adminEmail.to, 'and customer:', customerEmail.to);
-          console.log('📤 API Key length:', process.env.SENDGRID_API_KEY?.length);
+          console.log('📤 RESEND_API_KEY present:', Boolean(process.env.RESEND_API_KEY));
 
           try {
             await Promise.all([
-              sgMail.send(adminEmail),
-              sgMail.send(customerEmail),
+              sendResendEmail(adminEmail),
+              sendResendEmail(customerEmail),
             ]);
           } catch (emailError) {
-            console.error('❌ SendGrid error:', JSON.stringify({
+            console.error('❌ Resend error:', JSON.stringify({
               message: emailError.message,
               code: emailError.code,
               status: emailError.status,
-              errors: emailError.response?.body?.errors,
+              errors: emailError.details,
             }, null, 2));
             throw emailError;
           }

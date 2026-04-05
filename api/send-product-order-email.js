@@ -1,4 +1,4 @@
-import sgMail from "@sendgrid/mail";
+import { getResendFromEmail, isResendConfigured, sendResendEmail } from "./_lib/resend.js";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -22,17 +22,15 @@ export const handler = async (event) => {
   if (method !== "POST") return json(405, { error: "Method not allowed" });
 
   try {
-    if (!process.env.SENDGRID_API_KEY) {
-      return json(500, { error: "Server misconfigured: SENDGRID_API_KEY is not set" });
+    if (!isResendConfigured()) {
+      return json(500, { error: "Server misconfigured: RESEND_API_KEY is not set" });
     }
-
-    sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
     const bodyRaw = event?.body || "";
     const parsed = JSON.parse(bodyRaw);
 
     const adminTo = process.env.ADMIN_EMAIL || "3d.print.ittt@gmail.com";
-    const from = process.env.SENDGRID_FROM_EMAIL || "3d.print.ittt@gmail.com";
+    const from = getResendFromEmail();
 
     const customerEmail = parsed?.customer?.email;
     if (!customerEmail) return json(400, { error: "Missing customer email" });
@@ -52,13 +50,13 @@ export const handler = async (event) => {
     })();
 
     await Promise.all([
-      sgMail.send({
+      sendResendEmail({
         to: adminTo,
         from,
         subject: `🛒 Product order ${orderId} — ${subjectProductName}`,
         html: adminHtml,
       }),
-      sgMail.send({
+      sendResendEmail({
         to: customerEmail,
         from,
         subject: `✓ Order received (${orderId}) — 3D Print It`,
@@ -71,10 +69,10 @@ export const handler = async (event) => {
     const details = {
       message: err?.message,
       code: err?.code,
-      status: err?.response?.statusCode,
-      errors: err?.response?.body?.errors,
+      status: err?.status,
+      errors: err?.details,
     };
-    console.error("❌ SendGrid error:", JSON.stringify(details, null, 2));
+    console.error("❌ Resend error:", JSON.stringify(details, null, 2));
     return json(500, { error: err?.message || "Unknown error", details });
   }
 };

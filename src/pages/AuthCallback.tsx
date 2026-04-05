@@ -41,24 +41,6 @@ export default function AuthCallback() {
           .eq("id", user.id)
           .maybeSingle();
 
-        const provider = user.app_metadata?.provider;
-        const phoneVerified = Boolean(user.phone_confirmed_at);
-        const knownPhone = user.phone || user.user_metadata?.phone || "";
-
-        if (provider === "google" && !phoneVerified) {
-          if (!cancelled) {
-            navigate("/verify-phone", {
-              replace: true,
-              state: {
-                source: "google",
-                initialPhone: knownPhone,
-                nextPath: adminData?.id ? "/admin" : "/account",
-              },
-            });
-            return;
-          }
-        }
-
         if (!cancelled) {
           navigate(adminData?.id ? "/admin" : "/account", { replace: true });
           return;

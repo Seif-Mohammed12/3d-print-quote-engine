@@ -1,4 +1,4 @@
-import sgMail from "@sendgrid/mail";
+import { getResendFromEmail, isResendConfigured, sendResendEmail } from "./_lib/resend.js";
 import busboy from "busboy";
 import { Readable } from "node:stream";
 
@@ -38,10 +38,9 @@ export const handler = async (event) => {
   if (method !== "POST") return json(405, { error: "Method not allowed" });
 
   try {
-    if (!process.env.SENDGRID_API_KEY) {
-      return json(500, { error: "Server misconfigured: SENDGRID_API_KEY is not set" });
+    if (!isResendConfigured()) {
+      return json(500, { error: "Server misconfigured: RESEND_API_KEY is not set" });
     }
-    sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
     const headers = normalizeHeaders(event?.headers);
     if (!headers["content-type"]?.includes("multipart/form-data")) {
@@ -115,7 +114,7 @@ export const handler = async (event) => {
         if (!fileAttachment) return resolve(json(400, { error: "Missing file" }));
 
         const adminTo = process.env.ADMIN_EMAIL || "3d.print.ittt@gmail.com";
-        const from = process.env.SENDGRID_FROM_EMAIL || "3d.print.ittt@gmail.com";
+        const from = getResendFromEmail();
 
         const customerEmail = quoteDetails?.customer?.email;
         if (!customerEmail) return resolve(json(400, { error: "Missing customer email" }));
@@ -124,14 +123,14 @@ export const handler = async (event) => {
 
         try {
           await Promise.all([
-            sgMail.send({
+            sendResendEmail({
               to: adminTo,
               from,
               subject: `📩 New Quote Request ${requestId} — ${quoteDetails?.file?.name || "3D file"}`,
               html: adminHtml(requestId, quoteDetails),
               attachments: [fileAttachment],
             }),
-            sgMail.send({
+            sendResendEmail({
               to: customerEmail,
               from,
               subject: `✓ Quote request received (${requestId}) — 3D Print It`,
@@ -144,10 +143,10 @@ export const handler = async (event) => {
           const details = {
             message: err?.message,
             code: err?.code,
-            status: err?.response?.statusCode,
-            errors: err?.response?.body?.errors,
+            status: err?.status,
+            errors: err?.details,
           };
-          console.error("❌ SendGrid error:", JSON.stringify(details, null, 2));
+          console.error("❌ Resend error:", JSON.stringify(details, null, 2));
           resolve(json(500, { error: err?.message || "Email send failed", details }));
         }
       });
