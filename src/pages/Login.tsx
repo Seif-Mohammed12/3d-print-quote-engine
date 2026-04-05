@@ -70,6 +70,7 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [resetLoading, setResetLoading] = useState(false);
   const [resetCooldownSeconds, setResetCooldownSeconds] = useState(0);
+  const [resetSentToEmail, setResetSentToEmail] = useState<string | null>(null);
 
   useEffect(() => {
     const tick = () => {
@@ -80,6 +81,37 @@ export default function Login() {
     const timer = window.setInterval(tick, 1000);
     return () => window.clearInterval(timer);
   }, [forgotEmail]);
+
+  const sendPasswordResetLink = async (isResend = false) => {
+    const emailForReset = forgotEmail.trim();
+    const remaining = getResetCooldownSeconds(emailForReset);
+    if (remaining > 0) {
+      setResetCooldownSeconds(remaining);
+      setError(`Please wait ${remaining}s before sending another reset email for this address.`);
+      return;
+    }
+
+    setResetLoading(true);
+    setError("");
+    const result = await requestPasswordReset(emailForReset);
+    setResetLoading(false);
+
+    if (result.error) {
+      setError(result.error);
+
+      // Back off locally if provider reports rate limiting.
+      if (result.error.toLowerCase().includes("too many") || result.error.toLowerCase().includes("wait")) {
+        setResetCooldown(emailForReset);
+        setResetCooldownSeconds(getResetCooldownSeconds(emailForReset));
+      }
+      return;
+    }
+
+    setResetCooldown(emailForReset);
+    setResetCooldownSeconds(getResetCooldownSeconds(emailForReset));
+    setResetSentToEmail(normalizeEmail(emailForReset));
+    toast.success(isResend ? "Reset email re-sent. Check your inbox and spam folder." : "Password reset email sent. Check your inbox.");
+  };
 
   const nextPath = (location.state as { from?: string } | null)?.from;
 
@@ -104,6 +136,9 @@ export default function Login() {
       window.clearTimeout(timeout);
     };
   }, [adminRole, isAdmin, isAuthenticated, navigate, nextPath]);
+
+  const normalizedForgotEmail = normalizeEmail(forgotEmail);
+  const canShowResend = Boolean(resetSentToEmail && normalizedForgotEmail && resetSentToEmail === normalizedForgotEmail);
 
   return (
     <Layout>
@@ -194,44 +229,24 @@ export default function Login() {
                     onChange={(e) => {
                       setForgotEmail(e.target.value);
                       setError("");
+                      if (resetSentToEmail && normalizeEmail(e.target.value) !== resetSentToEmail) {
+                        setResetSentToEmail(null);
+                      }
                     }}
                     className="w-full rounded-lg bg-background border border-border px-3 py-2 text-sm"
                     placeholder="you@example.com"
                     required
                   />
+                  {canShowResend ? (
+                    <p className="text-xs text-emerald-400">
+                      Reset link already sent to this email. Did not receive it? Click Resend link.
+                    </p>
+                  ) : null}
                   <button
                     type="button"
                     disabled={resetLoading || !forgotEmail || resetCooldownSeconds > 0}
-                    onClick={async () => {
-                      const remaining = getResetCooldownSeconds(forgotEmail);
-                      if (remaining > 0) {
-                        setResetCooldownSeconds(remaining);
-                        setError(`Please wait ${remaining}s before sending another reset email for this address.`);
-                        return;
-                      }
-
-                      setResetLoading(true);
-                      setError("");
-                      const emailForReset = forgotEmail.trim();
-                      const result = await requestPasswordReset(emailForReset);
-                      setResetLoading(false);
-
-                      if (result.error) {
-                        setError(result.error);
-
-                        // Back off locally if provider reports rate limiting.
-                        if (result.error.toLowerCase().includes("too many") || result.error.toLowerCase().includes("wait")) {
-                          setResetCooldown(emailForReset);
-                          setResetCooldownSeconds(getResetCooldownSeconds(emailForReset));
-                        }
-                        return;
-                      }
-
-                      setResetCooldown(emailForReset);
-                      setResetCooldownSeconds(getResetCooldownSeconds(emailForReset));
-
-                      toast.success("Password reset email sent. Check your inbox.");
-                      setShowForgotPassword(false);
+                    onClick={() => {
+                      void sendPasswordResetLink(false);
                     }}
                     className="w-full rounded-lg border border-border px-4 py-2.5 text-sm font-semibold text-foreground hover:bg-background disabled:opacity-50"
                   >
@@ -241,6 +256,22 @@ export default function Login() {
                         ? `Try again in ${resetCooldownSeconds}s for this email`
                         : "Send reset link"}
                   </button>
+                  {canShowResend ? (
+                    <button
+                      type="button"
+                      disabled={resetLoading || !forgotEmail || resetCooldownSeconds > 0}
+                      onClick={() => {
+                        void sendPasswordResetLink(true);
+                      }}
+                      className="w-full rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-50"
+                    >
+                      {resetLoading
+                        ? "Re-sending..."
+                        : resetCooldownSeconds > 0
+                          ? `Resend available in ${resetCooldownSeconds}s`
+                          : "Resend link"}
+                    </button>
+                  ) : null}
                 </div>
               ) : null}
 
