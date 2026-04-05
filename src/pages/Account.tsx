@@ -1,16 +1,26 @@
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Layout from "@/components/Layout";
 import SectionHeading from "@/components/SectionHeading";
 import { useAuth } from "@/lib/auth-context";
-import { listMyOrders } from "@/lib/orders-api";
+import { cancelMyOrder, CUSTOMER_CANCELLABLE_STATUSES, listMyOrders } from "@/lib/orders-api";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { Eye, EyeOff } from "lucide-react";
 
+const statusClass: Record<string, string> = {
+  pending: "bg-amber-500/10 text-amber-300 border-amber-500/30",
+  confirmed: "bg-blue-500/10 text-blue-300 border-blue-500/30",
+  processing: "bg-indigo-500/10 text-indigo-300 border-indigo-500/30",
+  shipped: "bg-cyan-500/10 text-cyan-300 border-cyan-500/30",
+  completed: "bg-emerald-500/10 text-emerald-300 border-emerald-500/30",
+  cancelled: "bg-rose-500/10 text-rose-300 border-rose-500/30",
+};
+
 export default function Account() {
   const { user, signOut, updatePassword } = useAuth();
+  const queryClient = useQueryClient();
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [addressLine1, setAddressLine1] = useState("");
@@ -80,6 +90,19 @@ export default function Account() {
   });
 
   const pendingCount = orders.filter((o) => ["pending", "confirmed", "processing"].includes(o.status)).length;
+
+  const cancelOrder = useMutation({
+    mutationFn: async (orderId: string) => cancelMyOrder(orderId),
+    onSuccess: () => {
+      toast.success("Order cancelled successfully");
+      queryClient.invalidateQueries({ queryKey: ["my-account-orders"] });
+      queryClient.invalidateQueries({ queryKey: ["my-orders"] });
+      queryClient.invalidateQueries({ queryKey: ["order-detail"] });
+    },
+    onError: (err: any) => {
+      toast.error(err?.message || "Unable to cancel this order");
+    },
+  });
 
   const changePassword = useMutation({
     mutationFn: async () => {
@@ -210,6 +233,69 @@ export default function Account() {
               <Link to="/quote" className="rounded-lg border border-border px-4 py-2 text-sm font-semibold text-foreground hover:bg-secondary">New quote</Link>
               <Link to="/product-cart" className="rounded-lg border border-border px-4 py-2 text-sm font-semibold text-foreground hover:bg-secondary">Product cart</Link>
             </div>
+          </div>
+
+          <div className="glass-card p-6 space-y-4">
+            <div className="flex items-center justify-between gap-3">
+              <h3 className="font-heading text-xl font-semibold text-foreground">Order history</h3>
+              <Link to="/orders" className="text-sm font-semibold text-primary hover:underline">Open full page</Link>
+            </div>
+
+            {orders.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No orders yet.</p>
+            ) : (
+              <div className="max-h-[420px] overflow-y-auto overflow-x-auto rounded-lg border border-border/70">
+                <table className="w-full min-w-[700px] text-sm">
+                  <thead className="bg-secondary/60 sticky top-0">
+                    <tr className="border-b border-border">
+                      <th className="text-left p-3">Order</th>
+                      <th className="text-left p-3">Type</th>
+                      <th className="text-left p-3">Status</th>
+                      <th className="text-left p-3">Date</th>
+                      <th className="text-right p-3">Total</th>
+                      <th className="text-right p-3">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {orders.map((order) => (
+                      <tr key={order.id} className="border-b border-border/50 hover:bg-secondary/30">
+                        <td className="p-3 font-semibold text-foreground">
+                          <Link to={`/orders/${order.id}`} className="hover:underline">{order.order_code}</Link>
+                        </td>
+                        <td className="p-3 uppercase text-muted-foreground">{order.order_type}</td>
+                        <td className="p-3">
+                          <span className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${statusClass[order.status] || ""}`}>
+                            {order.status}
+                          </span>
+                        </td>
+                        <td className="p-3 text-muted-foreground">{new Date(order.created_at).toLocaleString()}</td>
+                        <td className="p-3 text-right font-semibold text-foreground">
+                          {order.totals?.total != null ? `EGP${Number(order.totals.total).toFixed(0)}` : "-"}
+                        </td>
+                        <td className="p-3 text-right">
+                          {CUSTOMER_CANCELLABLE_STATUSES.includes(order.status) ? (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const confirmed = window.confirm("Cancel this order? This action cannot be undone.");
+                                if (!confirmed) return;
+                                cancelOrder.mutate(order.id);
+                              }}
+                              disabled={cancelOrder.isPending}
+                              className="rounded-lg border border-rose-500/50 px-2.5 py-1.5 text-xs font-semibold text-rose-300 hover:bg-rose-500/10 disabled:opacity-60"
+                            >
+                              {cancelOrder.isPending ? "Cancelling..." : "Cancel"}
+                            </button>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">-</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
 
           <div className="glass-card p-6 space-y-4">
