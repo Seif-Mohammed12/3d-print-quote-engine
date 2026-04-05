@@ -13,6 +13,10 @@ export default function Account() {
   const { user, signOut, updatePassword } = useAuth();
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
+  const [addressLine1, setAddressLine1] = useState("");
+  const [addressLine2, setAddressLine2] = useState("");
+  const [city, setCity] = useState("");
+  const [governorate, setGovernorate] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showNewPassword, setShowNewPassword] = useState(false);
@@ -30,7 +34,7 @@ export default function Account() {
       if (!supabase || !user?.id) return null;
       const { data, error } = await supabase
         .from("customer_profiles")
-        .select("full_name, phone")
+        .select("full_name, phone, address_line1, address_line2, city, governorate")
         .eq("id", user.id)
         .maybeSingle();
 
@@ -42,7 +46,11 @@ export default function Account() {
   useEffect(() => {
     setFullName(profile?.full_name || user?.user_metadata?.full_name || "");
     setPhone(profile?.phone || "");
-  }, [profile?.full_name, profile?.phone, user?.user_metadata?.full_name]);
+    setAddressLine1((profile as any)?.address_line1 || "");
+    setAddressLine2((profile as any)?.address_line2 || "");
+    setCity((profile as any)?.city || "");
+    setGovernorate((profile as any)?.governorate || "");
+  }, [profile, user?.user_metadata?.full_name]);
 
   const saveProfile = useMutation({
     mutationFn: async () => {
@@ -52,6 +60,10 @@ export default function Account() {
         id: user.id,
         full_name: fullName.trim() || null,
         phone: phone.trim() || null,
+        address_line1: addressLine1.trim() || null,
+        address_line2: addressLine2.trim() || null,
+        city: city.trim() || null,
+        governorate: governorate.trim() || null,
       };
 
       const { error } = await supabase.from("customer_profiles").upsert(payload);
@@ -140,6 +152,42 @@ export default function Account() {
                   type="tel"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-lg bg-secondary border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-foreground mb-1.5 block">Address line 1</label>
+                <input
+                  type="text"
+                  value={addressLine1}
+                  onChange={(e) => setAddressLine1(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-lg bg-secondary border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-foreground mb-1.5 block">Address line 2</label>
+                <input
+                  type="text"
+                  value={addressLine2}
+                  onChange={(e) => setAddressLine2(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-lg bg-secondary border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-foreground mb-1.5 block">City</label>
+                <input
+                  type="text"
+                  value={city}
+                  onChange={(e) => setCity(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-lg bg-secondary border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-foreground mb-1.5 block">Governorate / State</label>
+                <input
+                  type="text"
+                  value={governorate}
+                  onChange={(e) => setGovernorate(e.target.value)}
                   className="w-full px-4 py-2.5 rounded-lg bg-secondary border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
                 />
               </div>

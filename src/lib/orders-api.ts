@@ -13,6 +13,8 @@ export type UserOrderRow = {
   created_at: string;
 };
 
+export const CUSTOMER_CANCELLABLE_STATUSES: OrderStatus[] = ["pending", "confirmed"];
+
 export async function createOrderRecord(payload: Record<string, unknown>) {
   const token = await getAccessToken();
   const guestToken = getOrCreateGuestToken();
@@ -73,6 +75,27 @@ export async function claimGuestOrders() {
   }
 
   return { updated: Number(data?.updated || 0) };
+}
+
+export async function cancelMyOrder(orderId: string, reason?: string) {
+  const token = await getAccessToken();
+  if (!token) throw new Error("Not authenticated");
+
+  const response = await fetch("/api/orders-cancel", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ orderId, reason: reason || null }),
+  });
+
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(data?.error || `Failed to cancel order (${response.status})`);
+  }
+
+  return data;
 }
 
 export async function listAdminOrders() {

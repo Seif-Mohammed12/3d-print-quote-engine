@@ -1,10 +1,11 @@
 import { useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
 import SectionHeading from "@/components/SectionHeading";
-import { listMyOrders } from "@/lib/orders-api";
+import { cancelMyOrder, CUSTOMER_CANCELLABLE_STATUSES, listMyOrders } from "@/lib/orders-api";
 import { supabase } from "@/lib/supabase";
+import { toast } from "sonner";
 
 const statusClass: Record<string, string> = {
   pending: "bg-amber-500/10 text-amber-300 border-amber-500/30",
@@ -17,9 +18,21 @@ const statusClass: Record<string, string> = {
 
 export default function Orders() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { data: orders = [], refetch, isLoading, error } = useQuery({
     queryKey: ["my-orders"],
     queryFn: listMyOrders,
+  });
+
+  const cancelOrder = useMutation({
+    mutationFn: async (orderId: string) => cancelMyOrder(orderId),
+    onSuccess: () => {
+      toast.success("Order cancelled successfully");
+      queryClient.invalidateQueries({ queryKey: ["my-orders"] });
+    },
+    onError: (err: any) => {
+      toast.error(err?.message || "Unable to cancel this order");
+    },
   });
 
   useEffect(() => {
@@ -60,6 +73,7 @@ export default function Orders() {
                     <th className="text-left p-4">Status</th>
                     <th className="text-left p-4">Date</th>
                     <th className="text-right p-4">Total</th>
+                    <th className="text-right p-4">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -79,6 +93,25 @@ export default function Orders() {
                       <td className="p-4 text-muted-foreground">{new Date(order.created_at).toLocaleString()}</td>
                       <td className="p-4 text-right font-semibold text-foreground">
                         {order.totals?.total != null ? `EGP${Number(order.totals.total).toFixed(0)}` : "-"}
+                      </td>
+                      <td className="p-4 text-right">
+                        {CUSTOMER_CANCELLABLE_STATUSES.includes(order.status) ? (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const confirmed = window.confirm("Cancel this order? This action cannot be undone.");
+                              if (!confirmed) return;
+                              cancelOrder.mutate(order.id);
+                            }}
+                            disabled={cancelOrder.isPending}
+                            className="rounded-lg border border-rose-500/50 px-3 py-1.5 text-xs font-semibold text-rose-300 hover:bg-rose-500/10 disabled:opacity-60"
+                          >
+                            {cancelOrder.isPending ? "Cancelling..." : "Cancel"}
+                          </button>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">Not available</span>
+                        )}
                       </td>
                     </tr>
                   ))}

@@ -1,9 +1,11 @@
 import { useEffect, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Layout from "@/components/Layout";
 import SectionHeading from "@/components/SectionHeading";
 import { supabase } from "@/lib/supabase";
+import { cancelMyOrder, CUSTOMER_CANCELLABLE_STATUSES } from "@/lib/orders-api";
+import { toast } from "sonner";
 
 function MetadataRow({ label, value }: { label: string; value?: string | number | null }) {
   if (value === undefined || value === null || value === "") return null;
@@ -62,6 +64,7 @@ async function getOrderById(orderId: string) {
 export default function OrderDetail() {
   const { orderId = "" } = useParams();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["order-detail", orderId],
@@ -89,6 +92,22 @@ export default function OrderDetail() {
   const shipping = useMemo(() => data?.order?.shipping || {}, [data?.order?.shipping]);
   const payment = useMemo(() => data?.order?.payment || {}, [data?.order?.payment]);
   const metadata = useMemo(() => data?.order?.metadata || {}, [data?.order?.metadata]);
+  const canCancel = useMemo(
+    () => Boolean(data?.order?.status && CUSTOMER_CANCELLABLE_STATUSES.includes(data.order.status)),
+    [data?.order?.status]
+  );
+
+  const cancelOrder = useMutation({
+    mutationFn: async () => cancelMyOrder(orderId),
+    onSuccess: async () => {
+      toast.success("Order cancelled successfully");
+      await queryClient.invalidateQueries({ queryKey: ["my-orders"] });
+      refetch();
+    },
+    onError: (err: any) => {
+      toast.error(err?.message || "Unable to cancel this order");
+    },
+  });
 
   return (
     <Layout>
@@ -116,6 +135,20 @@ export default function OrderDetail() {
                   <h2 className="font-heading text-2xl font-semibold text-foreground">{data.order.order_code}</h2>
                   <p className="text-sm text-muted-foreground">Status: <span className="text-foreground font-semibold">{data.order.status}</span></p>
                   <p className="text-sm text-muted-foreground">Placed: {new Date(data.order.created_at).toLocaleString()}</p>
+                  {canCancel ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const confirmed = window.confirm("Cancel this order? This action cannot be undone.");
+                        if (!confirmed) return;
+                        cancelOrder.mutate();
+                      }}
+                      disabled={cancelOrder.isPending}
+                      className="mt-2 rounded-lg border border-rose-500/50 px-3 py-2 text-xs font-semibold text-rose-300 hover:bg-rose-500/10 disabled:opacity-60"
+                    >
+                      {cancelOrder.isPending ? "Cancelling..." : "Cancel this order"}
+                    </button>
+                  ) : null}
                 </div>
 
                 <div className="glass-card p-6 space-y-4">
