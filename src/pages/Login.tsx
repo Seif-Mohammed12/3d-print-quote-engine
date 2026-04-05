@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
 import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
+import { Eye, EyeOff } from "lucide-react";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -11,6 +12,7 @@ export default function Login() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [forgotEmail, setForgotEmail] = useState("");
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [error, setError] = useState("");
@@ -83,13 +85,23 @@ export default function Login() {
               </div>
               <div>
                 <label className="text-sm text-muted-foreground mb-1 block">Password</label>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full rounded-lg bg-secondary border border-border px-3 py-2 text-sm"
-                  required
-                />
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full rounded-lg bg-secondary border border-border px-3 py-2 pr-10 text-sm"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    className="absolute inset-y-0 right-0 px-3 text-muted-foreground hover:text-foreground"
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
                 <button
                   type="button"
                   onClick={() => {
@@ -107,6 +119,9 @@ export default function Login() {
                 <div className="rounded-lg border border-border bg-secondary/50 p-3 space-y-3">
                   <p className="text-sm text-muted-foreground">
                     Enter your account email and we will send a secure password reset link.
+                  </p>
+                  <p className="text-xs text-muted-foreground/80">
+                    We now send reset links directly to the in-app reset page. Your email app may still choose whether the link opens in the same tab or a new tab.
                   </p>
                   <input
                     type="email"

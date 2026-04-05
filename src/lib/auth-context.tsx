@@ -264,6 +264,27 @@ function getOAuthRedirectTo() {
   return configured;
 }
 
+function getPasswordResetRedirectTo() {
+  const fallback = `${window.location.origin}/reset-password`;
+  const configured = (import.meta.env.VITE_AUTH_REDIRECT_URL as string | undefined)?.trim();
+
+  if (!configured) return fallback;
+
+  const isProductionHost = !["localhost", "127.0.0.1"].includes(window.location.hostname);
+  const configuredIsLocal = configured.includes("localhost") || configured.includes("127.0.0.1");
+  if (isProductionHost && configuredIsLocal) return fallback;
+
+  try {
+    const url = new URL(configured);
+    url.pathname = "/reset-password";
+    url.search = "";
+    url.hash = "";
+    return url.toString();
+  } catch {
+    return fallback;
+  }
+}
+
 // Debug utilities
 function initializeDebugMode() {
   try {
@@ -563,7 +584,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       requestPasswordReset: async (email: string) => {
         if (!supabase) return { error: "Supabase is not configured." };
 
-        const redirectTo = getOAuthRedirectTo();
+        const redirectTo = getPasswordResetRedirectTo();
         const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
         if (error) return { error: error.message };
 
