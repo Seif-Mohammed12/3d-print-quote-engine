@@ -1,27 +1,74 @@
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { CheckCircle, MessageCircle, ArrowLeft } from "lucide-react";
+import { CheckCircle, MessageCircle, ArrowLeft, Download } from "lucide-react";
 import Layout from "@/components/Layout";
+import { buildReceiptHtml, downloadReceipt } from "@/lib/receipt";
 
 interface OrderData {
   customer: string;
   email: string;
   phone: string;
+  company?: string;
+  notes?: string;
   items: any[];
   total: string;
   timestamp: string;
 }
 
 const OrderConfirmation = () => {
-  const [order, setOrder] = useState<OrderData | null>(null);
-
-  useEffect(() => {
+  const [order] = useState<OrderData | null>(() => {
     const saved = sessionStorage.getItem("lastOrder");
-    if (saved) {
-      setOrder(JSON.parse(saved));
+    if (!saved) return null;
+    try {
+      return JSON.parse(saved) as OrderData;
+    } catch {
+      return null;
     }
-  }, []);
+  });
+
+  const receiptFileName = useMemo(() => {
+    const stamp = order?.timestamp ? new Date(order.timestamp).toISOString().slice(0, 19).replace(/[:T]/g, "-") : "order";
+    return `quote-receipt-${stamp}.html`;
+  }, [order?.timestamp]);
+
+  const handleDownloadReceipt = () => {
+    if (!order) return;
+
+    const html = buildReceiptHtml({
+      title: "Quote Receipt",
+      subtitle: "Your quote request has been received and is ready for review.",
+      referenceLabel: "Receipt ID",
+      referenceValue: order.timestamp ? new Date(order.timestamp).toISOString().slice(0, 10) : "Quote request",
+      customerName: order.customer,
+      createdAt: order.timestamp,
+      sections: [
+        {
+          title: "Customer details",
+          rows: [
+            { label: "Customer", value: order.customer },
+            { label: "Email", value: order.email },
+            { label: "Phone", value: order.phone },
+            { label: "Company", value: order.company || "-" },
+          ],
+        },
+        {
+          title: "Order details",
+          rows: [
+            { label: "Item count", value: String(order.items?.length || 0) },
+            { label: "Submitted", value: order.timestamp ? new Date(order.timestamp).toLocaleString() : "-" },
+          ],
+        },
+      ],
+      items: order.items,
+      totals: [
+        { label: "Estimated total", value: `EGP${Number(order.total || 0).toFixed(2)}` },
+      ],
+      notes: order.notes || null,
+    });
+
+    downloadReceipt(receiptFileName, html);
+  };
 
   return (
     <Layout>
@@ -66,7 +113,17 @@ const OrderConfirmation = () => {
 
             {order && (
               <div className="space-y-4">
-                <h3 className="font-heading font-semibold text-foreground">Order Details</h3>
+                <div className="flex items-center justify-between gap-3 flex-wrap">
+                  <h3 className="font-heading font-semibold text-foreground">Order Details</h3>
+                  <button
+                    type="button"
+                    onClick={handleDownloadReceipt}
+                    className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:shadow-[0_0_20px_-5px_hsl(var(--neon-glow)/0.5)] transition-all"
+                  >
+                    <Download className="h-4 w-4" />
+                    Download receipt
+                  </button>
+                </div>
                 <div className="space-y-3">
                   <div className="flex justify-between py-2 border-b border-border/30">
                     <span className="text-muted-foreground">Customer</span>
@@ -79,6 +136,10 @@ const OrderConfirmation = () => {
                   <div className="flex justify-between py-2 border-b border-border/30">
                     <span className="text-muted-foreground">Phone</span>
                     <span className="text-foreground font-medium">{order.phone}</span>
+                  </div>
+                  <div className="flex justify-between py-2 border-b border-border/30">
+                    <span className="text-muted-foreground">Company</span>
+                    <span className="text-foreground font-medium">{order.company || "-"}</span>
                   </div>
                   <div className="flex justify-between py-2 border-b border-border/30">
                     <span className="text-muted-foreground">Items</span>

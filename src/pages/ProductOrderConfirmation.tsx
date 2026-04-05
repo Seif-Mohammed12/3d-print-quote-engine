@@ -2,6 +2,8 @@ import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useMemo } from "react";
 import Layout from "@/components/Layout";
 import SectionHeading from "@/components/SectionHeading";
+import { Download } from "lucide-react";
+import { buildReceiptHtml, downloadReceipt } from "@/lib/receipt";
 
 export default function ProductOrderConfirmation() {
   const navigate = useNavigate();
@@ -23,6 +25,47 @@ export default function ProductOrderConfirmation() {
 
   if (!order) return null;
 
+  const receiptFileName = `${order.orderCode || "product-order"}-receipt.html`;
+
+  const handleDownloadReceipt = () => {
+    const items = Array.isArray(order.items) ? order.items : order.product ? [order.product] : [];
+    const html = buildReceiptHtml({
+      title: "Product Order Receipt",
+      subtitle: "Your product order has been received and is ready for review.",
+      referenceLabel: "Order code",
+      referenceValue: order.orderCode || order.orderId || "-",
+      customerName: order.customer?.name || null,
+      createdAt: order.createdAt || null,
+      sections: [
+        {
+          title: "Customer details",
+          rows: [
+            { label: "Customer", value: order.customer?.name || "-" },
+            { label: "Email", value: order.customer?.email || "-" },
+            { label: "Phone", value: order.customer?.phone || "-" },
+          ],
+        },
+        {
+          title: "Delivery & payment",
+          rows: [
+            { label: "Shipping", value: order.shipping?.method === "pickup" ? "Pickup" : "Aramex" },
+            { label: "Payment", value: order.payment?.method === "cod" ? "Cash on delivery" : "Instapay" },
+            { label: "Address", value: order.shipping?.address ? [order.shipping.address.line1, order.shipping.address.line2, order.shipping.address.city, order.shipping.address.governorate].filter(Boolean).join(", ") : "-" },
+          ],
+        },
+      ],
+      items,
+      totals: [
+        { label: "Subtotal", value: `EGP${Number(order.totals?.subtotal || 0).toFixed(0)}` },
+        { label: "Shipping", value: `EGP${Number(order.totals?.shipping || 0).toFixed(0)}` },
+        { label: "Total", value: `EGP${Number(order.totals?.total || 0).toFixed(0)}` },
+      ],
+      notes: order.customer?.notes || null,
+    });
+
+    downloadReceipt(receiptFileName, html);
+  };
+
   return (
     <Layout>
       <section className="section-padding">
@@ -33,7 +76,17 @@ export default function ProductOrderConfirmation() {
           />
 
           <div className="glass-card p-6 space-y-4">
-            <h3 className="font-heading font-semibold text-foreground">Summary</h3>
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <h3 className="font-heading font-semibold text-foreground">Summary</h3>
+              <button
+                type="button"
+                onClick={handleDownloadReceipt}
+                className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:shadow-[0_0_20px_-5px_hsl(var(--neon-glow)/0.5)] transition-all"
+              >
+                <Download className="h-4 w-4" />
+                Download receipt
+              </button>
+            </div>
             <div className="text-sm text-muted-foreground space-y-2">
               {order.orderCode ? (
                 <div>
