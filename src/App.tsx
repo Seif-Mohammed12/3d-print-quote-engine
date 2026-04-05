@@ -14,6 +14,9 @@ import BrandProductDetail from "./pages/BrandProductDetail";
 import Gallery from "./pages/Gallery";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TermsOfService from "./pages/TermsOfService";
+import RefundPolicy from "./pages/RefundPolicy";
 import Quote from "./pages/Quote";
 import QuoteRequest from "./pages/QuoteRequest";
 import QuoteConfirmation from "./pages/QuoteConfirmation";
@@ -58,6 +61,9 @@ const App = () => (
             <Route path="/gallery" element={<Gallery />} />
             <Route path="/about" element={<About />} />
             <Route path="/contact" element={<Contact />} />
+            <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+            <Route path="/terms-of-service" element={<TermsOfService />} />
+            <Route path="/refund-policy" element={<RefundPolicy />} />
             <Route path="/quote" element={<Quote />} />
             <Route path="/quote-request" element={<QuoteRequest />} />
             <Route path="/quote-confirmation" element={<QuoteConfirmation />} />

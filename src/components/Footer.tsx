@@ -48,8 +48,13 @@ const Footer = () => (
         </div>
       </div>
 
-      <div className="mt-10 pt-6 border-t border-border/30 text-center text-xs text-muted-foreground">
-        © 2021 - {new Date().getFullYear()} 3D Print It. All rights reserved.
+      <div className="mt-10 pt-6 border-t border-border/30 flex flex-col md:flex-row items-center justify-between gap-3 text-xs text-muted-foreground">
+        <p>© 2021 - {new Date().getFullYear()} 3D Print It. All rights reserved.</p>
+        <div className="flex items-center gap-4">
+          <Link to="/privacy-policy" className="hover:text-primary transition-colors">Privacy Policy</Link>
+          <Link to="/terms-of-service" className="hover:text-primary transition-colors">Terms of Service</Link>
+          <Link to="/refund-policy" className="hover:text-primary transition-colors">Refund Policy</Link>
+        </div>
       </div>
     </div>
   </footer>
