@@ -171,11 +171,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       setRoleResolved(false);
 
-      try {
-        await claimGuestOrders();
-      } catch {
+      void claimGuestOrders().catch(() => {
         // Non-blocking: user can still proceed even if claim fails.
-      }
+      });
 
       const role = await resolveAdminRoleWithRetry(nextUserId, nextSession?.access_token || null);
       if (!mounted) return;
