@@ -86,13 +86,12 @@ const Printique = () => {
                 whileInView={isMobile ? undefined : { opacity: 1, y: 0 }}
                 viewport={isMobile ? undefined : { once: true }}
                 transition={{ delay: idx * 0.08 }}
-                className="group relative h-full overflow-hidden rounded-2xl border border-slate-800/85 bg-slate-950/85 p-6 shadow-[0_0_25px_-18px_rgba(15,23,42,1),0_0_0_1px_rgba(59,130,246,0.06)] hover:-translate-y-0.5 hover:shadow-[0_0_42px_-16px_rgba(59,130,246,0.45),0_0_0_1px_rgba(250,204,21,0.24)] transition-all duration-300 flex flex-col"
+                className="group relative h-full overflow-hidden rounded-2xl border border-slate-800/80 bg-slate-950/70 p-5 shadow-[0_14px_30px_-22px_rgba(2,6,23,1)] hover:-translate-y-0.5 hover:border-blue-300/35 transition-all duration-300 flex flex-col"
               >
-                <div className="pointer-events-none absolute -inset-10 rounded-[2rem] bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.2),_transparent_60%)] opacity-40 blur-2xl transition-opacity duration-300 group-hover:opacity-70" />
-                <div className="pointer-events-none absolute inset-px rounded-2xl bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.2),_transparent)] opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+                <div className="pointer-events-none absolute inset-px rounded-2xl bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.14),_transparent)] opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
 
                 <Link to={`/printique/${product.id}`} className="block">
-                  <div className="relative mb-6 h-52 rounded-xl border border-slate-800/80 bg-gradient-to-b from-slate-900/40 to-slate-950/70 overflow-hidden">
+                  <div className="relative mb-4 h-44 rounded-xl border border-slate-800/70 bg-gradient-to-b from-slate-900/35 to-slate-950/70 overflow-hidden">
                     {product.images?.[0] ? (
                       <img
                         src={product.images[0]}
@@ -109,8 +108,7 @@ const Printique = () => {
                   </div>
                 </Link>
 
-                <div className="relative flex items-start justify-between mb-4 gap-3">
-                  <div className="min-h-[64px] min-w-0 flex-1">
+                <div className="relative min-w-0 mb-4">
                     <Link to={`/printique/${product.id}`}>
                       <h3 className="font-heading text-base font-semibold text-slate-50 hover:text-blue-100 transition-colors">
                         {product.name}
@@ -127,17 +125,17 @@ const Printique = () => {
                     >
                       {product.short}
                     </p>
-                  </div>
-                  <div className="rounded-full bg-slate-900/90 px-3 py-1.5 text-xs font-semibold text-blue-200 whitespace-nowrap">
-                    {product.discount?.enabled && product.discount.price > 0 ? (
-                      <span className="inline-flex items-center gap-2">
-                        <span className="text-slate-400 line-through">EGP{product.basePrice}</span>
-                        <span>EGP{product.discount.price}</span>
-                      </span>
-                    ) : (
-                      <span>EGP{product.basePrice}</span>
-                    )}
-                  </div>
+                </div>
+
+                <div className="mb-4 text-sm">
+                  {product.discount?.enabled && product.discount.price > 0 ? (
+                    <div className="flex items-baseline gap-2">
+                      <span className="font-semibold text-blue-200">EGP{product.discount.price}</span>
+                      <span className="text-xs text-slate-500 line-through">EGP{product.basePrice}</span>
+                    </div>
+                  ) : (
+                    <span className="font-semibold text-blue-200">EGP{product.basePrice}</span>
+                  )}
                 </div>
 
                 <div className="relative z-10 mt-auto flex items-center gap-2">
@@ -150,7 +148,7 @@ const Printique = () => {
                   </button>
                   <Link
                     to={`/printique/${product.id}`}
-                    className="inline-flex items-center justify-center rounded-lg border border-slate-700 px-3 py-3 text-xs font-semibold text-slate-200 hover:border-blue-300/40 hover:text-blue-100 transition-colors"
+                    className="inline-flex items-center justify-center rounded-lg px-3 py-3 text-xs font-semibold text-blue-200/90 hover:text-blue-100 transition-colors"
                   >
                     Details
                   </Link>
