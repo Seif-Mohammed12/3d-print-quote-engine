@@ -9,6 +9,7 @@ type AuthContextValue = {
   user: User | null;
   session: Session | null;
   loading: boolean;
+  roleResolved: boolean;
   isAuthenticated: boolean;
   isAdmin: boolean;
   adminRole: AdminRole | null;
@@ -120,6 +121,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [adminRole, setAdminRole] = useState<AdminRole | null>(null);
   const [loading, setLoading] = useState(true);
+  const [roleResolved, setRoleResolved] = useState(false);
   const latestUserIdRef = useRef<string | null>(null);
   const latestAdminRoleRef = useRef<AdminRole | null>(null);
 
@@ -131,10 +133,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const refreshRole = async () => {
     if (!user?.id) {
       setAdminRole(null);
+      setRoleResolved(true);
       return null;
     }
     const role = await resolveAdminRoleWithRetry(user.id);
     setAdminRole(role);
+    setRoleResolved(true);
     return role;
   };
 
@@ -157,12 +161,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (!nextUserId) {
         setAdminRole(null);
+        setRoleResolved(true);
         return;
       }
 
       if (previousUserId !== nextUserId) {
         setAdminRole(null);
       }
+
+      setRoleResolved(false);
 
       try {
         await claimGuestOrders();
@@ -175,6 +182,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (role) {
         setAdminRole(role);
+        setRoleResolved(true);
         return;
       }
 
@@ -183,6 +191,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (previousUserId !== nextUserId || !latestAdminRoleRef.current) {
         setAdminRole(null);
       }
+      setRoleResolved(true);
     };
 
     supabase.auth
@@ -207,6 +216,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       user,
       session,
       loading,
+      roleResolved,
       isAuthenticated: Boolean(user),
       isAdmin: Boolean(adminRole),
       adminRole,
@@ -239,11 +249,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const token = data?.session?.access_token || null;
         const role = userId ? await resolveAdminRoleWithTimeout(userId, token, 1500) : null;
         setAdminRole(role);
+        setRoleResolved(Boolean(!userId || role));
 
         if (userId && !role) {
           // Complete a slower role resolution in background so admin state can still settle soon after navigation.
           void resolveAdminRoleWithRetry(userId, token, 5, 250).then((resolvedRole) => {
-            if (resolvedRole) setAdminRole(resolvedRole);
+            if (resolvedRole) {
+              setAdminRole(resolvedRole);
+            }
+            setRoleResolved(true);
           });
         }
 
@@ -272,6 +286,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setSession(null);
         setUser(null);
         setAdminRole(null);
+        setRoleResolved(true);
 
         if (!supabase) {
           clearStoredSupabaseTokens();
@@ -287,7 +302,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       },
       refreshRole,
     }),
-    [adminRole, loading, session, user]
+    [adminRole, loading, roleResolved, session, user]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

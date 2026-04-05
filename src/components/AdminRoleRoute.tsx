@@ -2,10 +2,10 @@ import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/lib/auth-context";
 
 export default function AdminRoleRoute({ children }: { children: React.ReactNode }) {
-  const { loading, isAuthenticated, isAdmin } = useAuth();
+  const { loading, roleResolved, isAuthenticated, isAdmin } = useAuth();
   const location = useLocation();
 
-  if (loading) {
+  if (loading || (isAuthenticated && !roleResolved)) {
     return <div className="min-h-[40vh] flex items-center justify-center text-sm text-muted-foreground">Checking admin access...</div>;
   }
 
