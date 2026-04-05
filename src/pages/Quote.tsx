@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Upload, FileType, RotateCcw, Send } from "lucide-react";
@@ -19,6 +19,7 @@ const Quote = () => {
   const [quality, setQuality] = useState<Quality>("standard");
   const [infill, setInfill] = useState(20);
   const [dragOver, setDragOver] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const processFile = useCallback((file: File) => {
     const ext = file.name.split(".").pop()?.toLowerCase();
@@ -43,6 +44,17 @@ const Quote = () => {
     };
     reader.readAsArrayBuffer(file);
   }, []);
+
+  const openFilePicker = useCallback(() => {
+    fileInputRef.current?.click();
+  }, []);
+
+  const handleFileInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) processFile(file);
+    // Allow reselecting the same file after reset/errors.
+    e.currentTarget.value = "";
+  }, [processFile]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -102,16 +114,7 @@ const Quote = () => {
                   className={`glass-card border-2 border-dashed p-12 text-center cursor-pointer transition-all duration-300 ${
                     dragOver ? "border-primary bg-primary/5" : "border-border hover:border-primary/50"
                   }`}
-                  onClick={() => {
-                    const input = document.createElement("input");
-                    input.type = "file";
-                    input.accept = ".stl,.obj";
-                    input.onchange = (e) => {
-                      const file = (e.target as HTMLInputElement).files?.[0];
-                      if (file) processFile(file);
-                    };
-                    input.click();
-                  }}
+                  onClick={openFilePicker}
                 >
                   <Upload className="w-12 h-12 text-primary/50 mx-auto mb-4" />
                   <h3 className="font-heading font-semibold text-foreground mb-2">
@@ -120,6 +123,23 @@ const Quote = () => {
                   <p className="text-sm text-muted-foreground">
                     Supports STL and OBJ files
                   </p>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openFilePicker();
+                    }}
+                    className="mt-4 rounded-lg border border-border px-4 py-2 text-sm font-semibold text-foreground hover:bg-secondary"
+                  >
+                    Choose file
+                  </button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    className="sr-only"
+                    accept=".stl,.obj,.STL,.OBJ,model/stl,application/sla,application/vnd.ms-pki.stl,application/octet-stream"
+                    onChange={handleFileInputChange}
+                  />
                 </motion.div>
               ) : (
                 <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}>
