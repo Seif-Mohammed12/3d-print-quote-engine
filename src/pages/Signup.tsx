@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
 import { useAuth } from "@/lib/auth-context";
 import { Eye, EyeOff } from "lucide-react";
@@ -7,7 +7,9 @@ import { toast } from "sonner";
 
 export default function Signup() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { signUpWithPassword, signInWithProvider } = useAuth();
+  const nextPath = (location.state as { from?: string } | null)?.from;
 
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -58,7 +60,7 @@ export default function Signup() {
 
                 setLoading(false);
 
-                navigate("/account", { replace: true });
+                navigate(nextPath || "/account", { replace: true });
               }}
             >
               <div>

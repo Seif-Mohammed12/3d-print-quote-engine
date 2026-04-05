@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import Layout from "@/components/Layout";
 import SectionHeading from "@/components/SectionHeading";
+import CheckoutAuthPrompt from "@/components/CheckoutAuthPrompt";
 import { toast } from "sonner";
 import { useCart, type ProductCartItem } from "@/lib/cart-context";
 import type { Product } from "@/lib/brand-catalog";
@@ -59,6 +60,7 @@ export default function ProductCheckout() {
   const navigate = useNavigate();
   const { clearProductCart, productCart } = useCart();
   const { user } = useAuth();
+  const [guestMode, setGuestMode] = useState(false);
   const [checkoutMode, setCheckoutMode] = useState<CheckoutMode>("loading");
   const [draft, setDraft] = useState<ProductOrderDraft | null>(null);
   const [shipping, setShipping] = useState<ShippingMethod>("pickup");
@@ -302,6 +304,28 @@ export default function ProductCheckout() {
 
   if (checkoutMode === "cart" && cartReady && !cartLines.every((l) => l.product)) {
     return null;
+  }
+
+  if (!user && !guestMode) {
+    return (
+      <Layout>
+        <section className="section-padding">
+          <div className="container mx-auto max-w-4xl space-y-6">
+            <SectionHeading
+              title="Checkout"
+              subtitle="Choose how you want to continue before placing your order."
+            />
+            <CheckoutAuthPrompt
+              title="Continue to checkout"
+              subtitle="Sign in to track this order in your account, or continue as guest and still receive confirmation emails."
+              onLogin={() => navigate("/login", { state: { from: "/product-checkout" } })}
+              onSignup={() => navigate("/signup", { state: { from: "/product-checkout" } })}
+              onContinueGuest={() => setGuestMode(true)}
+            />
+          </div>
+        </section>
+      </Layout>
+    );
   }
 
   const requiresAddress = shipping === "aramex";

@@ -1,9 +1,10 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { CheckCircle, MessageCircle, ArrowLeft, Download } from "lucide-react";
+import { CheckCircle, MessageCircle, ArrowLeft, FileText } from "lucide-react";
 import Layout from "@/components/Layout";
-import { buildReceiptHtml, downloadReceipt } from "@/lib/receipt";
+import ReceiptPdfDialog from "@/components/ReceiptPdfDialog";
+import { createReceiptPdfBlob } from "@/lib/receipt-pdf";
 
 interface OrderData {
   customer: string;
@@ -26,16 +27,13 @@ const OrderConfirmation = () => {
       return null;
     }
   });
+  const [receiptOpen, setReceiptOpen] = useState(false);
+  const [receiptPdfUrl, setReceiptPdfUrl] = useState<string | null>(null);
 
-  const receiptFileName = useMemo(() => {
-    const stamp = order?.timestamp ? new Date(order.timestamp).toISOString().slice(0, 19).replace(/[:T]/g, "-") : "order";
-    return `quote-receipt-${stamp}.html`;
-  }, [order?.timestamp]);
-
-  const handleDownloadReceipt = () => {
+  useEffect(() => {
     if (!order) return;
 
-    const html = buildReceiptHtml({
+    const blob = createReceiptPdfBlob({
       title: "Quote Receipt",
       subtitle: "Your quote request has been received and is ready for review.",
       referenceLabel: "Receipt ID",
@@ -67,8 +65,18 @@ const OrderConfirmation = () => {
       notes: order.notes || null,
     });
 
-    downloadReceipt(receiptFileName, html);
-  };
+    const url = URL.createObjectURL(blob);
+    setReceiptPdfUrl(url);
+
+    return () => {
+      URL.revokeObjectURL(url);
+    };
+  }, [order]);
+
+  const receiptFileName = useMemo(() => {
+    const stamp = order?.timestamp ? new Date(order.timestamp).toISOString().slice(0, 19).replace(/[:T]/g, "-") : "order";
+    return `quote-receipt-${stamp}.pdf`;
+  }, [order?.timestamp]);
 
   return (
     <Layout>
@@ -117,11 +125,11 @@ const OrderConfirmation = () => {
                   <h3 className="font-heading font-semibold text-foreground">Order Details</h3>
                   <button
                     type="button"
-                    onClick={handleDownloadReceipt}
+                    onClick={() => setReceiptOpen(true)}
                     className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:shadow-[0_0_20px_-5px_hsl(var(--neon-glow)/0.5)] transition-all"
                   >
-                    <Download className="h-4 w-4" />
-                    Download receipt
+                    <FileText className="h-4 w-4" />
+                    View receipt
                   </button>
                 </div>
                 <div className="space-y-3">
@@ -153,6 +161,15 @@ const OrderConfirmation = () => {
               </div>
             )}
           </motion.div>
+
+          <ReceiptPdfDialog
+            open={receiptOpen}
+            onOpenChange={setReceiptOpen}
+            title="Quote receipt"
+            description="Review the PDF receipt here or download a copy for your records."
+            pdfUrl={receiptPdfUrl}
+            fileName={receiptFileName}
+          />
 
           <motion.div
             initial={{ opacity: 0, y: 20 }}

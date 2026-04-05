@@ -4,8 +4,10 @@ import { motion } from "framer-motion";
 import { FileType, Mail, Phone, MapPin } from "lucide-react";
 import Layout from "@/components/Layout";
 import SectionHeading from "@/components/SectionHeading";
+import CheckoutAuthPrompt from "@/components/CheckoutAuthPrompt";
 import { useCart } from "@/lib/cart-context";
 import { useAuth } from "@/lib/auth-context";
+import { createOrderRecord } from "@/lib/orders-api";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 
@@ -44,6 +46,7 @@ const Checkout = () => {
   const navigate = useNavigate();
   const { cart, getTotalPrice, clearCart } = useCart();
   const { user } = useAuth();
+  const [guestMode, setGuestMode] = useState(false);
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -94,6 +97,28 @@ const Checkout = () => {
     return null;
   }
 
+  if (!user && !guestMode) {
+    return (
+      <Layout>
+        <section className="section-padding">
+          <div className="container mx-auto max-w-4xl space-y-6">
+            <SectionHeading
+              title="Checkout"
+              subtitle="Choose how you want to continue before placing your order."
+            />
+            <CheckoutAuthPrompt
+              title="Continue to checkout"
+              subtitle="Sign in to track everything in your account, or continue as guest and still receive confirmation emails."
+              onLogin={() => navigate("/login", { state: { from: "/checkout" } })}
+              onSignup={() => navigate("/signup", { state: { from: "/checkout" } })}
+              onContinueGuest={() => setGuestMode(true)}
+            />
+          </div>
+        </section>
+      </Layout>
+    );
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -101,6 +126,7 @@ const Checkout = () => {
     try {
       // Prepare order details
       const orderDetails = {
+        orderType: "quote",
         customer: form.name,
         email: form.email,
         phone: form.phone,
@@ -117,6 +143,48 @@ const Checkout = () => {
         })),
         total: getTotalPrice().toFixed(2),
       };
+
+      const orderRecordPayload = {
+        orderType: "quote",
+        createdAt: new Date().toISOString(),
+        customer: {
+          name: form.name,
+          email: form.email,
+          phone: form.phone,
+          notes: form.notes,
+        },
+        payment: null,
+        shipping: null,
+        totals: {
+          subtotal: Number(getTotalPrice().toFixed(2)),
+          shipping: 0,
+          total: Number(getTotalPrice().toFixed(2)),
+          currency: "EGP",
+        },
+        items: cart.map((item) => ({
+          name: item.fileName,
+          brand: "custom",
+          qty: 1,
+          unitPrice: Number(item.quote.totalPrice.toFixed(2)),
+          subtotal: Number(item.quote.totalPrice.toFixed(2)),
+          material: item.material,
+          quality: item.quality,
+          infill: item.infill,
+          weight: Number(item.quote.weightGrams.toFixed(1)),
+          time: item.quote.estimatedTime,
+          file: item.fileName,
+        })),
+      };
+
+      const created = await createOrderRecord(orderRecordPayload);
+      const persistedOrder = created?.order || null;
+
+      if (persistedOrder?.order_code) {
+        (orderDetails as any).orderCode = persistedOrder.order_code;
+      }
+      if (persistedOrder?.id) {
+        (orderDetails as any).orderId = persistedOrder.id;
+      }
 
       // Prepare file buffers with names
       const fileBuffers = cart.map(item => ({

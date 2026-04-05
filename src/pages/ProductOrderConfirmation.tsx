@@ -1,12 +1,16 @@
 import { Link, useNavigate } from "react-router-dom";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Layout from "@/components/Layout";
 import SectionHeading from "@/components/SectionHeading";
-import { Download } from "lucide-react";
-import { buildReceiptHtml, downloadReceipt } from "@/lib/receipt";
+import { FileText } from "lucide-react";
+import ReceiptPdfDialog from "@/components/ReceiptPdfDialog";
+import { createReceiptPdfBlob } from "@/lib/receipt-pdf";
 
 export default function ProductOrderConfirmation() {
   const navigate = useNavigate();
+  const [receiptOpen, setReceiptOpen] = useState(false);
+  const [receiptPdfUrl, setReceiptPdfUrl] = useState<string | null>(null);
+
   const order = useMemo(() => {
     const raw = sessionStorage.getItem("lastProductOrder");
     if (!raw) return null;
@@ -23,13 +27,11 @@ export default function ProductOrderConfirmation() {
     }
   }, [order, navigate]);
 
-  if (!order) return null;
+  useEffect(() => {
+    if (!order) return;
 
-  const receiptFileName = `${order.orderCode || "product-order"}-receipt.html`;
-
-  const handleDownloadReceipt = () => {
     const items = Array.isArray(order.items) ? order.items : order.product ? [order.product] : [];
-    const html = buildReceiptHtml({
+    const blob = createReceiptPdfBlob({
       title: "Product Order Receipt",
       subtitle: "Your product order has been received and is ready for review.",
       referenceLabel: "Order code",
@@ -50,7 +52,19 @@ export default function ProductOrderConfirmation() {
           rows: [
             { label: "Shipping", value: order.shipping?.method === "pickup" ? "Pickup" : "Aramex" },
             { label: "Payment", value: order.payment?.method === "cod" ? "Cash on delivery" : "Instapay" },
-            { label: "Address", value: order.shipping?.address ? [order.shipping.address.line1, order.shipping.address.line2, order.shipping.address.city, order.shipping.address.governorate].filter(Boolean).join(", ") : "-" },
+            {
+              label: "Address",
+              value: order.shipping?.address
+                ? [
+                    order.shipping.address.line1,
+                    order.shipping.address.line2,
+                    order.shipping.address.city,
+                    order.shipping.address.governorate,
+                  ]
+                    .filter(Boolean)
+                    .join(", ")
+                : "-",
+            },
           ],
         },
       ],
@@ -63,8 +77,17 @@ export default function ProductOrderConfirmation() {
       notes: order.customer?.notes || null,
     });
 
-    downloadReceipt(receiptFileName, html);
-  };
+    const url = URL.createObjectURL(blob);
+    setReceiptPdfUrl(url);
+
+    return () => {
+      URL.revokeObjectURL(url);
+    };
+  }, [order]);
+
+  if (!order) return null;
+
+  const receiptFileName = `${order.orderCode || "product-order"}-receipt.pdf`;
 
   return (
     <Layout>
@@ -80,11 +103,11 @@ export default function ProductOrderConfirmation() {
               <h3 className="font-heading font-semibold text-foreground">Summary</h3>
               <button
                 type="button"
-                onClick={handleDownloadReceipt}
+                onClick={() => setReceiptOpen(true)}
                 className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:shadow-[0_0_20px_-5px_hsl(var(--neon-glow)/0.5)] transition-all"
               >
-                <Download className="h-4 w-4" />
-                Download receipt
+                <FileText className="h-4 w-4" />
+                View receipt
               </button>
             </div>
             <div className="text-sm text-muted-foreground space-y-2">
@@ -149,6 +172,15 @@ export default function ProductOrderConfirmation() {
               Contact us
             </Link>
           </div>
+
+          <ReceiptPdfDialog
+            open={receiptOpen}
+            onOpenChange={setReceiptOpen}
+            title="Product order receipt"
+            description="Review the PDF receipt here or download a copy for your records."
+            pdfUrl={receiptPdfUrl}
+            fileName={receiptFileName}
+          />
         </div>
       </section>
     </Layout>
