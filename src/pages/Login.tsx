@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
 import { useAuth } from "@/lib/auth-context";
@@ -6,7 +6,7 @@ import { useAuth } from "@/lib/auth-context";
 export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { signInWithPassword, signInWithProvider } = useAuth();
+  const { signInWithPassword, signInWithProvider, isAuthenticated, isAdmin, adminRole } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -14,6 +14,28 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
 
   const nextPath = (location.state as { from?: string } | null)?.from;
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    if (nextPath) {
+      navigate(nextPath, { replace: true });
+      return;
+    }
+
+    if (isAdmin) {
+      navigate("/admin", { replace: true });
+      return;
+    }
+
+    const timeout = window.setTimeout(() => {
+      navigate("/account", { replace: true });
+    }, adminRole === null ? 1200 : 0);
+
+    return () => {
+      window.clearTimeout(timeout);
+    };
+  }, [adminRole, isAdmin, isAuthenticated, navigate, nextPath]);
 
   return (
     <Layout>

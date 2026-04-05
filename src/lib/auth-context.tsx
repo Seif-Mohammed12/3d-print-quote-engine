@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { isSupabaseConfigured, supabase } from "@/lib/supabase";
 import { claimGuestOrders } from "@/lib/orders-api";
@@ -21,25 +21,83 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
-async function fetchAdminRole(userId: string): Promise<AdminRole | null> {
-  if (!supabase || !userId) return null;
+async function fetchAdminRoleAttempt(userId: string): Promise<{ role: AdminRole | null; hadError: boolean }> {
+  if (!supabase || !userId) return { role: null, hadError: true };
   const { data, error } = await supabase
     .from("admin_users")
     .select("role")
     .eq("id", userId)
     .maybeSingle();
 
-  if (error || !data?.role) return null;
-  return data.role as AdminRole;
+  if (error) return { role: null, hadError: true };
+  if (!data?.role) return { role: null, hadError: false };
+  return { role: data.role as AdminRole, hadError: false };
 }
 
-async function fetchAdminRoleWithTimeout(userId: string, timeoutMs = 5000): Promise<AdminRole | null> {
+async function fetchAdminRoleFromToken(token: string): Promise<AdminRole | null> {
+  try {
+    const response = await fetch("/api/user-role", {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) return null;
+    return (data?.role as AdminRole | null) || null;
+  } catch {
+    return null;
+  }
+}
+
+async function resolveAdminRoleWithRetry(
+  userId: string,
+  token?: string | null,
+  retries = 3,
+  delayMs = 200
+): Promise<AdminRole | null> {
+  for (let attempt = 0; attempt < retries; attempt += 1) {
+    if (token) {
+      const roleFromApi = await fetchAdminRoleFromToken(token);
+      if (roleFromApi) return roleFromApi;
+    }
+
+    const result = await fetchAdminRoleAttempt(userId);
+    if (result.role) return result.role;
+
+    // If user simply has no admin row, don't keep retrying.
+    if (!result.hadError) return null;
+
+    if (attempt < retries - 1) {
+      await new Promise((resolve) => window.setTimeout(resolve, delayMs));
+    }
+  }
+
+  return null;
+}
+
+async function resolveAdminRoleWithTimeout(userId: string, token?: string | null, timeoutMs = 1500): Promise<AdminRole | null> {
   return Promise.race([
-    fetchAdminRole(userId),
+    resolveAdminRoleWithRetry(userId, token),
     new Promise<AdminRole | null>((resolve) => {
       window.setTimeout(() => resolve(null), timeoutMs);
     }),
   ]);
+}
+
+function clearStoredSupabaseTokens() {
+  for (const key of Object.keys(localStorage)) {
+    if (key.startsWith("sb-") && key.endsWith("-auth-token")) {
+      localStorage.removeItem(key);
+    }
+  }
+
+  for (const key of Object.keys(sessionStorage)) {
+    if (key.startsWith("sb-") && key.endsWith("-auth-token")) {
+      sessionStorage.removeItem(key);
+    }
+  }
 }
 
 function getOAuthRedirectTo() {
@@ -62,13 +120,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [adminRole, setAdminRole] = useState<AdminRole | null>(null);
   const [loading, setLoading] = useState(true);
+  const latestUserIdRef = useRef<string | null>(null);
+  const latestAdminRoleRef = useRef<AdminRole | null>(null);
+
+  useEffect(() => {
+    latestUserIdRef.current = user?.id || null;
+    latestAdminRoleRef.current = adminRole;
+  }, [user?.id, adminRole]);
 
   const refreshRole = async () => {
     if (!user?.id) {
       setAdminRole(null);
       return null;
     }
-    const role = await fetchAdminRole(user.id);
+    const role = await resolveAdminRoleWithRetry(user.id);
     setAdminRole(role);
     return role;
   };
@@ -83,13 +148,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const applySession = async (nextSession: Session | null) => {
       if (!mounted) return;
 
+      const previousUserId = latestUserIdRef.current;
+      const nextUserId = nextSession?.user?.id || null;
+
       setSession(nextSession ?? null);
       setUser(nextSession?.user ?? null);
       setLoading(false);
 
-      if (!nextSession?.user?.id) {
+      if (!nextUserId) {
         setAdminRole(null);
         return;
+      }
+
+      if (previousUserId !== nextUserId) {
+        setAdminRole(null);
       }
 
       try {
@@ -98,8 +170,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Non-blocking: user can still proceed even if claim fails.
       }
 
-      const role = await fetchAdminRoleWithTimeout(nextSession.user.id);
-      if (mounted) setAdminRole(role);
+      const role = await resolveAdminRoleWithRetry(nextUserId, nextSession?.access_token || null);
+      if (!mounted) return;
+
+      if (role) {
+        setAdminRole(role);
+        return;
+      }
+
+      // If role lookup temporarily fails for the same user, keep the previous admin role
+      // to avoid dropping admin UI access during token refresh churn.
+      if (previousUserId !== nextUserId || !latestAdminRoleRef.current) {
+        setAdminRole(null);
+      }
     };
 
     supabase.auth
@@ -152,8 +235,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const { data, error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) return { error: error.message };
 
-        const role = data?.user?.id ? await fetchAdminRoleWithTimeout(data.user.id) : null;
+        const userId = data?.user?.id || null;
+        const token = data?.session?.access_token || null;
+        const role = userId ? await resolveAdminRoleWithTimeout(userId, token, 1500) : null;
         setAdminRole(role);
+
+        if (userId && !role) {
+          // Complete a slower role resolution in background so admin state can still settle soon after navigation.
+          void resolveAdminRoleWithRetry(userId, token, 5, 250).then((resolvedRole) => {
+            if (resolvedRole) setAdminRole(resolvedRole);
+          });
+        }
+
         return { role };
       },
       signInWithProvider: async (provider: "google") => {
@@ -176,8 +269,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return {};
       },
       signOut: async () => {
-        if (!supabase) return;
-        await supabase.auth.signOut();
+        setSession(null);
+        setUser(null);
+        setAdminRole(null);
+
+        if (!supabase) {
+          clearStoredSupabaseTokens();
+          return;
+        }
+
+        try {
+          const { error } = await supabase.auth.signOut({ scope: "local" });
+          if (error) clearStoredSupabaseTokens();
+        } catch {
+          clearStoredSupabaseTokens();
+        }
       },
       refreshRole,
     }),
