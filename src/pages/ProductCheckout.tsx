@@ -114,7 +114,7 @@ export default function ProductCheckout() {
 
       const { data } = await supabase
         .from("customer_profiles")
-        .select("full_name, phone")
+        .select("full_name, phone, address_line1, address_line2, city, governorate")
         .eq("id", user.id)
         .maybeSingle();
 
@@ -125,6 +125,10 @@ export default function ProductCheckout() {
         name: prev.name || data?.full_name || user.user_metadata?.full_name || "",
         email: prev.email || user.email || "",
         phone: prev.phone || data?.phone || "",
+        addressLine1: prev.addressLine1 || data?.address_line1 || "",
+        addressLine2: prev.addressLine2 || data?.address_line2 || "",
+        city: prev.city || data?.city || "",
+        governorate: prev.governorate || data?.governorate || "",
       }));
     };
 

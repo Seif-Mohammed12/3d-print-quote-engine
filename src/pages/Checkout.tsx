@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { FileType, Mail, Phone, MapPin } from "lucide-react";
 import Layout from "@/components/Layout";
 import SectionHeading from "@/components/SectionHeading";
 import { useCart } from "@/lib/cart-context";
+import { useAuth } from "@/lib/auth-context";
+import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 
 // Email sending service - sends order details and files using FormData (multipart)
@@ -41,6 +43,7 @@ const sendOrderEmail = async (orderDetails: any, fileBuffers: { name: string; bu
 const Checkout = () => {
   const navigate = useNavigate();
   const { cart, getTotalPrice, clearCart } = useCart();
+  const { user } = useAuth();
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -49,6 +52,42 @@ const Checkout = () => {
     notes: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const bootstrapContact = async () => {
+      if (!supabase || !user?.id) {
+        if (user?.email && !cancelled) {
+          setForm((prev) => ({
+            ...prev,
+            email: prev.email || user.email || "",
+          }));
+        }
+        return;
+      }
+
+      const { data } = await supabase
+        .from("customer_profiles")
+        .select("full_name, phone")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      if (cancelled) return;
+
+      setForm((prev) => ({
+        ...prev,
+        name: prev.name || data?.full_name || user.user_metadata?.full_name || "",
+        email: prev.email || user.email || "",
+        phone: prev.phone || data?.phone || "",
+      }));
+    };
+
+    void bootstrapContact();
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id, user?.email, user?.user_metadata?.full_name]);
 
   if (cart.length === 0) {
     navigate("/cart");
