@@ -4,15 +4,16 @@ import { json } from "./_lib/http.js";
  * TEMPORARY DIAGNOSTIC ENDPOINT - Remove before production
  * 
  * Used to diagnose environment variable configuration on Netlify Functions.
- * Only responds when ?debug=auth query param is present (manual safety check).
+ * Only responds when ?debug=auth or ?debug=email query param is present (manual safety check).
  * 
- * Accessible via: GET /api/debug-env?debug=auth
+ * Accessible via: GET /api/debug-env?debug=auth or /api/debug-env?debug=email
  */
 export const handler = async (event) => {
   // Safety check: only respond if debug param is present
   const params = new URLSearchParams(event.queryStringParameters || {});
-  if (!params.has('debug') || params.get('debug') !== 'auth') {
-    return json(403, { error: 'Debug mode not enabled. Add ?debug=auth to enable.' });
+  const debugValue = params.get('debug');
+  if (!params.has('debug') || (debugValue !== 'auth' && debugValue !== 'email')) {
+    return json(403, { error: 'Debug mode not enabled. Add ?debug=auth or ?debug=email to enable.' });
   }
 
   if (event.httpMethod === "OPTIONS") return json(200, { ok: true });
@@ -75,6 +76,7 @@ export const handler = async (event) => {
         'ADMIN_EMAILS (for email fallback)',
         'RESEND_API_KEY (for transactional emails)',
         'RESEND_FROM_EMAIL (must be verified domain in Resend)',
+        '/api/auth-password-reset uses SUPABASE_SERVICE_ROLE_KEY + Resend to deliver reset links',
       ],
     },
   };

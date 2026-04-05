@@ -601,16 +601,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (!supabase) return { error: "Supabase is not configured." };
 
         const redirectTo = getPasswordResetRedirectTo();
-        const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
-        if (error) {
-          const msg = error.message?.toLowerCase() || "";
+        const response = await fetch("/api/auth-password-reset", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, redirectTo }),
+        }).catch(() => null);
+
+        if (!response) {
+          return { error: "Unable to reach password reset service. Please try again." };
+        }
+
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          const message = String(payload?.error || "Password reset failed");
+          const lower = message.toLowerCase();
           const isRateLimited =
-            msg.includes("rate limit") ||
-            msg.includes("too many") ||
-            msg.includes("over_email_send_rate_limit") ||
-            // Supabase may use status 429 on AuthApiError
-            (typeof (error as { status?: number }).status === "number" &&
-              (error as { status?: number }).status === 429);
+            lower.includes("rate limit") ||
+            lower.includes("too many") ||
+            (response.status === 429);
 
           if (isRateLimited) {
             return {
@@ -619,7 +627,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             };
           }
 
-          return { error: error.message };
+          return { error: message };
         }
 
         return {};
