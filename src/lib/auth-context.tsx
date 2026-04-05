@@ -21,6 +21,46 @@ type AuthContextValue = {
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
+const ADMIN_ROLE_CACHE_KEY = "3d-print-it-admin-role-cache";
+const ADMIN_ROLE_CACHE_MS = 10 * 60 * 1000;
+
+type AdminRoleCache = {
+  userId: string;
+  role: AdminRole;
+  expiresAt: number;
+};
+
+function readAdminRoleCache(userId: string): AdminRole | null {
+  try {
+    const raw = localStorage.getItem(ADMIN_ROLE_CACHE_KEY);
+    if (!raw) return null;
+
+    const cached = JSON.parse(raw) as AdminRoleCache;
+    if (!cached || cached.userId !== userId) return null;
+    if (Date.now() > cached.expiresAt) return null;
+    return cached.role;
+  } catch {
+    return null;
+  }
+}
+
+function writeAdminRoleCache(userId: string, role: AdminRole | null) {
+  try {
+    if (!role) {
+      localStorage.removeItem(ADMIN_ROLE_CACHE_KEY);
+      return;
+    }
+
+    const cached: AdminRoleCache = {
+      userId,
+      role,
+      expiresAt: Date.now() + ADMIN_ROLE_CACHE_MS,
+    };
+    localStorage.setItem(ADMIN_ROLE_CACHE_KEY, JSON.stringify(cached));
+  } catch {
+    // Ignore storage failures.
+  }
+}
 
 async function fetchAdminRoleAttempt(userId: string): Promise<{ role: AdminRole | null; hadError: boolean }> {
   if (!supabase || !userId) return { role: null, hadError: true };
@@ -154,6 +194,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       const previousUserId = latestUserIdRef.current;
       const nextUserId = nextSession?.user?.id || null;
+      const cachedRole = nextUserId ? readAdminRoleCache(nextUserId) : null;
 
       setSession(nextSession ?? null);
       setUser(nextSession?.user ?? null);
@@ -166,30 +207,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (previousUserId !== nextUserId) {
-        setAdminRole(null);
+        setAdminRole(cachedRole);
       }
 
-      setRoleResolved(false);
+      setRoleResolved(Boolean(cachedRole));
 
       void claimGuestOrders().catch(() => {
         // Non-blocking: user can still proceed even if claim fails.
       });
 
-      const role = await resolveAdminRoleWithRetry(nextUserId, nextSession?.access_token || null);
+      const role = await resolveAdminRoleWithTimeout(nextUserId, nextSession?.access_token || null, 1500);
       if (!mounted) return;
 
       if (role) {
         setAdminRole(role);
+        writeAdminRoleCache(nextUserId, role);
         setRoleResolved(true);
         return;
       }
 
       // If role lookup temporarily fails for the same user, keep the previous admin role
       // to avoid dropping admin UI access during token refresh churn.
-      if (previousUserId !== nextUserId || !latestAdminRoleRef.current) {
+      if (!cachedRole && (previousUserId !== nextUserId || !latestAdminRoleRef.current)) {
         setAdminRole(null);
       }
       setRoleResolved(true);
+
+      if (!cachedRole) {
+        void resolveAdminRoleWithRetry(nextUserId, nextSession?.access_token || null, 5, 250).then((resolvedRole) => {
+          if (!mounted || !resolvedRole) return;
+          setAdminRole(resolvedRole);
+          setRoleResolved(true);
+          writeAdminRoleCache(nextUserId, resolvedRole);
+        });
+      }
     };
 
     supabase.auth
@@ -248,12 +299,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const role = userId ? await resolveAdminRoleWithTimeout(userId, token, 1500) : null;
         setAdminRole(role);
         setRoleResolved(Boolean(!userId || role));
+        if (userId && role) writeAdminRoleCache(userId, role);
 
         if (userId && !role) {
           // Complete a slower role resolution in background so admin state can still settle soon after navigation.
           void resolveAdminRoleWithRetry(userId, token, 5, 250).then((resolvedRole) => {
             if (resolvedRole) {
               setAdminRole(resolvedRole);
+              writeAdminRoleCache(userId, resolvedRole);
             }
             setRoleResolved(true);
           });
@@ -285,9 +338,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(null);
         setAdminRole(null);
         setRoleResolved(true);
+        clearStoredSupabaseTokens();
 
         if (!supabase) {
-          clearStoredSupabaseTokens();
+          try {
+            localStorage.removeItem(ADMIN_ROLE_CACHE_KEY);
+          } catch {
+            // Ignore storage failures.
+          }
           return;
         }
 
@@ -296,6 +354,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (error) clearStoredSupabaseTokens();
         } catch {
           clearStoredSupabaseTokens();
+        }
+
+        try {
+          localStorage.removeItem(ADMIN_ROLE_CACHE_KEY);
+        } catch {
+          // Ignore storage failures.
         }
       },
       refreshRole,
