@@ -5,6 +5,7 @@ import { DollarSign, Package, Droplet, Plus, Edit2, Trash2, Calendar } from "luc
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { toast } from "sonner";
 import AdminNav from "@/components/admin/AdminNav";
+import { getAccessToken } from "@/lib/auth-session";
 
 interface StatOrder {
   id: string;
@@ -68,10 +69,23 @@ export default function AdminStats() {
     const loadStats = async () => {
       setLoading(true);
       try {
-        const response = await fetch(
-          `${import.meta.env.VITE_API_URL || ""}/api/admin-stats-list`
-        );
-        const data = await response.json();
+        const token = await getAccessToken();
+        if (!token) {
+          throw new Error("You must be signed in to view statistics.");
+        }
+
+        const response = await fetch(`${import.meta.env.VITE_API_URL || ""}/api/admin-stats-list`, {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        const data = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+          throw new Error(data?.error || `Failed to load statistics (${response.status})`);
+        }
 
         if (data.success) {
           setMetrics(data.metrics);
@@ -100,11 +114,20 @@ export default function AdminStats() {
 
     setBusy(true);
     try {
+      const token = await getAccessToken();
+      if (!token) {
+        toast.error("You must be signed in to add statistics.");
+        return;
+      }
+
       const response = await fetch(
         `${import.meta.env.VITE_API_URL || ""}/api/admin-stats-add`,
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
           body: JSON.stringify({
             orderCode: formData.orderCode,
             orderDate: formData.orderDate,
@@ -118,7 +141,11 @@ export default function AdminStats() {
         }
       );
 
-      const data = await response.json();
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(data?.error || `Failed to add order (${response.status})`);
+      }
+
       if (data.success) {
         toast.success("Order added to statistics");
         setOrders([data.stat, ...orders]);
@@ -162,16 +189,29 @@ export default function AdminStats() {
 
     setBusy(true);
     try {
+      const token = await getAccessToken();
+      if (!token) {
+        toast.error("You must be signed in to update statistics.");
+        return;
+      }
+
       const response = await fetch(
         `${import.meta.env.VITE_API_URL || ""}/api/admin-stats-update?id=${orderId}`,
         {
           method: "PUT",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
           body: JSON.stringify(updates),
         }
       );
 
-      const data = await response.json();
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(data?.error || `Failed to update order (${response.status})`);
+      }
+
       if (data.success) {
         toast.success("Order updated");
         setOrders(orders.map((o) => (o.id === orderId ? data.stat : o)));
@@ -193,12 +233,27 @@ export default function AdminStats() {
 
     setBusy(true);
     try {
+      const token = await getAccessToken();
+      if (!token) {
+        toast.error("You must be signed in to delete statistics.");
+        return;
+      }
+
       const response = await fetch(
         `${import.meta.env.VITE_API_URL || ""}/api/admin-stats-delete?id=${orderId}`,
-        { method: "DELETE" }
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
       );
 
-      const data = await response.json();
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(data?.error || `Failed to delete order (${response.status})`);
+      }
+
       if (data.success) {
         toast.success("Order removed from statistics");
         setOrders(orders.filter((o) => o.id !== orderId));
