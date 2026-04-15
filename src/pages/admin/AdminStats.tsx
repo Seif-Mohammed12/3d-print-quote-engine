@@ -74,7 +74,7 @@ export default function AdminStats() {
           throw new Error("You must be signed in to view statistics.");
         }
 
-        const response = await fetch(`${import.meta.env.VITE_API_URL || ""}/api/admin-stats-list`, {
+        const response = await fetch("/api/admin-stats-list", {
           method: "GET",
           headers: {
             Authorization: `Bearer ${token}`,
@@ -120,26 +120,23 @@ export default function AdminStats() {
         return;
       }
 
-      const response = await fetch(
-        `${import.meta.env.VITE_API_URL || ""}/api/admin-stats-add`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            orderCode: formData.orderCode,
-            orderDate: formData.orderDate,
-            customerName: formData.customerName,
-            customerEmail: formData.customerEmail || undefined,
-            customerPhone: formData.customerPhone || undefined,
-            revenue: parseFloat(formData.revenue),
-            weightGrams: parseFloat(formData.weightGrams),
-            notes: formData.notes || undefined,
-          }),
-        }
-      );
+      const response = await fetch("/api/admin-stats-add", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          orderCode: formData.orderCode,
+          orderDate: formData.orderDate,
+          customerName: formData.customerName,
+          customerEmail: formData.customerEmail || undefined,
+          customerPhone: formData.customerPhone || undefined,
+          revenue: parseFloat(formData.revenue),
+          weightGrams: parseFloat(formData.weightGrams),
+          notes: formData.notes || undefined,
+        }),
+      });
 
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
@@ -195,17 +192,14 @@ export default function AdminStats() {
         return;
       }
 
-      const response = await fetch(
-        `${import.meta.env.VITE_API_URL || ""}/api/admin-stats-update?id=${orderId}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(updates),
-        }
-      );
+      const response = await fetch(`/api/admin-stats-update?id=${orderId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(updates),
+      });
 
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
@@ -239,15 +233,12 @@ export default function AdminStats() {
         return;
       }
 
-      const response = await fetch(
-        `${import.meta.env.VITE_API_URL || ""}/api/admin-stats-delete?id=${orderId}`,
-        {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const response = await fetch(`/api/admin-stats-delete?id=${orderId}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
