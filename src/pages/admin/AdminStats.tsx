@@ -6,6 +6,16 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsi
 import { toast } from "sonner";
 import AdminNav from "@/components/admin/AdminNav";
 import { getAccessToken } from "@/lib/auth-session";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface StatOrder {
   id: string;
@@ -75,6 +85,7 @@ export default function AdminStats() {
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<StatOrder | null>(null);
   const [busy, setBusy] = useState(false);
   const [granularity, setGranularity] = useState<TimeGranularity>("month");
 
@@ -253,8 +264,6 @@ export default function AdminStats() {
   };
 
   const handleDeleteOrder = async (orderId: string) => {
-    if (!confirm("Delete this order from statistics?")) return;
-
     setBusy(true);
     try {
       const token = await getAccessToken();
@@ -278,6 +287,7 @@ export default function AdminStats() {
       if (data.success) {
         toast.success("Order removed from statistics");
         setOrders(orders.filter((o) => o.id !== orderId));
+        setDeleteTarget(null);
         setEditingId(null);
       } else {
         toast.error("Failed to delete order");
@@ -697,7 +707,7 @@ export default function AdminStats() {
                                   <Edit2 className="w-4 h-4" />
                                 </button>
                                 <button
-                                  onClick={() => handleDeleteOrder(order.id)}
+                                  onClick={() => setDeleteTarget(order)}
                                   className="p-2 hover:bg-secondary rounded-lg transition-colors text-destructive"
                                   title="Delete"
                                 >
@@ -712,6 +722,37 @@ export default function AdminStats() {
                   </table>
                 </div>
               </motion.div>
+
+              <AlertDialog
+                open={Boolean(deleteTarget)}
+                onOpenChange={(open) => {
+                  if (!open && !busy) setDeleteTarget(null);
+                }}
+              >
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete statistics entry?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will remove the order {deleteTarget?.order_code || ""} from the statistics page.
+                      You can add it again later if needed.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel disabled={busy}>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      disabled={busy || !deleteTarget}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        if (!deleteTarget) return;
+                        void handleDeleteOrder(deleteTarget.id);
+                      }}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                      {busy ? "Deleting..." : "Delete"}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
 
               {/* Edit Modal */}
               {editingId && (

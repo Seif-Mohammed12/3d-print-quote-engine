@@ -55,17 +55,26 @@ returns trigger
 language plpgsql
 as $$
 declare
-  v_total_weight numeric(10,2);
-  v_total_revenue numeric(10,2);
+  v_total_weight numeric(10,2) := 0;
+  v_total_revenue numeric(10,2) := 0;
+  v_total_text text;
+  v_weight_text text;
 begin
-  -- Only create stats entry when order reaches 'completed' status
-  if new.status = 'completed' and (old.status is null or old.status != 'completed') then
-    -- Calculate total revenue from totals jsonb
-    v_total_revenue := coalesce((new.totals->>'total')::numeric, 0);
-    
-    -- Calculate total weight from metadata
-    v_total_weight := coalesce((new.metadata->>'totalWeight')::numeric, 0);
-    
+  -- Only act when order becomes completed (insert as completed OR status transition to completed).
+  if new.status = 'completed' and (tg_op = 'INSERT' or coalesce(old.status, '') <> 'completed') then
+    v_total_text := coalesce(new.totals->>'total', '');
+    if v_total_text ~ '^[0-9]+(\.[0-9]+)?$' then
+      v_total_revenue := v_total_text::numeric;
+    end if;
+
+    v_weight_text := coalesce(new.metadata->>'totalWeight', '');
+    if v_weight_text = '' then
+      v_weight_text := coalesce(new.metadata->>'weightGrams', '');
+    end if;
+    if v_weight_text ~ '^[0-9]+(\.[0-9]+)?$' then
+      v_total_weight := v_weight_text::numeric;
+    end if;
+
     insert into public.admin_order_stats (
       order_code,
       order_date,
@@ -83,7 +92,7 @@ begin
     ) values (
       new.order_code,
       new.created_at,
-      case when new.user_id is not null or (new.guest_token is not null) then 'site' else 'site' end,
+      'site',
       new.customer_name,
       new.customer_email,
       new.customer_phone,
@@ -94,7 +103,19 @@ begin
       true,
       true,
       'Auto-created from site order'
-    );
+    )
+    on conflict (order_code) do update
+      set order_date = excluded.order_date,
+          customer_name = excluded.customer_name,
+          customer_email = excluded.customer_email,
+          customer_phone = excluded.customer_phone,
+          revenue = excluded.revenue,
+          weight_grams = excluded.weight_grams,
+          linked_order_id = excluded.linked_order_id,
+          is_completed = true,
+          is_active = true,
+          notes = excluded.notes,
+          updated_at = now();
   end if;
   
   return new;
