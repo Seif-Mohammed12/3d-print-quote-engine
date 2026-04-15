@@ -1,92 +1,48 @@
-/**
- * Fetch admin statistics with monthly breakdown
- * GET /api/admin-stats
- * 
- * Returns:
- * - Total sales (completed orders count)
- * - Total revenue (all-time and by month)
- * - Total weight used (all-time and by month)
- * - Monthly breakdown for charting
- */
+import { json } from "./_lib/http.js";
+import { requireAdmin } from "./_lib/admin-auth.js";
 
-import { supabaseAdmin } from "./_lib/supabase-admin.js";
-import { verifyAdminAuth } from "./_lib/admin-auth.js";
+export const handler = async (event) => {
+  if (event.httpMethod === "OPTIONS") return json(200, { ok: true });
+  if (event.httpMethod !== "GET") return json(405, { error: "Method not allowed" });
 
-export default async (req, res) => {
-  try {
-    // Verify admin access
-    const adminCheck = await verifyAdminAuth(req);
-    if (!adminCheck.isAdmin) {
-      return res.status(403).json({ error: "Unauthorized" });
-    }
+  const admin = await requireAdmin(event);
+  if (!admin.ok) return admin.response;
 
-    const { startDate, endDate } = req.query;
+  const supabase = admin.supabase;
 
-    // Build date filters
-    let dateFilter = {};
-    if (startDate) {
-      dateFilter = {
-        ...dateFilter,
-        order_date: { gte: new Date(startDate).toISOString() },
-      };
-    }
-    if (endDate) {
-      dateFilter = {
-        ...dateFilter,
-        order_date: { lte: new Date(endDate).toISOString() },
-      };
-    }
+  const { data: stats, error } = await supabase
+    .from("admin_order_stats")
+    .select("id, order_code, order_date, customer_name, customer_email, customer_phone, revenue, weight_grams, notes, order_type, is_completed, is_active")
+    .eq("is_active", true)
+    .eq("is_completed", true)
+    .order("order_date", { ascending: false });
 
-    // Fetch active stats
-    const { data: stats, error: statsError } = await supabaseAdmin
-      .from("admin_order_stats")
-      .select("*")
-      .eq("is_active", true)
-      .eq("is_completed", true)
-      .order("order_date", { ascending: false });
+  if (error) return json(500, { error: error.message });
 
-    if (statsError) throw statsError;
+  const activeStats = stats || [];
+  const totalSales = activeStats.length;
+  const totalRevenue = activeStats.reduce((sum, stat) => sum + Number(stat.revenue || 0), 0);
+  const totalWeight = activeStats.reduce((sum, stat) => sum + Number(stat.weight_grams || 0), 0);
 
-    // Calculate totals
-    const totalSales = stats.length;
-    const totalRevenue = stats.reduce((sum, s) => sum + (parseFloat(s.revenue) || 0), 0);
-    const totalWeight = stats.reduce((sum, s) => sum + (parseFloat(s.weight_grams) || 0), 0);
-
-    // Group by month for charts
-    const monthlyData = {};
-    stats.forEach((stat) => {
-      const date = new Date(stat.order_date);
-      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
-
-      if (!monthlyData[monthKey]) {
-        monthlyData[monthKey] = {
-          month: monthKey,
-          sales: 0,
-          revenue: 0,
-          weight: 0,
-        };
-      }
-
-      monthlyData[monthKey].sales += 1;
-      monthlyData[monthKey].revenue += parseFloat(stat.revenue) || 0;
-      monthlyData[monthKey].weight += parseFloat(stat.weight_grams) || 0;
-    });
-
-    // Convert to sorted array
-    const chartData = Object.values(monthlyData).sort((a, b) => a.month.localeCompare(b.month));
-
-    res.json({
-      success: true,
-      metrics: {
-        totalSales,
-        totalRevenue: parseFloat(totalRevenue.toFixed(2)),
-        totalWeight: parseFloat(totalWeight.toFixed(2)),
-      },
-      monthlyData: chartData,
-      orders: stats,
-    });
-  } catch (error) {
-    console.error("Stats fetch error:", error);
-    res.status(500).json({ error: "Failed to fetch statistics" });
+  const monthlyMap = new Map();
+  for (const stat of activeStats) {
+    const date = new Date(stat.order_date);
+    const month = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+    const current = monthlyMap.get(month) || { month, sales: 0, revenue: 0, weight: 0 };
+    current.sales += 1;
+    current.revenue += Number(stat.revenue || 0);
+    current.weight += Number(stat.weight_grams || 0);
+    monthlyMap.set(month, current);
   }
+
+  return json(200, {
+    success: true,
+    metrics: {
+      totalSales,
+      totalRevenue: Number(totalRevenue.toFixed(2)),
+      totalWeight: Number(totalWeight.toFixed(2)),
+    },
+    monthlyData: [...monthlyMap.values()].sort((a, b) => a.month.localeCompare(b.month)),
+    orders: activeStats,
+  });
 };

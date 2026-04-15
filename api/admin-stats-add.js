@@ -1,66 +1,33 @@
-/**
- * Add a manual order to statistics
- * POST /api/admin-stats-add
- * 
- * Body:
- * {
- *   orderCode: string (unique),
- *   orderDate: ISO string,
- *   customerName: string,
- *   customerEmail: string (optional),
- *   customerPhone: string (optional),
- *   revenue: number,
- *   weightGrams: number,
- *   notes: string (optional)
- * }
- */
+import { json } from "./_lib/http.js";
+import { requireAdmin } from "./_lib/admin-auth.js";
 
-import { supabaseAdmin } from "./_lib/supabase-admin.js";
-import { verifyAdminAuth } from "./_lib/admin-auth.js";
+export const handler = async (event) => {
+  if (event.httpMethod === "OPTIONS") return json(200, { ok: true });
+  if (event.httpMethod !== "POST") return json(405, { error: "Method not allowed" });
 
-export default async (req, res) => {
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
-  }
+  const admin = await requireAdmin(event);
+  if (!admin.ok) return admin.response;
+
+  const supabase = admin.supabase;
 
   try {
-    // Verify admin access
-    const adminCheck = await verifyAdminAuth(req);
-    if (!adminCheck.isAdmin) {
-      return res.status(403).json({ error: "Unauthorized" });
-    }
+    const body = JSON.parse(event.body || "{}");
+    const { orderCode, orderDate, customerName, customerEmail, customerPhone, revenue, weightGrams, notes } = body;
 
-    const {
-      orderCode,
-      orderDate,
-      customerName,
-      customerEmail,
-      customerPhone,
-      revenue,
-      weightGrams,
-      notes,
-    } = req.body;
-
-    // Validate required fields
     if (!orderCode || !orderDate || !customerName || revenue === undefined || weightGrams === undefined) {
-      return res.status(400).json({
-        error: "Missing required fields: orderCode, orderDate, customerName, revenue, weightGrams",
-      });
+      return json(400, { error: "Missing required fields: orderCode, orderDate, customerName, revenue, weightGrams" });
     }
 
-    // Check if order code already exists
-    const { data: existing } = await supabaseAdmin
+    const { data: existing, error: existingError } = await supabase
       .from("admin_order_stats")
       .select("id")
       .eq("order_code", orderCode)
-      .single();
+      .maybeSingle();
 
-    if (existing) {
-      return res.status(409).json({ error: "Order code already exists" });
-    }
+    if (existingError) return json(500, { error: existingError.message });
+    if (existing) return json(409, { error: "Order code already exists" });
 
-    // Insert new stat
-    const { data: newStat, error: insertError } = await supabaseAdmin
+    const { data: stat, error } = await supabase
       .from("admin_order_stats")
       .insert({
         order_code: orderCode,
@@ -69,25 +36,20 @@ export default async (req, res) => {
         customer_name: customerName,
         customer_email: customerEmail || null,
         customer_phone: customerPhone || null,
-        revenue: parseFloat(revenue),
-        weight_grams: parseFloat(weightGrams),
+        revenue: Number(revenue),
+        weight_grams: Number(weightGrams),
         item_count: 1,
         notes: notes || null,
         is_active: true,
         is_completed: true,
-        created_by: adminCheck.userId,
       })
       .select()
       .single();
 
-    if (insertError) throw insertError;
+    if (error) return json(500, { error: error.message });
 
-    res.json({
-      success: true,
-      stat: newStat,
-    });
+    return json(200, { success: true, stat, userId: admin.user.id });
   } catch (error) {
-    console.error("Add stat error:", error);
-    res.status(500).json({ error: "Failed to add order to statistics" });
+    return json(500, { error: error?.message || "Failed to add order to statistics" });
   }
 };

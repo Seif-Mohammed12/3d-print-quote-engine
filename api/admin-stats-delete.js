@@ -1,49 +1,26 @@
-/**
- * Delete or deactivate an admin order stat
- * DELETE /api/admin-stats-delete/?id=<stat_id>
- */
+import { json } from "./_lib/http.js";
+import { requireAdmin } from "./_lib/admin-auth.js";
 
-import { supabaseAdmin } from "./_lib/supabase-admin.js";
-import { verifyAdminAuth } from "./_lib/admin-auth.js";
+export const handler = async (event) => {
+  if (event.httpMethod === "OPTIONS") return json(200, { ok: true });
+  if (event.httpMethod !== "DELETE") return json(405, { error: "Method not allowed" });
 
-export default async (req, res) => {
-  if (req.method !== "DELETE") {
-    return res.status(405).json({ error: "Method not allowed" });
-  }
+  const admin = await requireAdmin(event);
+  if (!admin.ok) return admin.response;
 
-  try {
-    // Verify admin access
-    const adminCheck = await verifyAdminAuth(req);
-    if (!adminCheck.isAdmin) {
-      return res.status(403).json({ error: "Unauthorized" });
-    }
+  const supabase = admin.supabase;
 
-    const { id } = req.query;
-    if (!id) {
-      return res.status(400).json({ error: "Missing stat ID" });
-    }
+  const id = event.queryStringParameters?.id;
+  if (!id) return json(400, { error: "Missing stat ID" });
 
-    // Soft delete by marking as inactive
-    const { data: updatedStat, error: updateError } = await supabaseAdmin
-      .from("admin_order_stats")
-      .update({ is_active: false })
-      .eq("id", id)
-      .select()
-      .single();
+  const { data: stat, error } = await supabase
+    .from("admin_order_stats")
+    .update({ is_active: false })
+    .eq("id", id)
+    .select()
+    .single();
 
-    if (updateError) throw updateError;
+  if (error) return json(500, { error: error.message });
 
-    if (!updatedStat) {
-      return res.status(404).json({ error: "Stat not found" });
-    }
-
-    res.json({
-      success: true,
-      message: "Statistic deactivated",
-      stat: updatedStat,
-    });
-  } catch (error) {
-    console.error("Delete stat error:", error);
-    res.status(500).json({ error: "Failed to delete statistic" });
-  }
+  return json(200, { success: true, message: "Statistic deactivated", stat });
 };
