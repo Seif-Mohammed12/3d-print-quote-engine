@@ -30,13 +30,6 @@ create index if not exists admin_stats_date_idx
 create index if not exists admin_stats_order_code_idx
   on public.admin_order_stats (order_code);
 
-create index if not exists admin_stats_month_idx
-  on public.admin_order_stats (
-    date_trunc('month', order_date) desc,
-    is_completed,
-    is_active
-  );
-
 -- Enable RLS
 alter table public.admin_order_stats enable row level security;
 

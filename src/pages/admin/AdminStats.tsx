@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import Layout from "@/components/Layout";
-import { DollarSign, Package, Droplet, Plus, Edit2, Trash2, Calendar } from "lucide-react";
-import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import { DollarSign, Package, Droplet, Plus, Edit2, Trash2, Calendar, ChevronDown } from "lucide-react";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { toast } from "sonner";
 import AdminNav from "@/components/admin/AdminNav";
 import { getAccessToken } from "@/lib/auth-session";
@@ -27,11 +27,42 @@ interface Metrics {
   totalWeight: number;
 }
 
-interface MonthlyData {
-  month: string;
+type TimeGranularity = "day" | "week" | "month";
+
+interface ChartPoint {
+  label: string;
+  sortKey: number;
   sales: number;
   revenue: number;
   weight: number;
+}
+
+function getUtcDateParts(input: string) {
+  const date = new Date(input);
+  return {
+    year: date.getUTCFullYear(),
+    month: date.getUTCMonth() + 1,
+    day: date.getUTCDate(),
+    week: getUtcWeekKey(date),
+  };
+}
+
+function getUtcWeekKey(date: Date) {
+  const copy = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+  const dayNumber = copy.getUTCDay() || 7;
+  copy.setUTCDate(copy.getUTCDate() + 4 - dayNumber);
+  const yearStart = new Date(Date.UTC(copy.getUTCFullYear(), 0, 1));
+  const weekNo = Math.ceil((((copy.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+  return `${copy.getUTCFullYear()}-W${String(weekNo).padStart(2, "0")}`;
+}
+
+function buildGranularityLabel(date: Date, granularity: TimeGranularity) {
+  if (granularity === "day") return date.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+  if (granularity === "week") {
+    const parts = getUtcDateParts(date.toISOString());
+    return `${parts.week}`;
+  }
+  return date.toLocaleDateString(undefined, { month: "short", year: "numeric" });
 }
 
 export default function AdminStats() {
@@ -40,12 +71,12 @@ export default function AdminStats() {
     totalRevenue: 0,
     totalWeight: 0,
   });
-  const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([]);
   const [orders, setOrders] = useState<StatOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [granularity, setGranularity] = useState<TimeGranularity>("month");
 
   const [formData, setFormData] = useState({
     orderCode: "",
@@ -89,7 +120,6 @@ export default function AdminStats() {
 
         if (data.success) {
           setMetrics(data.metrics);
-          setMonthlyData(data.monthlyData || []);
           setOrders(data.orders || []);
         } else {
           toast.error("Failed to load statistics");
@@ -263,6 +293,53 @@ export default function AdminStats() {
   const avgRevenuePerOrder = metrics.totalSales > 0 ? (metrics.totalRevenue / metrics.totalSales).toFixed(2) : 0;
   const avgWeightPerOrder = metrics.totalSales > 0 ? (metrics.totalWeight / metrics.totalSales).toFixed(2) : 0;
 
+  const chartData = useMemo<ChartPoint[]>(() => {
+    const activeOrders = orders
+      .filter((order) => order.is_completed)
+      .slice()
+      .sort((a, b) => new Date(a.order_date).getTime() - new Date(b.order_date).getTime());
+
+    const buckets = new Map<string, ChartPoint>();
+
+    for (const order of activeOrders) {
+      const date = new Date(order.order_date);
+      let key = "";
+      let label = "";
+
+      if (granularity === "day") {
+        key = date.toISOString().slice(0, 10);
+        label = buildGranularityLabel(date, "day");
+      } else if (granularity === "week") {
+        key = getUtcWeekKey(date);
+        label = key;
+      } else {
+        key = `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`;
+        label = buildGranularityLabel(date, "month");
+      }
+
+      const existing = buckets.get(key) || { label, sortKey: date.getTime(), sales: 0, revenue: 0, weight: 0 };
+      existing.sales += 1;
+      existing.revenue += Number(order.revenue || 0);
+      existing.weight += Number(order.weight_grams || 0);
+      existing.sortKey = Math.min(existing.sortKey, date.getTime());
+      buckets.set(key, existing);
+    }
+
+    return [...buckets.entries()]
+      .map(([key, value]) => ({
+        ...value,
+        sortKey: value.sortKey,
+        label: granularity === "day" ? value.label : value.label,
+      }))
+      .sort((a, b) => a.sortKey - b.sortKey);
+  }, [orders, granularity]);
+
+  const chartEmptyMessage = granularity === "day"
+    ? "No completed orders for daily view yet"
+    : granularity === "week"
+      ? "No completed orders for weekly view yet"
+      : "No completed orders for monthly view yet";
+
   return (
     <Layout>
       <section className="section-padding">
@@ -339,66 +416,102 @@ export default function AdminStats() {
               </div>
 
               {/* Charts */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Revenue Chart */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="glass-card p-6"
-                >
-                  <h3 className="font-semibold text-foreground mb-4">Revenue by Month</h3>
-                  {monthlyData.length > 0 ? (
-                    <ResponsiveContainer width="100%" height={300}>
-                      <LineChart data={monthlyData}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
-                        <XAxis dataKey="month" stroke="var(--color-muted-foreground)" />
-                        <YAxis stroke="var(--color-muted-foreground)" />
-                        <Tooltip
-                          contentStyle={{
-                            backgroundColor: "var(--color-secondary)",
-                            border: "1px solid var(--color-border)",
-                            borderRadius: "8px",
-                          }}
-                        />
-                        <Legend />
-                        <Line type="monotone" dataKey="revenue" stroke="var(--color-primary)" strokeWidth={2} />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  ) : (
-                    <p className="text-sm text-muted-foreground text-center py-8">No data yet</p>
-                  )}
-                </motion.div>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="glass-card p-6 space-y-6"
+              >
+                <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+                  <div>
+                    <h3 className="font-semibold text-foreground">Performance Trends</h3>
+                    <p className="text-sm text-muted-foreground">Switch between day, week, and month to spot spikes and drops</p>
+                  </div>
+                  <label className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Calendar className="h-4 w-4" />
+                    <span>Group by</span>
+                    <div className="relative">
+                      <select
+                        value={granularity}
+                        onChange={(e) => setGranularity(e.target.value as TimeGranularity)}
+                        className="appearance-none rounded-lg border border-border bg-secondary px-4 py-2 pr-10 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                      >
+                        <option value="day">Day</option>
+                        <option value="week">Week</option>
+                        <option value="month">Month</option>
+                      </select>
+                      <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    </div>
+                  </label>
+                </div>
 
-                {/* Weight Chart */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.1 }}
-                  className="glass-card p-6"
-                >
-                  <h3 className="font-semibold text-foreground mb-4">Filament Used by Month</h3>
-                  {monthlyData.length > 0 ? (
-                    <ResponsiveContainer width="100%" height={300}>
-                      <BarChart data={monthlyData}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
-                        <XAxis dataKey="month" stroke="var(--color-muted-foreground)" />
-                        <YAxis stroke="var(--color-muted-foreground)" />
-                        <Tooltip
-                          contentStyle={{
-                            backgroundColor: "var(--color-secondary)",
-                            border: "1px solid var(--color-border)",
-                            borderRadius: "8px",
-                          }}
-                        />
-                        <Legend />
-                        <Bar dataKey="weight" fill="var(--color-primary)" />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  ) : (
-                    <p className="text-sm text-muted-foreground text-center py-8">No data yet</p>
-                  )}
-                </motion.div>
-              </div>
+                {chartData.length > 0 ? (
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div>
+                      <h4 className="mb-3 text-sm font-medium text-foreground">Revenue</h4>
+                      <ResponsiveContainer width="100%" height={300}>
+                        <LineChart data={chartData}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                          <XAxis dataKey="label" stroke="hsl(var(--muted-foreground))" tick={{ fontSize: 12 }} />
+                          <YAxis stroke="hsl(var(--muted-foreground))" tick={{ fontSize: 12 }} />
+                          <Tooltip
+                            contentStyle={{
+                              backgroundColor: "hsl(var(--secondary))",
+                              border: "1px solid hsl(var(--border))",
+                              borderRadius: "10px",
+                              color: "hsl(var(--foreground))",
+                            }}
+                            labelStyle={{ color: "hsl(var(--foreground))" }}
+                            formatter={(value) => [`EGP${Number(value).toFixed(2)}`, "Revenue"]}
+                          />
+                          <Legend />
+                          <Line
+                            type="monotone"
+                            dataKey="revenue"
+                            name="Revenue"
+                            stroke="#22c55e"
+                            strokeWidth={3}
+                            dot={{ r: 3, fill: "#22c55e" }}
+                            activeDot={{ r: 6 }}
+                          />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+
+                    <div>
+                      <h4 className="mb-3 text-sm font-medium text-foreground">Filament Used</h4>
+                      <ResponsiveContainer width="100%" height={300}>
+                        <LineChart data={chartData}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                          <XAxis dataKey="label" stroke="hsl(var(--muted-foreground))" tick={{ fontSize: 12 }} />
+                          <YAxis stroke="hsl(var(--muted-foreground))" tick={{ fontSize: 12 }} />
+                          <Tooltip
+                            contentStyle={{
+                              backgroundColor: "hsl(var(--secondary))",
+                              border: "1px solid hsl(var(--border))",
+                              borderRadius: "10px",
+                              color: "hsl(var(--foreground))",
+                            }}
+                            labelStyle={{ color: "hsl(var(--foreground))" }}
+                            formatter={(value) => [`${Number(value).toFixed(1)} g`, "Weight"]}
+                          />
+                          <Legend />
+                          <Line
+                            type="monotone"
+                            dataKey="weight"
+                            name="Filament"
+                            stroke="#38bdf8"
+                            strokeWidth={3}
+                            dot={{ r: 3, fill: "#38bdf8" }}
+                            activeDot={{ r: 6 }}
+                          />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground text-center py-8">{chartEmptyMessage}</p>
+                )}
+              </motion.div>
 
               {/* Add Order Form */}
               <motion.div
