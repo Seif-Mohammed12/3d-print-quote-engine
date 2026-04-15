@@ -36,6 +36,7 @@ export const handler = async (event) => {
     name,
     short: String(payload.short || "").trim(),
     description: String(payload.description || "").trim(),
+    grams: Number(payload.grams || 0),
     base_price: Number(payload.basePrice || 0),
     discount_enabled: Boolean(payload.discountEnabled),
     discount_price: payload.discountEnabled ? Number(payload.discountPrice || 0) : null,

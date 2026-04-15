@@ -23,6 +23,7 @@ type ProductRow = {
   name: string;
   short: string;
   description: string;
+  grams: number | null;
   base_price: number;
   discount_enabled: boolean;
   discount_price: number | null;
@@ -66,6 +67,7 @@ const emptyProduct = {
   name: "",
   short: "",
   description: "",
+  grams: 0,
   basePrice: 0,
   discountEnabled: false,
   discountPrice: 0,
@@ -137,6 +139,7 @@ export default function AdminDashboard() {
       name: selectedProduct.name || "",
       short: selectedProduct.short || "",
       description: selectedProduct.description || "",
+      grams: Number(selectedProduct.grams || 0),
       basePrice: Number(selectedProduct.base_price || 0),
       discountEnabled: Boolean(selectedProduct.discount_enabled),
       discountPrice: Number(selectedProduct.discount_price || 0),
@@ -169,6 +172,12 @@ export default function AdminDashboard() {
           <div className="flex items-center justify-between">
             <h1 className="font-heading text-3xl font-bold text-foreground">Admin Dashboard</h1>
             <div className="flex items-center gap-2">
+              <Link
+                to="/admin/stats"
+                className="rounded-lg border border-border px-4 py-2 text-sm"
+              >
+                Statistics
+              </Link>
               <Link
                 to="/admin/orders"
                 className="rounded-lg border border-border px-4 py-2 text-sm"
@@ -256,6 +265,21 @@ export default function AdminDashboard() {
                   </p>
                 </div>
                 <div>
+                  <label className="mb-1 block text-xs font-medium text-muted-foreground">Product Weight (grams)</label>
+                  <input
+                    type="number"
+                    className="w-full rounded-lg bg-secondary border border-border px-3 py-2 text-sm"
+                    placeholder="180"
+                    value={form.grams}
+                    onChange={(e) => setForm({ ...form, grams: Number(e.target.value) })}
+                    min={0}
+                    step={0.01}
+                  />
+                  <p className="mt-1 text-[11px] text-muted-foreground">
+                    Used for stats and estimating filament usage per product.
+                  </p>
+                </div>
+                <div>
                   <label className="mb-1 block text-xs font-medium text-muted-foreground">Base Price (EGP)</label>
                   <input type="number" className="w-full rounded-lg bg-secondary border border-border px-3 py-2 text-sm" placeholder="550"
                     value={form.basePrice} onChange={(e) => setForm({ ...form, basePrice: Number(e.target.value) })} min={0.01} step={0.01} />
@@ -297,6 +321,7 @@ export default function AdminDashboard() {
                         name: form.name,
                         short: form.short,
                         description: form.description,
+                        grams: form.grams,
                         basePrice: form.basePrice,
                         discountEnabled: form.discountEnabled,
                         discountPrice: form.discountPrice,
