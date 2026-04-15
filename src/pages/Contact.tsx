@@ -45,6 +45,8 @@ const Contact = () => {
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
                   className="w-full px-4 py-2.5 rounded-lg bg-secondary border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
                   placeholder="Your name"
+                  minLength={2}
+                  maxLength={100}
                 />
               </div>
               <div>
@@ -56,6 +58,7 @@ const Contact = () => {
                   onChange={(e) => setForm({ ...form, email: e.target.value })}
                   className="w-full px-4 py-2.5 rounded-lg bg-secondary border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
                   placeholder="you@example.com"
+                  maxLength={100}
                 />
               </div>
               <div>
@@ -67,6 +70,8 @@ const Contact = () => {
                   onChange={(e) => setForm({ ...form, message: e.target.value })}
                   className="w-full px-4 py-2.5 rounded-lg bg-secondary border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all resize-none"
                   placeholder="Tell us about your project..."
+                  minLength={10}
+                  maxLength={2000}
                 />
               </div>
               <button

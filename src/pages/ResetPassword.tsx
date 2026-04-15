@@ -73,6 +73,7 @@ export default function ResetPassword() {
                     className="w-full rounded-lg bg-secondary border border-border px-3 py-2 pr-10 text-sm"
                     required
                     minLength={8}
+                    maxLength={100}
                   />
                   <button
                     type="button"
@@ -95,6 +96,7 @@ export default function ResetPassword() {
                     className="w-full rounded-lg bg-secondary border border-border px-3 py-2 pr-10 text-sm"
                     required
                     minLength={8}
+                    maxLength={100}
                   />
                   <button
                     type="button"

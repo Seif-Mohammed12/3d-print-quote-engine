@@ -270,6 +270,8 @@ const Checkout = () => {
                     onChange={(e) => setForm({ ...form, name: e.target.value })}
                     className="w-full px-4 py-2.5 rounded-lg bg-secondary border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
                     placeholder="Your name"
+                    minLength={2}
+                    maxLength={100}
                   />
                 </div>
 
@@ -282,6 +284,7 @@ const Checkout = () => {
                     onChange={(e) => setForm({ ...form, email: e.target.value })}
                     className="w-full px-4 py-2.5 rounded-lg bg-secondary border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
                     placeholder="your@email.com"
+                    maxLength={100}
                   />
                 </div>
 
@@ -294,6 +297,9 @@ const Checkout = () => {
                     onChange={(e) => setForm({ ...form, phone: e.target.value })}
                     className="w-full px-4 py-2.5 rounded-lg bg-secondary border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
                     placeholder="+20 1XX XXX XXXX"
+                    pattern="[0-9+\-() ]{10,20}"
+                    minLength={10}
+                    maxLength={20}
                   />
                 </div>
 
@@ -305,6 +311,7 @@ const Checkout = () => {
                     onChange={(e) => setForm({ ...form, company: e.target.value })}
                     className="w-full px-4 py-2.5 rounded-lg bg-secondary border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
                     placeholder="Company name"
+                    maxLength={100}
                   />
                 </div>
 
@@ -316,6 +323,7 @@ const Checkout = () => {
                     onChange={(e) => setForm({ ...form, notes: e.target.value })}
                     className="w-full px-4 py-2.5 rounded-lg bg-secondary border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none"
                     placeholder="Any special requests or notes..."
+                    maxLength={1000}
                   />
                 </div>
 

@@ -177,6 +177,7 @@ export default function Login() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full rounded-lg bg-secondary border border-border px-3 py-2 text-sm"
+                  maxLength={100}
                   required
                 />
               </div>
@@ -188,6 +189,8 @@ export default function Login() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="w-full rounded-lg bg-secondary border border-border px-3 py-2 pr-10 text-sm"
+                    minLength={6}
+                    maxLength={100}
                     required
                   />
                   <button

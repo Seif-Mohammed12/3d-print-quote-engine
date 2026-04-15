@@ -70,6 +70,8 @@ export default function Signup() {
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   className="w-full rounded-lg bg-secondary border border-border px-3 py-2 text-sm"
+                  minLength={2}
+                  maxLength={100}
                   required
                 />
               </div>
@@ -80,6 +82,7 @@ export default function Signup() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full rounded-lg bg-secondary border border-border px-3 py-2 text-sm"
+                  maxLength={100}
                   required
                 />
               </div>
@@ -91,6 +94,9 @@ export default function Signup() {
                   onChange={(e) => setPhone(e.target.value)}
                   className="w-full rounded-lg bg-secondary border border-border px-3 py-2 text-sm"
                   placeholder="0109928486 or +20109928486"
+                  pattern="[0-9+\-() ]{10,20}"
+                  minLength={10}
+                  maxLength={20}
                   required
                 />
                 <p className="mt-1 text-xs text-muted-foreground">
@@ -103,6 +109,7 @@ export default function Signup() {
                   <input
                     type={showPassword ? "text" : "password"}
                     minLength={6}
+                    maxLength={100}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="w-full rounded-lg bg-secondary border border-border px-3 py-2 pr-10 text-sm"
@@ -124,6 +131,7 @@ export default function Signup() {
                   <input
                     type={showConfirmPassword ? "text" : "password"}
                     minLength={6}
+                    maxLength={100}
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     className="w-full rounded-lg bg-secondary border border-border px-3 py-2 pr-10 text-sm"

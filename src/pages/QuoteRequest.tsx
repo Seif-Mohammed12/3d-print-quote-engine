@@ -226,6 +226,8 @@ export default function QuoteRequest() {
                       value={form.name}
                       onChange={(e) => setForm({ ...form, name: e.target.value })}
                       className="w-full px-4 py-2.5 rounded-lg bg-secondary border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                      minLength={2}
+                      maxLength={100}
                     />
                   </div>
                   <div>
@@ -236,6 +238,7 @@ export default function QuoteRequest() {
                       value={form.email}
                       onChange={(e) => setForm({ ...form, email: e.target.value })}
                       className="w-full px-4 py-2.5 rounded-lg bg-secondary border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                      maxLength={100}
                     />
                   </div>
                   <div>
@@ -245,6 +248,10 @@ export default function QuoteRequest() {
                       value={form.phone}
                       onChange={(e) => setForm({ ...form, phone: e.target.value })}
                       className="w-full px-4 py-2.5 rounded-lg bg-secondary border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                      type="tel"
+                      pattern="[0-9+\-() ]{10,20}"
+                      minLength={10}
+                      maxLength={20}
                     />
                   </div>
                   <div>
@@ -254,6 +261,7 @@ export default function QuoteRequest() {
                       onChange={(e) => setForm({ ...form, address: e.target.value })}
                       className="w-full px-4 py-2.5 rounded-lg bg-secondary border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
                       placeholder="City, area…"
+                      maxLength={200}
                     />
                   </div>
                 </div>
@@ -266,6 +274,7 @@ export default function QuoteRequest() {
                     onChange={(e) => setForm({ ...form, notes: e.target.value })}
                     className="w-full px-4 py-2.5 rounded-lg bg-secondary border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none"
                     placeholder="Deadlines, strength requirements, tolerances, quantity, etc."
+                    maxLength={2000}
                   />
                 </div>
 

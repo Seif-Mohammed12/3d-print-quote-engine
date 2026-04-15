@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import Layout from "@/components/Layout";
+import AdminNav from "@/components/admin/AdminNav";
 import { supabase } from "@/lib/supabase";
 import {
   adminDeleteColor,
@@ -231,12 +232,12 @@ export default function AdminDashboard() {
                 <div>
                   <label className="mb-1 block text-xs font-medium text-muted-foreground">Product Name</label>
                   <input className="w-full rounded-lg bg-secondary border border-border px-3 py-2 text-sm" placeholder="DualSense Display Stand"
-                    value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+                    value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} minLength={2} maxLength={100} />
                 </div>
                 <div>
                   <label className="mb-1 block text-xs font-medium text-muted-foreground">Slug (URL id)</label>
                   <input className="w-full rounded-lg bg-secondary border border-border px-3 py-2 text-sm" placeholder="dualsense-display-stand"
-                    value={form.slug} onChange={(e) => setForm({ ...form, slug: e.target.value })} />
+                    value={form.slug} onChange={(e) => setForm({ ...form, slug: e.target.value })} maxLength={100} />
                 </div>
                 <div>
                   <label className="mb-1 block text-xs font-medium text-muted-foreground">Brand</label>
@@ -249,7 +250,7 @@ export default function AdminDashboard() {
                 <div>
                   <label className="mb-1 block text-xs font-medium text-muted-foreground">Card Hook (outside)</label>
                   <input className="w-full rounded-lg bg-secondary border border-border px-3 py-2 text-sm" placeholder="Clean desk, hero setup."
-                    value={form.short} onChange={(e) => setForm({ ...form, short: e.target.value })} />
+                    value={form.short} onChange={(e) => setForm({ ...form, short: e.target.value })} maxLength={200} />
                   <p className="mt-1 text-[11px] text-muted-foreground">
                     This is the short line shown on product cards.
                   </p>
@@ -257,17 +258,17 @@ export default function AdminDashboard() {
                 <div>
                   <label className="mb-1 block text-xs font-medium text-muted-foreground">Base Price (EGP)</label>
                   <input type="number" className="w-full rounded-lg bg-secondary border border-border px-3 py-2 text-sm" placeholder="550"
-                    value={form.basePrice} onChange={(e) => setForm({ ...form, basePrice: Number(e.target.value) })} />
+                    value={form.basePrice} onChange={(e) => setForm({ ...form, basePrice: Number(e.target.value) })} min={0.01} step={0.01} />
                 </div>
                 <div>
                   <label className="mb-1 block text-xs font-medium text-muted-foreground">Discount Price (EGP)</label>
                   <input type="number" className="w-full rounded-lg bg-secondary border border-border px-3 py-2 text-sm" placeholder="480"
-                    value={form.discountPrice} onChange={(e) => setForm({ ...form, discountPrice: Number(e.target.value) })} />
+                    value={form.discountPrice} onChange={(e) => setForm({ ...form, discountPrice: Number(e.target.value) })} min={0.01} step={0.01} />
                 </div>
                 <div>
                   <label className="mb-1 block text-xs font-medium text-muted-foreground">Display Order</label>
                   <input type="number" className="w-full rounded-lg bg-secondary border border-border px-3 py-2 text-sm" placeholder="0"
-                    value={form.sortOrder} onChange={(e) => setForm({ ...form, sortOrder: Number(e.target.value) })} />
+                    value={form.sortOrder} onChange={(e) => setForm({ ...form, sortOrder: Number(e.target.value) })} min={0} step={1} />
                   <p className="mt-1 text-[11px] text-muted-foreground">
                     Lower number shows first on the brand page.
                   </p>
@@ -275,7 +276,7 @@ export default function AdminDashboard() {
               </div>
               <label className="mb-1 block text-xs font-medium text-muted-foreground">About This Product Description (inside)</label>
               <textarea className="w-full rounded-lg bg-secondary border border-border px-3 py-2 text-sm min-h-24" placeholder="Detailed description shown in About this product on the product details page."
-                value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+                value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} maxLength={5000} />
 
               <div className="flex flex-wrap items-center gap-4 text-sm">
                 <label className="inline-flex items-center gap-2"><input type="checkbox" checked={form.discountEnabled} onChange={(e) => setForm({ ...form, discountEnabled: e.target.checked })} /> Discount enabled</label>
@@ -599,4 +600,5 @@ export default function AdminDashboard() {
     </Layout>
   );
 }
+          <AdminNav />
 

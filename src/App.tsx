@@ -37,6 +37,7 @@ import Orders from "./pages/Orders";
 import OrderDetail from "./pages/OrderDetail";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminOrders from "./pages/admin/AdminOrders";
+import AdminStats from "./pages/admin/AdminStats";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -123,6 +124,14 @@ const App = () => (
               element={
                 <AdminRoleRoute>
                   <AdminOrders />
+                </AdminRoleRoute>
+              }
+            />
+            <Route
+              path="/admin/stats"
+              element={
+                <AdminRoleRoute>
+                  <AdminStats />
                 </AdminRoleRoute>
               }
             />
