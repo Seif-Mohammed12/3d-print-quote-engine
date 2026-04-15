@@ -130,6 +130,38 @@ export async function updateAdminOrderStatus(orderId: string, status: OrderStatu
   return data;
 }
 
+export async function deleteAdminOrder(orderId: string) {
+  const token = await getAccessToken();
+  if (!token) throw new Error("Not authenticated");
+
+  const response = await fetch(`/api/admin-orders-delete?id=${orderId}`, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data?.error || `Failed to delete order (${response.status})`);
+  return data;
+}
+
+export async function deleteAllAdminOrders() {
+  const token = await getAccessToken();
+  if (!token) throw new Error("Not authenticated");
+
+  const response = await fetch("/api/admin-orders-delete?all=true", {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data?.error || `Failed to delete all orders (${response.status})`);
+  return data;
+}
+
 function getOrCreateGuestToken() {
   const key = "guest_order_token";
   const existing = localStorage.getItem(key);

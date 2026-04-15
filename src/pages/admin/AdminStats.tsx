@@ -76,6 +76,11 @@ function buildGranularityLabel(date: Date, granularity: TimeGranularity) {
 }
 
 export default function AdminStats() {
+  type DeleteDialogState =
+    | { mode: "single"; order: StatOrder }
+    | { mode: "all" }
+    | null;
+
   const [metrics, setMetrics] = useState<Metrics>({
     totalSales: 0,
     totalRevenue: 0,
@@ -85,7 +90,7 @@ export default function AdminStats() {
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<StatOrder | null>(null);
+  const [deleteDialog, setDeleteDialog] = useState<DeleteDialogState>(null);
   const [busy, setBusy] = useState(false);
   const [granularity, setGranularity] = useState<TimeGranularity>("month");
 
@@ -287,7 +292,7 @@ export default function AdminStats() {
       if (data.success) {
         toast.success("Order removed from statistics");
         setOrders(orders.filter((o) => o.id !== orderId));
-        setDeleteTarget(null);
+        setDeleteDialog(null);
         setEditingId(null);
       } else {
         toast.error("Failed to delete order");
@@ -295,6 +300,44 @@ export default function AdminStats() {
     } catch (error) {
       console.error("Delete error:", error);
       toast.error("Failed to delete order");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleDeleteAllOrders = async () => {
+    setBusy(true);
+    try {
+      const token = await getAccessToken();
+      if (!token) {
+        toast.error("You must be signed in to delete statistics.");
+        return;
+      }
+
+      const response = await fetch("/api/admin-stats-delete?all=true", {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(data?.error || `Failed to delete all orders (${response.status})`);
+      }
+
+      if (data.success) {
+        toast.success("All statistics orders removed");
+        setOrders([]);
+        setMetrics({ totalSales: 0, totalRevenue: 0, totalWeight: 0 });
+        setDeleteDialog(null);
+        setEditingId(null);
+      } else {
+        toast.error("Failed to delete all orders");
+      }
+    } catch (error) {
+      console.error("Delete all error:", error);
+      toast.error("Failed to delete all orders");
     } finally {
       setBusy(false);
     }
@@ -655,7 +698,17 @@ export default function AdminStats() {
                 animate={{ opacity: 1, y: 0 }}
                 className="glass-card p-6 space-y-4"
               >
-                <h3 className="font-semibold text-foreground">Orders ({orders.length})</h3>
+                <div className="flex items-center justify-between gap-3">
+                  <h3 className="font-semibold text-foreground">Orders ({orders.length})</h3>
+                  {orders.length > 0 ? (
+                    <button
+                      onClick={() => setDeleteDialog({ mode: "all" })}
+                      className="rounded-lg border border-destructive/40 px-3 py-1.5 text-xs text-destructive hover:bg-destructive/10 transition-colors"
+                    >
+                      Delete All
+                    </button>
+                  ) : null}
+                </div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
@@ -707,7 +760,7 @@ export default function AdminStats() {
                                   <Edit2 className="w-4 h-4" />
                                 </button>
                                 <button
-                                  onClick={() => setDeleteTarget(order)}
+                                  onClick={() => setDeleteDialog({ mode: "single", order })}
                                   className="p-2 hover:bg-secondary rounded-lg transition-colors text-destructive"
                                   title="Delete"
                                 >
@@ -724,27 +777,34 @@ export default function AdminStats() {
               </motion.div>
 
               <AlertDialog
-                open={Boolean(deleteTarget)}
+                open={Boolean(deleteDialog)}
                 onOpenChange={(open) => {
-                  if (!open && !busy) setDeleteTarget(null);
+                  if (!open && !busy) setDeleteDialog(null);
                 }}
               >
                 <AlertDialogContent>
                   <AlertDialogHeader>
-                    <AlertDialogTitle>Delete statistics entry?</AlertDialogTitle>
+                    <AlertDialogTitle>
+                      {deleteDialog?.mode === "all" ? "Delete all statistics entries?" : "Delete statistics entry?"}
+                    </AlertDialogTitle>
                     <AlertDialogDescription>
-                      This will remove the order {deleteTarget?.order_code || ""} from the statistics page.
-                      You can add it again later if needed.
+                      {deleteDialog?.mode === "all"
+                        ? "This will remove all orders from the statistics page. You can add them again later if needed."
+                        : `This will remove the order ${deleteDialog?.mode === "single" ? deleteDialog.order.order_code : ""} from the statistics page. You can add it again later if needed.`}
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
                     <AlertDialogCancel disabled={busy}>Cancel</AlertDialogCancel>
                     <AlertDialogAction
-                      disabled={busy || !deleteTarget}
+                      disabled={busy || !deleteDialog}
                       onClick={(e) => {
                         e.preventDefault();
-                        if (!deleteTarget) return;
-                        void handleDeleteOrder(deleteTarget.id);
+                        if (!deleteDialog) return;
+                        if (deleteDialog.mode === "all") {
+                          void handleDeleteAllOrders();
+                          return;
+                        }
+                        void handleDeleteOrder(deleteDialog.order.id);
                       }}
                       className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                     >

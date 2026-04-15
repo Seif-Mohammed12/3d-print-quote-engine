@@ -10,6 +10,23 @@ export const handler = async (event) => {
 
   const supabase = admin.supabase;
 
+  const deleteAll = event.queryStringParameters?.all === "true";
+  if (deleteAll) {
+    const { data: stats, error } = await supabase
+      .from("admin_order_stats")
+      .update({ is_active: false })
+      .eq("is_active", true)
+      .select("id");
+
+    if (error) return json(500, { error: error.message });
+
+    return json(200, {
+      success: true,
+      message: "All statistics entries deactivated",
+      count: Array.isArray(stats) ? stats.length : 0,
+    });
+  }
+
   const id = event.queryStringParameters?.id;
   if (!id) return json(400, { error: "Missing stat ID" });
 
