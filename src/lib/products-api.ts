@@ -48,6 +48,7 @@ export type AdminCatalogPayload = {
   images: any[];
   colors: any[];
   colorLibrary?: any[];
+  bundles?: any[];
 };
 
 async function adminRequest(path: string, init?: RequestInit) {
@@ -97,6 +98,7 @@ export async function adminUpsertProduct(payload: {
   name: string;
   short: string;
   description: string;
+  grams?: number;
   basePrice: number;
   discountEnabled: boolean;
   discountPrice: number;
@@ -109,6 +111,14 @@ export async function adminUpsertProduct(payload: {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
+  });
+}
+
+export async function adminReorderProducts(ids: string[]) {
+  return adminRequest("/api/admin-products-reorder", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ids }),
   });
 }
 
@@ -197,6 +207,31 @@ export async function adminReorderColors(ids: string[]) {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ ids }),
+  });
+}
+
+export async function adminUpsertBundle(payload: {
+  id?: string;
+  brand: BrandId;
+  name: string;
+  productAId: string;
+  productBId: string;
+  bundlePrice: number;
+  sortOrder: number;
+  isActive: boolean;
+}) {
+  return adminRequest("/api/admin-bundles-upsert", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function adminDeleteBundle(id: string) {
+  return adminRequest("/api/admin-bundles-delete", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id }),
   });
 }
 

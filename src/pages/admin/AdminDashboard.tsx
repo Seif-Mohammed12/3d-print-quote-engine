@@ -4,13 +4,16 @@ import Layout from "@/components/Layout";
 import AdminNav from "@/components/admin/AdminNav";
 import { supabase } from "@/lib/supabase";
 import {
+  adminDeleteBundle,
   adminDeleteColor,
   adminDeleteImage,
   adminDeleteProduct,
   adminFetchCatalog,
   adminReorderColors,
   adminReorderImages,
+  adminReorderProducts,
   adminUploadImages,
+  adminUpsertBundle,
   adminUpsertColor,
   adminUpsertProduct,
 } from "@/lib/products-api";
@@ -49,6 +52,16 @@ type ColorLibraryRow = {
   hex: string;
   sort_order: number;
 };
+type BundleRow = {
+  id: string;
+  brand: Brand;
+  name: string;
+  product_a_id: string;
+  product_b_id: string;
+  bundle_price: number;
+  is_active: boolean;
+  sort_order: number;
+};
 
 function reindexSortOrder<T extends { sort_order: number }>(rows: T[]): T[] {
   return rows.map((row, idx) => ({ ...row, sort_order: idx }));
@@ -58,6 +71,11 @@ function swapRows<T>(rows: T[], from: number, to: number): T[] {
   const next = [...rows];
   [next[from], next[to]] = [next[to], next[from]];
   return next;
+}
+
+function toMoneyInput(value: number | null | undefined): string {
+  if (value == null || Number.isNaN(Number(value))) return "0.00";
+  return Number(value).toFixed(2);
 }
 
 const emptyProduct = {
@@ -83,8 +101,21 @@ export default function AdminDashboard() {
   const [products, setProducts] = useState<ProductRow[]>([]);
   const [images, setImages] = useState<ImageRow[]>([]);
   const [colors, setColors] = useState<ColorRow[]>([]);
+  const [bundles, setBundles] = useState<BundleRow[]>([]);
   const [colorLibrary, setColorLibrary] = useState<ColorLibraryRow[]>([]);
   const [colorLibraryPick, setColorLibraryPick] = useState("");
+  const [gridBrand, setGridBrand] = useState<Brand>("pforge");
+  const [dragProductId, setDragProductId] = useState<string | null>(null);
+  const [bundleDraft, setBundleDraft] = useState({
+    id: "",
+    brand: "pforge" as Brand,
+    name: "",
+    productAId: "",
+    productBId: "",
+    bundlePrice: "0.00",
+    isActive: true,
+    sortOrder: 0,
+  });
   const [selectedProductId, setSelectedProductId] = useState<string>("");
   const [form, setForm] = useState(emptyProduct);
   const [colorDraft, setColorDraft] = useState({ role: "primary" as "primary" | "secondary", colorId: "", name: "", hex: "#000000" });
@@ -101,6 +132,7 @@ export default function AdminDashboard() {
       setImages(data.images || []);
       setColors(data.colors || []);
       setColorLibrary(data.colorLibrary || []);
+      setBundles(data.bundles || []);
       if (!selectedProductId && data.products?.length) setSelectedProductId(data.products[0].id);
     } catch (err: any) {
       setError(err.message || "Failed to load admin catalog");
@@ -125,6 +157,32 @@ export default function AdminDashboard() {
   const selectedColors = useMemo(
     () => colors.filter((c) => c.product_id === selectedProductId).sort((a, b) => a.sort_order - b.sort_order),
     [colors, selectedProductId]
+  );
+  const productImageByProductId = useMemo(() => {
+    const map = new Map<string, string>();
+    images
+      .slice()
+      .sort((a, b) => a.sort_order - b.sort_order)
+      .forEach((img) => {
+        if (!map.has(img.product_id)) map.set(img.product_id, img.image_url);
+      });
+    return map;
+  }, [images]);
+  const gridProducts = useMemo(
+    () =>
+      products
+        .filter((p) => p.brand === gridBrand)
+        .slice()
+        .sort((a, b) => a.sort_order - b.sort_order),
+    [products, gridBrand]
+  );
+  const bundleBrandProducts = useMemo(
+    () =>
+      products
+        .filter((p) => p.brand === bundleDraft.brand)
+        .slice()
+        .sort((a, b) => a.sort_order - b.sort_order),
+    [products, bundleDraft.brand]
   );
 
   useEffect(() => {
@@ -282,12 +340,12 @@ export default function AdminDashboard() {
                 <div>
                   <label className="mb-1 block text-xs font-medium text-muted-foreground">Base Price (EGP)</label>
                   <input type="number" className="w-full rounded-lg bg-secondary border border-border px-3 py-2 text-sm" placeholder="550"
-                    value={form.basePrice} onChange={(e) => setForm({ ...form, basePrice: Number(e.target.value) })} min={0.01} step={0.01} />
+                    value={form.basePrice} onChange={(e) => setForm({ ...form, basePrice: parseFloat(e.target.value || "0") })} min={0.01} step={0.01} />
                 </div>
                 <div>
                   <label className="mb-1 block text-xs font-medium text-muted-foreground">Discount Price (EGP)</label>
                   <input type="number" className="w-full rounded-lg bg-secondary border border-border px-3 py-2 text-sm" placeholder="480"
-                    value={form.discountPrice} onChange={(e) => setForm({ ...form, discountPrice: Number(e.target.value) })} min={0.01} step={0.01} />
+                    value={form.discountPrice} onChange={(e) => setForm({ ...form, discountPrice: parseFloat(e.target.value || "0") })} min={0.01} step={0.01} />
                 </div>
                 <div>
                   <label className="mb-1 block text-xs font-medium text-muted-foreground">Display Order</label>
@@ -357,6 +415,232 @@ export default function AdminDashboard() {
                   </button>
                 ) : null}
               </div>
+            </div>
+          </div>
+
+          <div className="glass-card p-4 space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h2 className="font-semibold">Storefront Grid Editor</h2>
+              <select
+                className="rounded-lg bg-secondary border border-border px-3 py-2 text-sm"
+                value={gridBrand}
+                onChange={(e) => setGridBrand(e.target.value as Brand)}
+              >
+                <option value="pforge">Pforge</option>
+                <option value="printique">Printique</option>
+              </select>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Drag cards to reorder how products appear on the brand page.
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {gridProducts.map((p) => {
+                const img = productImageByProductId.get(p.id);
+                const livePrice = p.discount_enabled && p.discount_price ? p.discount_price : p.base_price;
+                return (
+                  <div
+                    key={p.id}
+                    draggable
+                    onDragStart={() => setDragProductId(p.id)}
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={async () => {
+                      if (!dragProductId || dragProductId === p.id) return;
+                      const from = gridProducts.findIndex((x) => x.id === dragProductId);
+                      const to = gridProducts.findIndex((x) => x.id === p.id);
+                      if (from < 0 || to < 0) return;
+                      const reordered = reindexSortOrder(swapRows(gridProducts, from, to));
+                      const otherBrand = products.filter((x) => x.brand !== gridBrand);
+                      setProducts([...otherBrand, ...reordered]);
+                      setBusy(true);
+                      try {
+                        await adminReorderProducts(reordered.map((x) => x.id));
+                      } catch (err: unknown) {
+                        setError(err instanceof Error ? err.message : "Failed to reorder products");
+                        await load();
+                      } finally {
+                        setBusy(false);
+                        setDragProductId(null);
+                      }
+                    }}
+                    className={`rounded-xl border p-3 bg-secondary/20 cursor-move ${
+                      p.id === dragProductId ? "border-primary bg-primary/10" : "border-border"
+                    }`}
+                  >
+                    <div className="aspect-[4/3] rounded-lg overflow-hidden bg-black/20 mb-2">
+                      {img ? (
+                        <img src={img} alt={p.name} className="h-full w-full object-cover" />
+                      ) : (
+                        <div className="h-full w-full grid place-items-center text-xs text-muted-foreground">No image</div>
+                      )}
+                    </div>
+                    <p className="text-sm font-semibold">{p.name}</p>
+                    <p className="text-xs text-muted-foreground">{p.short}</p>
+                    <p className="mt-1 text-sm font-semibold text-primary">EGP {toMoneyInput(livePrice)}</p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="glass-card p-4 space-y-3">
+            <h2 className="font-semibold">Bundles</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <input
+                className="w-full rounded-lg bg-secondary border border-border px-3 py-2 text-sm"
+                placeholder="Bundle name"
+                value={bundleDraft.name}
+                onChange={(e) => setBundleDraft((d) => ({ ...d, name: e.target.value }))}
+              />
+              <select
+                className="w-full rounded-lg bg-secondary border border-border px-3 py-2 text-sm"
+                value={bundleDraft.brand}
+                onChange={(e) =>
+                  setBundleDraft((d) => ({ ...d, brand: e.target.value as Brand, productAId: "", productBId: "" }))
+                }
+              >
+                <option value="pforge">Pforge</option>
+                <option value="printique">Printique</option>
+              </select>
+              <select
+                className="w-full rounded-lg bg-secondary border border-border px-3 py-2 text-sm"
+                value={bundleDraft.productAId}
+                onChange={(e) => setBundleDraft((d) => ({ ...d, productAId: e.target.value }))}
+              >
+                <option value="">Product A</option>
+                {bundleBrandProducts.map((p) => (
+                  <option key={`a-${p.id}`} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+              <select
+                className="w-full rounded-lg bg-secondary border border-border px-3 py-2 text-sm"
+                value={bundleDraft.productBId}
+                onChange={(e) => setBundleDraft((d) => ({ ...d, productBId: e.target.value }))}
+              >
+                <option value="">Product B</option>
+                {bundleBrandProducts.map((p) => (
+                  <option key={`b-${p.id}`} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+              <input
+                type="number"
+                min={0.01}
+                step={0.01}
+                className="w-full rounded-lg bg-secondary border border-border px-3 py-2 text-sm"
+                placeholder="Bundle price"
+                value={bundleDraft.bundlePrice}
+                onChange={(e) => setBundleDraft((d) => ({ ...d, bundlePrice: e.target.value }))}
+              />
+              <label className="inline-flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={bundleDraft.isActive}
+                  onChange={(e) => setBundleDraft((d) => ({ ...d, isActive: e.target.checked }))}
+                />
+                Active
+              </label>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <button
+                className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50"
+                disabled={busy}
+                onClick={async () => {
+                  setBusy(true);
+                  try {
+                    const res = await adminUpsertBundle({
+                      id: bundleDraft.id || undefined,
+                      brand: bundleDraft.brand,
+                      name: bundleDraft.name,
+                      productAId: bundleDraft.productAId,
+                      productBId: bundleDraft.productBId,
+                      bundlePrice: parseFloat(bundleDraft.bundlePrice || "0"),
+                      sortOrder: bundleDraft.sortOrder,
+                      isActive: bundleDraft.isActive,
+                    });
+                    const row = res?.bundle as BundleRow | undefined;
+                    if (row) {
+                      setBundles((prev) => {
+                        const next = prev.filter((b) => b.id !== row.id);
+                        return [...next, row].sort((a, b) => a.sort_order - b.sort_order);
+                      });
+                      setBundleDraft({
+                        id: "",
+                        brand: bundleDraft.brand,
+                        name: "",
+                        productAId: "",
+                        productBId: "",
+                        bundlePrice: "0.00",
+                        isActive: true,
+                        sortOrder: bundles.length,
+                      });
+                    }
+                  } catch (err: unknown) {
+                    setError(err instanceof Error ? err.message : "Failed to save bundle");
+                    await load();
+                  } finally {
+                    setBusy(false);
+                  }
+                }}
+              >
+                Save bundle
+              </button>
+            </div>
+            <div className="space-y-2">
+              {bundles
+                .slice()
+                .sort((a, b) => a.sort_order - b.sort_order)
+                .map((b) => {
+                  const a = products.find((p) => p.id === b.product_a_id)?.name || b.product_a_id;
+                  const c = products.find((p) => p.id === b.product_b_id)?.name || b.product_b_id;
+                  return (
+                    <div key={b.id} className="flex items-center gap-2 rounded-lg border border-border p-2">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold">{b.name}</p>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {b.brand.toUpperCase()} • {a} + {c} • EGP {toMoneyInput(b.bundle_price)}
+                        </p>
+                      </div>
+                      <button
+                        className="text-xs px-2 py-1 rounded border"
+                        onClick={() =>
+                          setBundleDraft({
+                            id: b.id,
+                            brand: b.brand,
+                            name: b.name,
+                            productAId: b.product_a_id,
+                            productBId: b.product_b_id,
+                            bundlePrice: toMoneyInput(b.bundle_price),
+                            isActive: b.is_active,
+                            sortOrder: b.sort_order,
+                          })
+                        }
+                      >
+                        Edit
+                      </button>
+                      <button
+                        className="text-xs px-2 py-1 rounded border border-destructive/40 text-destructive"
+                        onClick={async () => {
+                          if (!confirm("Delete this bundle?")) return;
+                          setBusy(true);
+                          try {
+                            await adminDeleteBundle(b.id);
+                            setBundles((prev) => prev.filter((x) => x.id !== b.id));
+                          } catch (err: unknown) {
+                            setError(err instanceof Error ? err.message : "Failed to delete bundle");
+                            await load();
+                          } finally {
+                            setBusy(false);
+                          }
+                        }}
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  );
+                })}
             </div>
           </div>
 

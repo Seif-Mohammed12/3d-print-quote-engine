@@ -37,14 +37,20 @@ export const handler = async (event) => {
     short: String(payload.short || "").trim(),
     description: String(payload.description || "").trim(),
     grams: Number(payload.grams || 0),
-    base_price: Number(payload.basePrice || 0),
+    base_price: parseFloat(String(payload.basePrice || 0)),
     discount_enabled: Boolean(payload.discountEnabled),
-    discount_price: payload.discountEnabled ? Number(payload.discountPrice || 0) : null,
+    discount_price: payload.discountEnabled ? parseFloat(String(payload.discountPrice || 0)) : null,
     stock_qty: Number(payload.stockQty || 0),
     in_stock: Boolean(payload.inStock),
     is_published: Boolean(payload.isPublished),
     sort_order: Number(payload.sortOrder || 0),
   };
+  if (!Number.isFinite(row.base_price) || row.base_price < 0) {
+    return json(400, { error: "Invalid base price" });
+  }
+  if (row.discount_enabled && (!Number.isFinite(row.discount_price) || row.discount_price < 0)) {
+    return json(400, { error: "Invalid discount price" });
+  }
 
   if (id) {
     const { data, error } = await supabase.from("products").update(row).eq("id", id).select("*").single();
