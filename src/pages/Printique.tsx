@@ -7,8 +7,14 @@ import { useMemo, useState } from "react";
 import QuickAddProductDialog from "@/components/QuickAddProductDialog";
 import { useBrandProducts } from "@/hooks/use-brand-products";
 import { useIsMobile } from "@/hooks/use-mobile";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
-type ProductFilter = "all" | "discounted" | "under300" | "300to600" | "above600";
 type ProductSort = "featured" | "priceAsc" | "priceDesc" | "nameAsc";
 
 function getEffectivePrice(product: Product) {
@@ -17,7 +23,6 @@ function getEffectivePrice(product: Product) {
 
 const Printique = () => {
   const [quickAddProduct, setQuickAddProduct] = useState<Product | null>(null);
-  const [filterBy, setFilterBy] = useState<ProductFilter>("all");
   const [sortBy, setSortBy] = useState<ProductSort>("featured");
   const isMobile = useIsMobile();
   const { data: products, isPending, isError, error } = useBrandProducts("printique");
@@ -25,25 +30,16 @@ const Printique = () => {
   const visibleProducts = useMemo(() => {
     const base = [...(products ?? [])];
 
-    const filtered = base.filter((product) => {
-      const price = getEffectivePrice(product);
-      if (filterBy === "discounted") return Boolean(product.discount?.enabled && product.discount.price > 0);
-      if (filterBy === "under300") return price < 300;
-      if (filterBy === "300to600") return price >= 300 && price <= 600;
-      if (filterBy === "above600") return price > 600;
-      return true;
-    });
-
     if (sortBy === "priceAsc") {
-      filtered.sort((a, b) => getEffectivePrice(a) - getEffectivePrice(b));
+      base.sort((a, b) => getEffectivePrice(a) - getEffectivePrice(b));
     } else if (sortBy === "priceDesc") {
-      filtered.sort((a, b) => getEffectivePrice(b) - getEffectivePrice(a));
+      base.sort((a, b) => getEffectivePrice(b) - getEffectivePrice(a));
     } else if (sortBy === "nameAsc") {
-      filtered.sort((a, b) => a.name.localeCompare(b.name));
+      base.sort((a, b) => a.name.localeCompare(b.name));
     }
 
-    return filtered;
-  }, [products, filterBy, sortBy]);
+    return base;
+  }, [products, sortBy]);
 
   return (
     <Layout>
@@ -99,37 +95,24 @@ const Printique = () => {
             </p>
           </div>
 
-          <div className="rounded-2xl border border-blue-300/20 bg-slate-950/60 p-4 md:p-5">
-            <div className="grid gap-3 md:grid-cols-2">
-              <label className="space-y-1">
-                <span className="text-[11px] uppercase tracking-[0.2em] text-blue-200/80">Filter</span>
-                <select
-                  value={filterBy}
-                  onChange={(e) => setFilterBy(e.target.value as ProductFilter)}
-                  className="w-full rounded-lg border border-slate-700/80 bg-slate-900/80 px-3 py-2 text-sm text-slate-100 outline-none transition-colors focus:border-blue-300/45"
-                >
-                  <option value="all">All products</option>
-                  <option value="discounted">Discounted only</option>
-                  <option value="under300">Under EGP 300</option>
-                  <option value="300to600">EGP 300 to EGP 600</option>
-                  <option value="above600">Above EGP 600</option>
-                </select>
-              </label>
-
-              <label className="space-y-1">
-                <span className="text-[11px] uppercase tracking-[0.2em] text-blue-200/80">Sort by</span>
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value as ProductSort)}
-                  className="w-full rounded-lg border border-slate-700/80 bg-slate-900/80 px-3 py-2 text-sm text-slate-100 outline-none transition-colors focus:border-blue-300/45"
-                >
-                  <option value="featured">Featured</option>
-                  <option value="priceAsc">Price: Low to High</option>
-                  <option value="priceDesc">Price: High to Low</option>
-                  <option value="nameAsc">Name: A to Z</option>
-                </select>
-              </label>
-            </div>
+          <div className="flex flex-wrap items-center justify-between gap-3 border-y border-blue-300/15 py-3">
+            <p className="text-xs text-blue-100/70">
+              Showing <span className="font-semibold text-blue-200">{visibleProducts.length}</span> products
+            </p>
+            <label className="inline-flex items-center gap-2">
+              <span className="text-xs text-blue-100/70">Sort</span>
+              <Select value={sortBy} onValueChange={(value) => setSortBy(value as ProductSort)}>
+                <SelectTrigger className="h-8 min-w-[190px] border-slate-700/70 bg-slate-900/70 px-3 text-xs text-slate-100 focus:ring-blue-300/40 focus:ring-offset-0">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="border-blue-300/20 bg-slate-950/95 text-slate-100">
+                  <SelectItem className="text-xs focus:bg-blue-300/15 focus:text-blue-100" value="featured">Featured</SelectItem>
+                  <SelectItem className="text-xs focus:bg-blue-300/15 focus:text-blue-100" value="priceAsc">Price: Low to High</SelectItem>
+                  <SelectItem className="text-xs focus:bg-blue-300/15 focus:text-blue-100" value="priceDesc">Price: High to Low</SelectItem>
+                  <SelectItem className="text-xs focus:bg-blue-300/15 focus:text-blue-100" value="nameAsc">Name: A to Z</SelectItem>
+                </SelectContent>
+              </Select>
+            </label>
           </div>
 
           <motion.div
@@ -143,7 +126,7 @@ const Printique = () => {
             ) : isError ? (
               <p className="col-span-full text-center text-sm text-red-400 py-16">{error?.message || "Could not load products."}</p>
             ) : visibleProducts.length === 0 ? (
-              <p className="col-span-full text-center text-sm text-slate-400 py-16">No products match this filter yet.</p>
+              <p className="col-span-full text-center text-sm text-slate-400 py-16">No products available yet.</p>
             ) : null}
             {visibleProducts.map((product, idx) => (
               <motion.div

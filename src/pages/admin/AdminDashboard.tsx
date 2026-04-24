@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import Layout from "@/components/Layout";
 import AdminNav from "@/components/admin/AdminNav";
@@ -73,6 +73,19 @@ function swapRows<T>(rows: T[], from: number, to: number): T[] {
   return next;
 }
 
+function toEditorHtml(input: string): string {
+  const raw = String(input || "").trim();
+  if (!raw) return "";
+  const hasHtml = /<\/?[a-z][\s\S]*>/i.test(raw);
+  if (hasHtml) return raw;
+  return raw
+    .split(/\n\n+/)
+    .map((block) => block.trim())
+    .filter(Boolean)
+    .map((block) => `<p>${block.replace(/\n/g, "<br/>")}</p>`)
+    .join("");
+}
+
 function toMoneyInput(value: number | null | undefined): string {
   if (value == null || Number.isNaN(Number(value))) return "0.00";
   return Number(value).toFixed(2);
@@ -122,6 +135,9 @@ export default function AdminDashboard() {
   const [busy, setBusy] = useState(false);
   const [mediaBusy, setMediaBusy] = useState(false);
   const [colorBusy, setColorBusy] = useState(false);
+  const [editorFontSizePx, setEditorFontSizePx] = useState("16");
+  const [editorTextColor, setEditorTextColor] = useState("#e5e7eb");
+  const descriptionEditorRef = useRef<HTMLDivElement | null>(null);
 
   async function load() {
     setLoading(true);
@@ -207,6 +223,48 @@ export default function AdminDashboard() {
       sortOrder: Number(selectedProduct.sort_order || 0),
     });
   }, [selectedProductId, selectedProduct]);
+
+  useEffect(() => {
+    const editor = descriptionEditorRef.current;
+    if (!editor) return;
+    const nextHtml = toEditorHtml(form.description);
+    if (editor.innerHTML !== nextHtml) {
+      editor.innerHTML = nextHtml;
+    }
+  }, [form.description]);
+
+  const applyDescriptionCommand = (command: string, value?: string) => {
+    const editor = descriptionEditorRef.current;
+    if (!editor) return;
+    editor.focus();
+    document.execCommand(command, false, value);
+    setForm((prev) => ({ ...prev, description: editor.innerHTML }));
+  };
+
+  const applyDescriptionInlineStyle = (style: Partial<CSSStyleDeclaration>) => {
+    const editor = descriptionEditorRef.current;
+    if (!editor) return;
+    editor.focus();
+
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) return;
+    const range = selection.getRangeAt(0);
+
+    if (range.collapsed) return;
+    if (!editor.contains(range.commonAncestorContainer)) return;
+
+    const span = document.createElement("span");
+    Object.assign(span.style, style);
+    span.appendChild(range.extractContents());
+    range.insertNode(span);
+
+    const nextRange = document.createRange();
+    nextRange.selectNodeContents(span);
+    selection.removeAllRanges();
+    selection.addRange(nextRange);
+
+    setForm((prev) => ({ ...prev, description: editor.innerHTML }));
+  };
 
   const colorDraftHex = useMemo(() => {
     const candidate = (colorDraft.hex || "").trim();
@@ -357,8 +415,83 @@ export default function AdminDashboard() {
                 </div>
               </div>
               <label className="mb-1 block text-xs font-medium text-muted-foreground">About This Product Description (inside)</label>
-              <textarea className="w-full rounded-lg bg-secondary border border-border px-3 py-2 text-sm min-h-24" placeholder="Detailed description shown in About this product on the product details page."
-                value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} maxLength={5000} />
+              <div className="rounded-lg border border-border bg-secondary/30 p-2 space-y-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    className="rounded border border-border px-2 py-1 text-xs font-semibold"
+                    onClick={() => applyDescriptionCommand("bold")}
+                  >
+                    Bold
+                  </button>
+                  <button
+                    type="button"
+                    className="rounded border border-border px-2 py-1 text-xs"
+                    onClick={() => applyDescriptionCommand("underline")}
+                  >
+                    Underline
+                  </button>
+
+                  <label className="ml-2 inline-flex items-center gap-1 text-xs text-muted-foreground">
+                    Size
+                    <input
+                      type="number"
+                      min={10}
+                      max={72}
+                      value={editorFontSizePx}
+                      onChange={(e) => setEditorFontSizePx(e.target.value)}
+                      className="w-16 rounded border border-border bg-secondary px-2 py-1 text-xs text-foreground"
+                    />
+                    px
+                  </label>
+                  <button
+                    type="button"
+                    className="rounded border border-border px-2 py-1 text-xs"
+                    onClick={() => {
+                      const size = Math.min(72, Math.max(10, Number(editorFontSizePx || 16)));
+                      applyDescriptionInlineStyle({ fontSize: `${size}px` });
+                    }}
+                  >
+                    Apply size
+                  </button>
+
+                  <label className="ml-2 inline-flex items-center gap-1 text-xs text-muted-foreground">
+                    Text color
+                    <input
+                      type="color"
+                      value={editorTextColor}
+                      onChange={(e) => setEditorTextColor(e.target.value)}
+                      className="h-7 w-9 rounded border border-border bg-secondary p-1"
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    className="rounded border border-border px-2 py-1 text-xs"
+                    onClick={() => applyDescriptionInlineStyle({ color: editorTextColor })}
+                  >
+                    Apply color
+                  </button>
+
+                  <button
+                    type="button"
+                    className="rounded border border-border px-2 py-1 text-xs"
+                    onClick={() => applyDescriptionCommand("removeFormat")}
+                  >
+                    Clear format
+                  </button>
+                </div>
+
+                <div
+                  ref={descriptionEditorRef}
+                  contentEditable
+                  suppressContentEditableWarning
+                  className="min-h-28 rounded-lg border border-border bg-secondary px-3 py-2 text-sm focus:outline-none"
+                  onInput={(e) => {
+                    const html = (e.currentTarget as HTMLDivElement).innerHTML;
+                    setForm((prev) => ({ ...prev, description: html }));
+                  }}
+                />
+              </div>
 
               <div className="flex flex-wrap items-center gap-4 text-sm">
                 <label className="inline-flex items-center gap-2"><input type="checkbox" checked={form.discountEnabled} onChange={(e) => setForm({ ...form, discountEnabled: e.target.checked })} /> Discount enabled</label>

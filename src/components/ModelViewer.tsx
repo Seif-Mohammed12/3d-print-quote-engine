@@ -1,6 +1,5 @@
-import { Suspense, useMemo } from "react";
-import { Canvas } from "@react-three/fiber";
-import { OrbitControls, Stage } from "@react-three/drei";
+import { Suspense, useMemo, useRef } from "react";
+import { Canvas, useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 
 interface Props {
@@ -58,14 +57,27 @@ function STLModel({ buffer }: { buffer: ArrayBuffer }) {
   );
 }
 
+function AutoRotate({ children }: { children: React.ReactNode }) {
+  const groupRef = useRef<THREE.Group | null>(null);
+
+  useFrame((_, delta) => {
+    if (!groupRef.current) return;
+    groupRef.current.rotation.y += delta * 0.35;
+  });
+
+  return <group ref={groupRef}>{children}</group>;
+}
+
 const ModelViewer = ({ fileBuffer }: Props) => (
   <div className="w-full aspect-square rounded-xl overflow-hidden glass-card">
-    <Canvas camera={{ fov: 45 }}>
+    <Canvas camera={{ fov: 45, position: [0, 0, 140] }}>
       <Suspense fallback={null}>
-        <Stage environment="city" intensity={0.6}>
+        <ambientLight intensity={0.55} />
+        <directionalLight position={[40, 40, 30]} intensity={0.9} />
+        <directionalLight position={[-30, -15, -20]} intensity={0.35} />
+        <AutoRotate>
           <STLModel buffer={fileBuffer} />
-        </Stage>
-        <OrbitControls />
+        </AutoRotate>
       </Suspense>
     </Canvas>
   </div>
