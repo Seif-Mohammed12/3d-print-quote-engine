@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes, useParams } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { CartProvider } from "@/lib/cart-context";
@@ -10,9 +10,8 @@ import ScrollToTop from "@/components/ScrollToTop";
 import CookieConsentBanner from "@/components/CookieConsentBanner";
 import Index from "./pages/Index";
 import Services from "./pages/Services";
-import Pforge from "./pages/Pforge";
-import Printique from "./pages/Printique";
-import BrandProductDetail from "./pages/BrandProductDetail";
+import Products from "./pages/Products";
+import ProductDetail from "./pages/ProductDetail";
 import Gallery from "./pages/Gallery";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
@@ -42,6 +41,11 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
+function LegacyProductRedirect() {
+  const { productId = "" } = useParams();
+  return <Navigate to={`/products/${productId}`} replace />;
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
@@ -54,16 +58,12 @@ const App = () => (
             <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/services" element={<Services />} />
-            <Route path="/pforge" element={<Pforge />} />
-            <Route
-              path="/pforge/:productId"
-              element={<BrandProductDetail brand="pforge" />}
-            />
-            <Route path="/printique" element={<Printique />} />
-            <Route
-              path="/printique/:productId"
-              element={<BrandProductDetail brand="printique" />}
-            />
+            <Route path="/products" element={<Products />} />
+            <Route path="/products/:productId" element={<ProductDetail />} />
+            <Route path="/pforge" element={<Navigate to="/products" replace />} />
+            <Route path="/pforge/:productId" element={<LegacyProductRedirect />} />
+            <Route path="/printique" element={<Navigate to="/products" replace />} />
+            <Route path="/printique/:productId" element={<LegacyProductRedirect />} />
             <Route path="/gallery" element={<Gallery />} />
             <Route path="/about" element={<About />} />
             <Route path="/contact" element={<Contact />} />

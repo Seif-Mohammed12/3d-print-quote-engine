@@ -252,7 +252,7 @@ export default function ProductCheckout() {
     if (checkoutMode !== "single" || !draft) return;
     if (!product) {
       toast.error("Product not found");
-      navigate(draft.brand === "pforge" ? "/pforge" : "/printique", { replace: true });
+      navigate("/products", { replace: true });
     }
   }, [checkoutMode, draft, product, navigate]);
 
@@ -521,8 +521,7 @@ export default function ProductCheckout() {
                               ) : null}
                             </div>
                             <p className="text-xs text-muted-foreground mt-1">
-                              {line.item.brand.toUpperCase()} • Qty {line.item.qty} • Primary:{" "}
-                              {line.primary?.name || "—"}
+                              Qty {line.item.qty} • Primary: {line.primary?.name || "—"}
                               {line.hasSecondaryColors ? ` • Secondary: ${line.secondary?.name || "—"}` : ""}
                             </p>
                             {line.item.isBundle && (line.item.bundleItems?.length || line.product?.bundleItems?.length) ? (
@@ -556,7 +555,7 @@ export default function ProductCheckout() {
                           ) : null}
                         </div>
                         <p className="text-xs text-muted-foreground mt-1">
-                          {draft!.brand.toUpperCase()} • Primary: {primary?.name || "—"}
+                          Primary: {primary?.name || "—"}
                           {hasSingleSecondaryColors ? ` • Secondary: ${secondary?.name || "—"}` : ""}
                         </p>
                         {draft!.isBundle && (draft!.bundleItems?.length || product!.bundleItems?.length) ? (

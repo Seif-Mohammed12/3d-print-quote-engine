@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Target, Rocket, Heart } from "lucide-react";
+import { Target, Rocket, Heart, Package } from "lucide-react";
 import { Link } from "react-router-dom";
 import Layout from "@/components/Layout";
 import SectionHeading from "@/components/SectionHeading";
@@ -8,25 +8,6 @@ const values = [
   { icon: Target, title: "Precision", desc: "Every print meets exacting standards. We obsess over quality so you don't have to." },
   { icon: Rocket, title: "Speed", desc: "Most orders ship within 48 hours. Need it faster? We offer rush options." },
   { icon: Heart, title: "Affordability", desc: "Transparent pricing with no hidden fees. Our smart quoting system ensures fair prices." },
-];
-
-const subBrands = [
-  {
-    name: "Pforge",
-    tag: "Gaming Accessories",
-    desc: "A focused line of controller stands, headset hooks, docks, and setup accessories designed to elevate gaming spaces.",
-    to: "/pforge",
-    accent: "text-cyan-300",
-    border: "border-cyan-500/35",
-  },
-  {
-    name: "Printique",
-    tag: "Premium Decor",
-    desc: "A modern decor brand featuring curated pieces that blend dark elegance, clean forms, and practical everyday function.",
-    to: "/printique",
-    accent: "text-blue-200",
-    border: "border-blue-500/35",
-  },
 ];
 
 const About = () => (
@@ -55,30 +36,28 @@ const About = () => (
           </p>
         </motion.div>
 
-        <SectionHeading
-          title="Our Sub-Brands"
-          subtitle="Two focused product lines built under the 3D Print It umbrella."
-          gradient={false}
-        />
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-16">
-          {subBrands.map((brand, i) => (
-            <motion.div
-              key={brand.name}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.1 }}
-              className={`glass-card-hover p-6 ${brand.border}`}
-            >
-              <p className={`text-xs uppercase tracking-[0.2em] font-semibold ${brand.accent}`}>{brand.tag}</p>
-              <h3 className="font-heading text-2xl font-semibold text-foreground mt-2">{brand.name}</h3>
-              <p className="text-sm text-muted-foreground mt-3 leading-relaxed">{brand.desc}</p>
-              <Link to={brand.to} className={`inline-block mt-5 text-sm font-semibold ${brand.accent} hover:opacity-90`}>
-                Explore {brand.name}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="glass-card-hover mb-16 border border-blue-500/35 p-6"
+        >
+          <div className="flex items-start gap-4">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+              <Package className="h-6 w-6 text-primary" />
+            </div>
+            <div className="space-y-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-200">Products</p>
+              <h3 className="font-heading text-2xl font-semibold text-foreground">One storefront, one product catalog</h3>
+              <p className="text-sm leading-relaxed text-muted-foreground">
+                We&apos;re keeping the shopping experience simple for now with a single products section that brings all of our ready-made items together in one place.
+              </p>
+              <Link to="/products" className="inline-block text-sm font-semibold text-blue-200 hover:opacity-90">
+                Browse products
               </Link>
-            </motion.div>
-          ))}
-        </div>
+            </div>
+          </div>
+        </motion.div>
 
         <SectionHeading title="Our Values" gradient={false} />
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

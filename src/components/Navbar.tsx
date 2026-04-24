@@ -15,8 +15,7 @@ import type { BrandId, Product } from "@/lib/brand-catalog";
 const navLinks = [
   { to: "/", label: "Home" },
   { to: "/services", label: "Services" },
-  { to: "/pforge", label: "Pforge" },
-  { to: "/printique", label: "Printique" },
+  { to: "/products", label: "Products" },
   { to: "/gallery", label: "Gallery" },
   { to: "/about", label: "About" },
   { to: "/contact", label: "Contact" },
@@ -86,24 +85,6 @@ const Navbar = () => {
             3D Print <span className="text-primary">It</span>
           </span>
         </Link>
-
-        {/* Mobile quick links (avoid having to open menu) */}
-        <div className="md:hidden flex items-center gap-2">
-          <Link
-            to="/pforge"
-            className="px-2 py-1 rounded-lg text-xs font-semibold bg-cyan-400/10 border border-cyan-300/30 text-cyan-200 hover:bg-cyan-400/15 transition-colors"
-            onClick={() => setOpen(false)}
-          >
-            Pforge
-          </Link>
-          <Link
-            to="/printique"
-            className="px-2 py-1 rounded-lg text-xs font-semibold bg-blue-400/10 border border-blue-300/30 text-blue-200 hover:bg-blue-400/15 transition-colors"
-            onClick={() => setOpen(false)}
-          >
-            Printique
-          </Link>
-        </div>
 
         {/* Desktop */}
         <div className="hidden md:flex items-center gap-1">
@@ -342,6 +323,7 @@ const Navbar = () => {
               <div className="max-h-[50vh] space-y-3 overflow-y-auto pr-1">
                 {productCart.map((item) => {
                   const product = resolveProduct(item.brand, item.productId);
+                  const itemName = product?.name || item.productName || (isCatalogLoading ? "Loading product..." : "Product unavailable");
                   const primary = product?.primaryColors.find((c) => c.id === item.primaryColorId)?.name || (isCatalogLoading ? "Loading..." : "N/A");
                   const hasSecondaryColors = (product?.secondaryColors.length || 0) > 0;
                   const secondary = hasSecondaryColors
@@ -351,12 +333,24 @@ const Navbar = () => {
                     <div key={item.id} className="rounded-xl border border-slate-800 bg-slate-900/40 p-4">
                       <div className="flex items-start justify-between gap-3">
                         <div>
-                          <p className="text-sm font-semibold text-slate-100">{product?.name || (isCatalogLoading ? "Loading product..." : "Product unavailable")}</p>
-                          <p className="mt-1 text-xs text-slate-400">{item.brand.toUpperCase()}</p>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <p className="text-sm font-semibold text-slate-100">{itemName}</p>
+                            {item.isBundle ? (
+                              <span className="rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-primary">
+                                Bundle
+                              </span>
+                            ) : null}
+                          </div>
+                          <p className="mt-1 text-xs text-slate-400">Qty: {Math.max(1, item.qty)}</p>
                           <p className="mt-1 text-xs text-slate-400">
                             Primary: {primary}
                             {hasSecondaryColors ? ` • Secondary: ${secondary}` : ""}
                           </p>
+                          {item.isBundle && item.bundleItems?.length ? (
+                            <p className="mt-1 text-xs text-slate-400">
+                              Includes: {item.bundleItems.map((bundleItem) => `${bundleItem.name}${bundleItem.qty > 1 ? ` x${bundleItem.qty}` : ""}`).join(", ")}
+                            </p>
+                          ) : null}
                           <div className="mt-3 inline-flex items-center rounded-lg border border-slate-700 bg-slate-900/70">
                             <button
                               type="button"

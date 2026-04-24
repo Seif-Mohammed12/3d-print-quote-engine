@@ -44,7 +44,7 @@ export default function ProductCart() {
     const map = new Map<string, Product>();
     brandsInCart.forEach((brand, idx) => {
       const rows = brandQueries[idx]?.data || [];
-      rows.forEach((p) => map.set(`${brand}:${p.id}`, p));
+      rows.forEach((product) => map.set(`${brand}:${product.id}`, product));
     });
     return map;
   }, [brandsInCart, brandQueries]);
@@ -64,7 +64,7 @@ export default function ProductCart() {
             <button
               type="button"
               onClick={() => navigate(-1)}
-              className="rounded-lg border border-border px-4 py-2 text-sm font-semibold text-foreground hover:bg-secondary transition-all"
+              className="rounded-lg border border-border px-4 py-2 text-sm font-semibold text-foreground transition-all hover:bg-secondary"
             >
               Back
             </button>
@@ -74,24 +74,28 @@ export default function ProductCart() {
             <div className="glass-card p-8 text-center">
               <p className="text-muted-foreground">Your product cart is empty.</p>
               <Link
-                to="/pforge"
-                className="inline-flex mt-4 rounded-lg bg-primary px-5 py-2.5 font-semibold text-primary-foreground"
+                to="/products"
+                className="mt-4 inline-flex rounded-lg bg-primary px-5 py-2.5 font-semibold text-primary-foreground"
               >
                 Browse products
               </Link>
             </div>
           ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              <div className="lg:col-span-2 space-y-4">
+            <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+              <div className="space-y-4 lg:col-span-2">
                 {items.map((item, idx) => {
                   const product = resolveProduct(item.brand, item.productId);
                   const itemName =
                     product?.name || item.productName || (isCatalogLoading ? "Loading product..." : "Product unavailable");
-                  const primary = product?.primaryColors.find((c) => c.id === item.primaryColorId)?.name || (isCatalogLoading ? "Loading..." : "N/A");
+                  const primary =
+                    product?.primaryColors.find((color) => color.id === item.primaryColorId)?.name ||
+                    (isCatalogLoading ? "Loading..." : "N/A");
                   const hasSecondaryColors = (product?.secondaryColors.length || 0) > 0;
                   const secondary = hasSecondaryColors
-                    ? product?.secondaryColors.find((c) => c.id === item.secondaryColorId)?.name || (isCatalogLoading ? "Loading..." : "N/A")
+                    ? product?.secondaryColors.find((color) => color.id === item.secondaryColorId)?.name ||
+                      (isCatalogLoading ? "Loading..." : "N/A")
                     : null;
+
                   return (
                     <motion.div
                       key={item.id}
@@ -110,24 +114,20 @@ export default function ProductCart() {
                               </span>
                             ) : null}
                           </div>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {item.brand.toUpperCase()} • Qty: {item.qty}
-                          </p>
-                          <p className="text-xs text-muted-foreground mt-1">
+                          <p className="mt-1 text-xs text-muted-foreground">Qty: {item.qty}</p>
+                          <p className="mt-1 text-xs text-muted-foreground">
                             Primary: {primary}
                             {hasSecondaryColors ? ` • Secondary: ${secondary}` : ""}
                           </p>
                           {item.isBundle && item.bundleItems?.length ? (
-                            <p className="text-xs text-muted-foreground mt-1">
+                            <p className="mt-1 text-xs text-muted-foreground">
                               Includes: {item.bundleItems.map((bundleItem) => `${bundleItem.name}${bundleItem.qty > 1 ? ` x${bundleItem.qty}` : ""}`).join(", ")}
                             </p>
                           ) : null}
                         </div>
 
                         <div className="text-right">
-                          <p className="font-semibold text-primary">
-                            EGP{(item.unitPrice * Math.max(1, item.qty)).toFixed(0)}
-                          </p>
+                          <p className="font-semibold text-primary">EGP{(item.unitPrice * Math.max(1, item.qty)).toFixed(0)}</p>
                           <button
                             type="button"
                             onClick={() => removeProductFromCart(item.id)}
@@ -143,13 +143,13 @@ export default function ProductCart() {
               </div>
 
               <div className="lg:col-span-1">
-                <div className="glass-card p-6 sticky top-24 space-y-4">
+                <div className="glass-card sticky top-24 space-y-4 p-6">
                   <h3 className="font-heading font-semibold text-foreground">Summary</h3>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">Items</span>
                     <span className="text-foreground">{items.length}</span>
                   </div>
-                  <div className="flex items-center justify-between text-sm pb-4 border-b border-border">
+                  <div className="flex items-center justify-between border-b border-border pb-4 text-sm">
                     <span className="text-muted-foreground">Subtotal</span>
                     <span className="text-foreground">EGP{subtotal.toFixed(0)}</span>
                   </div>
@@ -160,7 +160,7 @@ export default function ProductCart() {
                       sessionStorage.setItem("productCartCheckout", "true");
                       navigate("/product-checkout");
                     }}
-                    className="w-full py-3 rounded-lg bg-primary text-primary-foreground font-semibold hover:shadow-[0_0_20px_-5px_hsl(var(--neon-glow)/0.5)] transition-all"
+                    className="w-full rounded-lg bg-primary py-3 font-semibold text-primary-foreground transition-all hover:shadow-[0_0_20px_-5px_hsl(var(--neon-glow)/0.5)]"
                   >
                     Checkout
                   </button>
@@ -168,7 +168,7 @@ export default function ProductCart() {
                   <button
                     type="button"
                     onClick={clearProductCart}
-                    className="w-full py-3 rounded-lg border border-border text-foreground font-semibold hover:bg-secondary transition-all"
+                    className="w-full rounded-lg border border-border py-3 font-semibold text-foreground transition-all hover:bg-secondary"
                   >
                     Clear cart
                   </button>
@@ -181,4 +181,3 @@ export default function ProductCart() {
     </Layout>
   );
 }
-
