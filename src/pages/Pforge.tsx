@@ -3,43 +3,15 @@ import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import type { Product } from "@/lib/brand-catalog";
 import { Image as ImageIcon } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import QuickAddProductDialog from "@/components/QuickAddProductDialog";
 import { useBrandProducts } from "@/hooks/use-brand-products";
 import { useIsMobile } from "@/hooks/use-mobile";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-
-type ProductSort = "featured" | "priceAsc" | "priceDesc" | "nameAsc";
-
-function getEffectivePrice(product: Product) {
-  return product.discount?.enabled && product.discount.price > 0 ? product.discount.price : product.basePrice;
-}
 
 const Pforge = () => {
   const [quickAddProduct, setQuickAddProduct] = useState<Product | null>(null);
-  const [sortBy, setSortBy] = useState<ProductSort>("featured");
   const isMobile = useIsMobile();
   const { data: products, isPending, isError, error } = useBrandProducts("pforge");
-
-  const visibleProducts = useMemo(() => {
-    const base = [...(products ?? [])];
-
-    if (sortBy === "priceAsc") {
-      base.sort((a, b) => getEffectivePrice(a) - getEffectivePrice(b));
-    } else if (sortBy === "priceDesc") {
-      base.sort((a, b) => getEffectivePrice(b) - getEffectivePrice(a));
-    } else if (sortBy === "nameAsc") {
-      base.sort((a, b) => a.name.localeCompare(b.name));
-    }
-
-    return base;
-  }, [products, sortBy]);
 
   return (
     <Layout>
@@ -94,26 +66,6 @@ const Pforge = () => {
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center justify-between gap-3 border-y border-cyan-300/15 py-3">
-            <p className="text-xs text-cyan-100/70">
-              Showing <span className="font-semibold text-cyan-200">{visibleProducts.length}</span> products
-            </p>
-            <label className="inline-flex items-center gap-2">
-              <span className="text-xs text-cyan-100/70">Sort</span>
-              <Select value={sortBy} onValueChange={(value) => setSortBy(value as ProductSort)}>
-                <SelectTrigger className="h-8 min-w-[190px] border-slate-700/70 bg-slate-900/70 px-3 text-xs text-slate-100 focus:ring-cyan-300/40 focus:ring-offset-0">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="border-cyan-300/20 bg-slate-950/95 text-slate-100">
-                  <SelectItem className="text-xs focus:bg-cyan-300/15 focus:text-cyan-100" value="featured">Featured</SelectItem>
-                  <SelectItem className="text-xs focus:bg-cyan-300/15 focus:text-cyan-100" value="priceAsc">Price: Low to High</SelectItem>
-                  <SelectItem className="text-xs focus:bg-cyan-300/15 focus:text-cyan-100" value="priceDesc">Price: High to Low</SelectItem>
-                  <SelectItem className="text-xs focus:bg-cyan-300/15 focus:text-cyan-100" value="nameAsc">Name: A to Z</SelectItem>
-                </SelectContent>
-              </Select>
-            </label>
-          </div>
-
           <motion.div
             id="pforge-products"
             initial={{ opacity: 0, y: 20 }}
@@ -124,10 +76,8 @@ const Pforge = () => {
               <p className="col-span-full text-center text-sm text-slate-400 py-16">Loading products…</p>
             ) : isError ? (
               <p className="col-span-full text-center text-sm text-red-400 py-16">{error?.message || "Could not load products."}</p>
-            ) : visibleProducts.length === 0 ? (
-              <p className="col-span-full text-center text-sm text-slate-400 py-16">No products available yet.</p>
             ) : null}
-            {visibleProducts.map((product, idx) => (
+            {(products ?? []).map((product, idx) => (
               <motion.div
                 key={product.id}
                 initial={isMobile ? false : { opacity: 0, y: 16 }}
@@ -141,6 +91,11 @@ const Pforge = () => {
 
                 <Link to={`/pforge/${product.id}`} className="block">
                   <div className="relative mb-4 h-44 rounded-xl border border-slate-800/70 bg-gradient-to-b from-slate-900/35 to-slate-950/70 overflow-hidden">
+                    {product.isBundle ? (
+                      <span className="absolute left-3 top-3 z-10 rounded-full border border-cyan-200/30 bg-black/55 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-cyan-100">
+                        Bundle
+                      </span>
+                    ) : null}
                     {product.images?.[0] ? (
                       <img
                         src={product.images[0]}
@@ -174,16 +129,21 @@ const Pforge = () => {
                     >
                       {product.short}
                     </p>
+                    {product.isBundle && product.bundleItems?.length ? (
+                      <p className="mt-2 text-[11px] text-slate-400">
+                        Includes {product.bundleItems.map((item) => `${item.name}${item.qty > 1 ? ` x${item.qty}` : ""}`).join(", ")}
+                      </p>
+                    ) : null}
                 </div>
 
                 <div className="mb-4 text-sm">
                   {product.discount?.enabled && product.discount.price > 0 ? (
                     <div className="flex items-baseline gap-2">
-                      <span className="font-semibold text-cyan-300">EGP{product.discount.price.toFixed(2)}</span>
-                      <span className="text-xs text-slate-500 line-through">EGP{product.basePrice.toFixed(2)}</span>
+                      <span className="font-semibold text-cyan-300">EGP{product.discount.price}</span>
+                      <span className="text-xs text-slate-500 line-through">EGP{product.basePrice}</span>
                     </div>
                   ) : (
-                    <span className="font-semibold text-cyan-300">EGP{product.basePrice.toFixed(2)}</span>
+                    <span className="font-semibold text-cyan-300">EGP{product.basePrice}</span>
                   )}
                 </div>
 
@@ -226,4 +186,3 @@ const Pforge = () => {
 };
 
 export default Pforge;
-

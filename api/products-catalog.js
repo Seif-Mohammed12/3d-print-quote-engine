@@ -19,6 +19,8 @@ function mapProduct(row, imagesByProduct, colorsByProduct) {
     inStock: Boolean(row.in_stock),
     isPublished: Boolean(row.is_published),
     sortOrder: Number(row.sort_order || 0),
+    isBundle: Boolean(row.is_bundle),
+    bundleItems: row.bundle_items || [],
     images: (imagesByProduct[row.id] || []).map((img) => img.image_url),
     primaryColors: colors
       .filter((c) => c.role === "primary")
@@ -77,6 +79,32 @@ export const handler = async (event) => {
   if (imagesError) return json(500, { error: imagesError.message });
   if (colorsError) return json(500, { error: colorsError.message });
 
+  const bundleProductIds = (products || []).filter((product) => product.is_bundle).map((product) => product.id);
+  let bundleItemsByProduct = {};
+  if (bundleProductIds.length > 0) {
+    const { data: bundleItems, error: bundleItemsError } = await supabase
+      .from("product_bundle_items")
+      .select("bundle_product_id, qty, component_product:component_product_id (id, name, slug)")
+      .in("bundle_product_id", bundleProductIds)
+      .order("sort_order", { ascending: true })
+      .order("created_at", { ascending: true });
+
+    if (bundleItemsError) return json(500, { error: bundleItemsError.message });
+
+    bundleItemsByProduct = (bundleItems || []).reduce((acc, row) => {
+      acc[row.bundle_product_id] ||= [];
+      if (row.component_product?.id) {
+        acc[row.bundle_product_id].push({
+          productId: row.component_product.id,
+          name: row.component_product.name,
+          slug: row.component_product.slug || undefined,
+          qty: Number(row.qty || 1),
+        });
+      }
+      return acc;
+    }, {});
+  }
+
   const imagesByProduct = {};
   for (const img of images || []) {
     imagesByProduct[img.product_id] ||= [];
@@ -89,7 +117,11 @@ export const handler = async (event) => {
     colorsByProduct[color.product_id].push(color);
   }
 
-  return json(200, { products: (products || []).map((p) => mapProduct(p, imagesByProduct, colorsByProduct)) });
+  return json(200, {
+    products: (products || []).map((p) =>
+      mapProduct({ ...p, bundle_items: bundleItemsByProduct[p.id] || [] }, imagesByProduct, colorsByProduct)
+    ),
+  });
   } catch (err) {
     console.error("products-catalog error:", err);
     return json(500, {

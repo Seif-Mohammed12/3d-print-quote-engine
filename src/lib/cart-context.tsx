@@ -16,6 +16,10 @@ export interface ProductCartItem {
   id: string;
   brand: BrandId;
   productId: string;
+  productName?: string;
+  productSlug?: string;
+  isBundle?: boolean;
+  bundleItems?: Array<{ productId: string; name: string; slug?: string; qty: number }>;
   qty: number;
   primaryColorId: string;
   secondaryColorId: string;
@@ -45,10 +49,16 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 export const CartProvider = ({ children }: { children: ReactNode }) => {
   const [cart, setCart] = useState<CartItem[]>(() => {
     const saved = localStorage.getItem("3d-print-cart");
-    return saved ? JSON.parse(saved).map((item: any) => ({
-      ...item,
-      fileBuffer: new ArrayBuffer(0), // Files can't be stored in localStorage
-    })) : [];
+    if (!saved) return [];
+    try {
+      const parsed = JSON.parse(saved) as Array<Omit<CartItem, "fileBuffer">>;
+      return parsed.map((item) => ({
+        ...item,
+        fileBuffer: new ArrayBuffer(0), // Files can't be stored in localStorage
+      }));
+    } catch {
+      return [];
+    }
   });
 
   const [productCart, setProductCart] = useState<ProductCartItem[]>(() => {

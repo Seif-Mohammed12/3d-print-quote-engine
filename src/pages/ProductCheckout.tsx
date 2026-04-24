@@ -26,6 +26,7 @@ type CheckoutMode = "loading" | "single" | "cart" | "empty";
 type CartLineResolved = {
   item: ProductCartItem;
   product: Product | null;
+  itemName: string;
   primary: { name: string } | null;
   secondary: { name: string } | null;
   hasSecondaryColors: boolean;
@@ -33,7 +34,12 @@ type CartLineResolved = {
   lineSubtotal: number;
 };
 
-async function sendProductOrderEmail(payload: any) {
+type ProductOrderEmailResponse = {
+  success?: boolean;
+  error?: string;
+};
+
+async function sendProductOrderEmail(payload: Record<string, unknown>) {
   const response = await fetch("/api/send-product-order-email", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -41,7 +47,7 @@ async function sendProductOrderEmail(payload: any) {
   });
 
   const contentType = response.headers.get("content-type") || "";
-  let data: any = null;
+  let data: ProductOrderEmailResponse | null = null;
   let text: string | null = null;
 
   try {
@@ -181,6 +187,7 @@ export default function ProductCheckout() {
         return {
           item,
           product: null,
+          itemName: item.productName || "Product unavailable",
           primary: null,
           secondary: null,
           hasSecondaryColors: false,
@@ -193,6 +200,7 @@ export default function ProductCheckout() {
       return {
         item,
         product: legacy,
+        itemName: legacy.name,
         primary,
         secondary,
         hasSecondaryColors: legacy.secondaryColors.length > 0,
@@ -388,6 +396,8 @@ export default function ProductCheckout() {
               items: cartLines
                 .filter((l) => l.product)
                 .map((line) => ({
+                  itemType: line.item.isBundle ? "bundle" : "product",
+                  isBundle: Boolean(line.item.isBundle),
                   brand: line.item.brand,
                   productId: line.product!.id,
                   name: line.product!.name,
@@ -396,6 +406,7 @@ export default function ProductCheckout() {
                   subtotal: line.lineSubtotal,
                   primaryColor: line.primary?.name || "",
                   secondaryColor: line.secondary?.name || "",
+                  bundleItems: line.item.bundleItems || line.product!.bundleItems || [],
                   discount:
                     line.product!.discount?.enabled && line.product!.discount.price
                       ? { oldPrice: line.product!.basePrice, newPrice: line.product!.discount.price }
@@ -413,6 +424,8 @@ export default function ProductCheckout() {
               createdAt: new Date().toISOString(),
               brand: draft!.brand,
               product: {
+                itemType: draft!.isBundle ? "bundle" : "product",
+                isBundle: Boolean(draft!.isBundle),
                 id: product!.id,
                 name: product!.name,
                 qty: draft!.qty,
@@ -420,6 +433,7 @@ export default function ProductCheckout() {
                 subtotal,
                 primaryColor: primary?.name || "",
                 secondaryColor: secondary?.name || "",
+                bundleItems: draft!.bundleItems || product!.bundleItems || [],
                 discount: product!.discount?.enabled
                   ? { oldPrice: product!.basePrice, newPrice: product!.discount.price }
                   : null,
@@ -455,7 +469,7 @@ export default function ProductCheckout() {
       toast.success("Order placed! Confirmation sent to your email.");
       navigate("/product-order-confirmation", { replace: true });
       clearProductCart();
-    } catch (err: any) {
+    } catch {
       toast.error("Failed to place order");
     } finally {
       setIsSubmitting(false);
@@ -498,12 +512,24 @@ export default function ProductCheckout() {
                           }`}
                         >
                           <div className="min-w-0">
-                            <p className="font-semibold text-foreground">{line.product!.name}</p>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <p className="font-semibold text-foreground">{line.itemName}</p>
+                              {line.item.isBundle ? (
+                                <span className="rounded-full border border-primary/30 bg-primary/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-primary">
+                                  Bundle
+                                </span>
+                              ) : null}
+                            </div>
                             <p className="text-xs text-muted-foreground mt-1">
                               {line.item.brand.toUpperCase()} • Qty {line.item.qty} • Primary:{" "}
                               {line.primary?.name || "—"}
                               {line.hasSecondaryColors ? ` • Secondary: ${line.secondary?.name || "—"}` : ""}
                             </p>
+                            {line.item.isBundle && (line.item.bundleItems?.length || line.product?.bundleItems?.length) ? (
+                              <p className="text-xs text-muted-foreground mt-1">
+                                Includes: {(line.item.bundleItems || line.product?.bundleItems || []).map((bundleItem) => `${bundleItem.name}${bundleItem.qty > 1 ? ` x${bundleItem.qty}` : ""}`).join(", ")}
+                              </p>
+                            ) : null}
                           </div>
                           <p className="font-semibold text-primary shrink-0">
                             EGP{line.lineSubtotal.toFixed(0)}
@@ -521,11 +547,23 @@ export default function ProductCheckout() {
                   <>
                     <div className="flex items-start justify-between gap-4 border-b border-border/50 pb-4">
                       <div>
-                        <p className="font-semibold text-foreground">{product!.name}</p>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="font-semibold text-foreground">{product!.name}</p>
+                          {draft!.isBundle ? (
+                            <span className="rounded-full border border-primary/30 bg-primary/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-primary">
+                              Bundle
+                            </span>
+                          ) : null}
+                        </div>
                         <p className="text-xs text-muted-foreground mt-1">
                           {draft!.brand.toUpperCase()} • Primary: {primary?.name || "—"}
                           {hasSingleSecondaryColors ? ` • Secondary: ${secondary?.name || "—"}` : ""}
                         </p>
+                        {draft!.isBundle && (draft!.bundleItems?.length || product!.bundleItems?.length) ? (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Includes: {(draft!.bundleItems || product!.bundleItems || []).map((bundleItem) => `${bundleItem.name}${bundleItem.qty > 1 ? ` x${bundleItem.qty}` : ""}`).join(", ")}
+                          </p>
+                        ) : null}
                       </div>
                       <p className="font-semibold text-primary">EGP{subtotal.toFixed(0)}</p>
                     </div>

@@ -85,6 +85,8 @@ export default function ProductCart() {
               <div className="lg:col-span-2 space-y-4">
                 {items.map((item, idx) => {
                   const product = resolveProduct(item.brand, item.productId);
+                  const itemName =
+                    product?.name || item.productName || (isCatalogLoading ? "Loading product..." : "Product unavailable");
                   const primary = product?.primaryColors.find((c) => c.id === item.primaryColorId)?.name || (isCatalogLoading ? "Loading..." : "N/A");
                   const hasSecondaryColors = (product?.secondaryColors.length || 0) > 0;
                   const secondary = hasSecondaryColors
@@ -100,7 +102,14 @@ export default function ProductCart() {
                     >
                       <div className="flex items-start justify-between gap-4">
                         <div>
-                          <p className="font-semibold text-foreground">{product?.name || (isCatalogLoading ? "Loading product..." : "Product unavailable")}</p>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <p className="font-semibold text-foreground">{itemName}</p>
+                            {item.isBundle ? (
+                              <span className="rounded-full border border-primary/30 bg-primary/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-primary">
+                                Bundle
+                              </span>
+                            ) : null}
+                          </div>
                           <p className="text-xs text-muted-foreground mt-1">
                             {item.brand.toUpperCase()} • Qty: {item.qty}
                           </p>
@@ -108,6 +117,11 @@ export default function ProductCart() {
                             Primary: {primary}
                             {hasSecondaryColors ? ` • Secondary: ${secondary}` : ""}
                           </p>
+                          {item.isBundle && item.bundleItems?.length ? (
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Includes: {item.bundleItems.map((bundleItem) => `${bundleItem.name}${bundleItem.qty > 1 ? ` x${bundleItem.qty}` : ""}`).join(", ")}
+                            </p>
+                          ) : null}
                         </div>
 
                         <div className="text-right">

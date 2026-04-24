@@ -121,11 +121,15 @@ export default function ProductOrderConfirmation() {
                 <div className="space-y-3">
                   <div className="text-foreground font-medium">Items</div>
                   <ul className="list-disc pl-5 space-y-1">
-                    {order.items.map((it: { name?: string; brand?: string; qty?: number }, i: number) => (
+                    {order.items.map((it: { name?: string; brand?: string; qty?: number; isBundle?: boolean; bundleItems?: Array<{ name?: string; qty?: number }> }, i: number) => (
                       <li key={i}>
                         {it.name}
                         {it.brand ? ` (${String(it.brand).toUpperCase()})` : ""}
                         {it.qty != null ? ` × ${it.qty}` : ""}
+                        {it.isBundle ? " [Bundle]" : ""}
+                        {it.isBundle && it.bundleItems?.length
+                          ? ` - Includes ${it.bundleItems.map((bundleItem) => `${bundleItem.name}${(bundleItem.qty || 1) > 1 ? ` x${bundleItem.qty}` : ""}`).join(", ")}`
+                          : ""}
                       </li>
                     ))}
                   </ul>
@@ -134,6 +138,10 @@ export default function ProductOrderConfirmation() {
                 <div>
                   <span className="text-foreground font-medium">Product:</span>{" "}
                   {order.product?.name}
+                  {order.product?.isBundle ? " [Bundle]" : ""}
+                  {order.product?.isBundle && order.product?.bundleItems?.length
+                    ? ` - Includes ${order.product.bundleItems.map((bundleItem: { name?: string; qty?: number }) => `${bundleItem.name}${(bundleItem.qty || 1) > 1 ? ` x${bundleItem.qty}` : ""}`).join(", ")}`
+                    : ""}
                 </div>
               )}
               <div>

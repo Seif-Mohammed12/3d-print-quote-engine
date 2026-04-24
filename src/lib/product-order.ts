@@ -7,6 +7,10 @@ export type PaymentMethod = "cod" | "instapay";
 export type ProductOrderDraft = {
   brand: BrandId;
   productId: string;
+  productName?: string;
+  productSlug?: string;
+  isBundle?: boolean;
+  bundleItems?: Array<{ productId: string; name: string; slug?: string; qty: number }>;
   primaryColorId: string;
   secondaryColorId: string;
   ledsEnabled: boolean;

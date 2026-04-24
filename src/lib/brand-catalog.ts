@@ -1,5 +1,6 @@
 import { Gamepad2, Headphones, MonitorSmartphone } from "lucide-react";
 import { Sparkles, PictureInPicture2, Droplets } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
 export type BrandId = "pforge" | "printique";
 
@@ -7,6 +8,13 @@ export type ProductColor = {
   id: string;
   name: string;
   hex: string;
+};
+
+export type ProductBundleItem = {
+  productId: string;
+  name: string;
+  slug?: string;
+  qty: number;
 };
 
 export type Product = {
@@ -20,12 +28,14 @@ export type Product = {
     price: number;
   };
   // Lucide icon component for list cards (optional).
-  icon?: any;
+  icon?: LucideIcon;
   images: string[];
   primaryColors: ProductColor[];
   secondaryColors: ProductColor[];
   supportsLeds: boolean;
   ledExtraPrice: number;
+  isBundle?: boolean;
+  bundleItems?: ProductBundleItem[];
 };
 
 const AVAILABLE_COLORS: ProductColor[] = [

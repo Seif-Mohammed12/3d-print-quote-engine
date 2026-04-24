@@ -51,12 +51,15 @@ export default function QuickAddProductDialog({
             <DialogHeader>
               <DialogTitle className="font-heading text-2xl">{product.name}</DialogTitle>
               <DialogDescription className="text-slate-400">
-                Choose colors and add this item to your cart.
+                {product.isBundle ? "Choose colors for the bundle and add it to your cart." : "Choose colors and add this item to your cart."}
               </DialogDescription>
             </DialogHeader>
 
             <div className="space-y-5">
               <div className="rounded-xl border border-slate-800 bg-slate-900/40 p-4">
+                {product.isBundle ? (
+                  <p className="text-xs uppercase tracking-[0.2em] text-amber-300">Bundle</p>
+                ) : null}
                 <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Price</p>
                 <div className="mt-2 flex items-center gap-3">
                   <p className={["text-2xl font-heading font-bold", accentClassName || "text-primary"].join(" ")}>
@@ -66,6 +69,19 @@ export default function QuickAddProductDialog({
                     <p className="text-sm text-slate-500 line-through">EGP{product.basePrice}</p>
                   ) : null}
                 </div>
+                {product.isBundle && product.bundleItems?.length ? (
+                  <div className="mt-4 space-y-2">
+                    <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Includes</p>
+                    <ul className="space-y-1 text-sm text-slate-300">
+                      {product.bundleItems.map((item) => (
+                        <li key={`${item.productId}-${item.qty}`}>
+                          {item.name}
+                          {item.qty > 1 ? ` x${item.qty}` : ""}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
               </div>
 
               <div>
@@ -134,6 +150,9 @@ export default function QuickAddProductDialog({
                   addProductToCart({
                     brand,
                     productId: product.id,
+                    productName: product.name,
+                    isBundle: product.isBundle,
+                    bundleItems: product.bundleItems,
                     qty: 1,
                     primaryColorId,
                     secondaryColorId,

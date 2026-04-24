@@ -1,10 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import Layout from "@/components/Layout";
 import AdminNav from "@/components/admin/AdminNav";
 import { supabase } from "@/lib/supabase";
 import {
-  adminDeleteBundle,
   adminDeleteColor,
   adminDeleteImage,
   adminDeleteProduct,
@@ -13,9 +12,9 @@ import {
   adminReorderImages,
   adminReorderProducts,
   adminUploadImages,
-  adminUpsertBundle,
   adminUpsertColor,
   adminUpsertProduct,
+  adminSetBundleItems,
 } from "@/lib/products-api";
 
 type Brand = "pforge" | "printique";
@@ -34,6 +33,7 @@ type ProductRow = {
   in_stock: boolean;
   is_published: boolean;
   sort_order: number;
+  is_bundle?: boolean;
 };
 type ImageRow = { id: string; product_id: string; image_url: string; sort_order: number };
 type ColorRow = {
@@ -52,14 +52,11 @@ type ColorLibraryRow = {
   hex: string;
   sort_order: number;
 };
-type BundleRow = {
+type BundleItemRow = {
   id: string;
-  brand: Brand;
-  name: string;
-  product_a_id: string;
-  product_b_id: string;
-  bundle_price: number;
-  is_active: boolean;
+  bundle_product_id: string;
+  component_product_id: string;
+  qty: number;
   sort_order: number;
 };
 
@@ -71,19 +68,6 @@ function swapRows<T>(rows: T[], from: number, to: number): T[] {
   const next = [...rows];
   [next[from], next[to]] = [next[to], next[from]];
   return next;
-}
-
-function toEditorHtml(input: string): string {
-  const raw = String(input || "").trim();
-  if (!raw) return "";
-  const hasHtml = /<\/?[a-z][\s\S]*>/i.test(raw);
-  if (hasHtml) return raw;
-  return raw
-    .split(/\n\n+/)
-    .map((block) => block.trim())
-    .filter(Boolean)
-    .map((block) => `<p>${block.replace(/\n/g, "<br/>")}</p>`)
-    .join("");
 }
 
 function toMoneyInput(value: number | null | undefined): string {
@@ -106,6 +90,7 @@ const emptyProduct = {
   inStock: true,
   isPublished: false,
   sortOrder: 0,
+  isBundle: false,
 };
 
 export default function AdminDashboard() {
@@ -114,30 +99,18 @@ export default function AdminDashboard() {
   const [products, setProducts] = useState<ProductRow[]>([]);
   const [images, setImages] = useState<ImageRow[]>([]);
   const [colors, setColors] = useState<ColorRow[]>([]);
-  const [bundles, setBundles] = useState<BundleRow[]>([]);
+  const [bundleItems, setBundleItems] = useState<BundleItemRow[]>([]);
   const [colorLibrary, setColorLibrary] = useState<ColorLibraryRow[]>([]);
   const [colorLibraryPick, setColorLibraryPick] = useState("");
   const [gridBrand, setGridBrand] = useState<Brand>("pforge");
   const [dragProductId, setDragProductId] = useState<string | null>(null);
-  const [bundleDraft, setBundleDraft] = useState({
-    id: "",
-    brand: "pforge" as Brand,
-    name: "",
-    productAId: "",
-    productBId: "",
-    bundlePrice: "0.00",
-    isActive: true,
-    sortOrder: 0,
-  });
+  const [bundleDraftItems, setBundleDraftItems] = useState<Array<{ key: string; productId: string; qty: number }>>([]);
   const [selectedProductId, setSelectedProductId] = useState<string>("");
   const [form, setForm] = useState(emptyProduct);
   const [colorDraft, setColorDraft] = useState({ role: "primary" as "primary" | "secondary", colorId: "", name: "", hex: "#000000" });
   const [busy, setBusy] = useState(false);
   const [mediaBusy, setMediaBusy] = useState(false);
   const [colorBusy, setColorBusy] = useState(false);
-  const [editorFontSizePx, setEditorFontSizePx] = useState("16");
-  const [editorTextColor, setEditorTextColor] = useState("#e5e7eb");
-  const descriptionEditorRef = useRef<HTMLDivElement | null>(null);
 
   async function load() {
     setLoading(true);
@@ -148,7 +121,7 @@ export default function AdminDashboard() {
       setImages(data.images || []);
       setColors(data.colors || []);
       setColorLibrary(data.colorLibrary || []);
-      setBundles(data.bundles || []);
+      setBundleItems(data.bundleItems || []);
       if (!selectedProductId && data.products?.length) setSelectedProductId(data.products[0].id);
     } catch (err: any) {
       setError(err.message || "Failed to load admin catalog");
@@ -174,6 +147,14 @@ export default function AdminDashboard() {
     () => colors.filter((c) => c.product_id === selectedProductId).sort((a, b) => a.sort_order - b.sort_order),
     [colors, selectedProductId]
   );
+  const selectedBundleItems = useMemo(
+    () =>
+      bundleItems
+        .filter((bi) => bi.bundle_product_id === selectedProductId)
+        .slice()
+        .sort((a, b) => a.sort_order - b.sort_order),
+    [bundleItems, selectedProductId]
+  );
   const productImageByProductId = useMemo(() => {
     const map = new Map<string, string>();
     images
@@ -192,14 +173,26 @@ export default function AdminDashboard() {
         .sort((a, b) => a.sort_order - b.sort_order),
     [products, gridBrand]
   );
-  const bundleBrandProducts = useMemo(
-    () =>
-      products
-        .filter((p) => p.brand === bundleDraft.brand)
-        .slice()
-        .sort((a, b) => a.sort_order - b.sort_order),
-    [products, bundleDraft.brand]
-  );
+  const bundleComponentOptions = useMemo(() => {
+    if (!selectedProductId) return [];
+    return products
+      .filter((p) => p.id !== selectedProductId && p.brand === form.brand)
+      .slice()
+      .sort((a, b) => a.sort_order - b.sort_order);
+  }, [products, selectedProductId, form.brand]);
+
+  useEffect(() => {
+    if (!selectedProductId || !form.isBundle) {
+      setBundleDraftItems([]);
+      return;
+    }
+    const seeded = selectedBundleItems.map((bi) => ({
+      key: bi.id,
+      productId: bi.component_product_id,
+      qty: Number(bi.qty || 1),
+    }));
+    setBundleDraftItems(seeded.length ? seeded : [{ key: `tmp-${Date.now()}`, productId: "", qty: 1 }]);
+  }, [selectedProductId, form.isBundle, selectedBundleItems]);
 
   useEffect(() => {
     if (!selectedProduct) {
@@ -221,50 +214,9 @@ export default function AdminDashboard() {
       inStock: Boolean(selectedProduct.in_stock),
       isPublished: Boolean(selectedProduct.is_published),
       sortOrder: Number(selectedProduct.sort_order || 0),
+      isBundle: Boolean(selectedProduct.is_bundle),
     });
   }, [selectedProductId, selectedProduct]);
-
-  useEffect(() => {
-    const editor = descriptionEditorRef.current;
-    if (!editor) return;
-    const nextHtml = toEditorHtml(form.description);
-    if (editor.innerHTML !== nextHtml) {
-      editor.innerHTML = nextHtml;
-    }
-  }, [form.description]);
-
-  const applyDescriptionCommand = (command: string, value?: string) => {
-    const editor = descriptionEditorRef.current;
-    if (!editor) return;
-    editor.focus();
-    document.execCommand(command, false, value);
-    setForm((prev) => ({ ...prev, description: editor.innerHTML }));
-  };
-
-  const applyDescriptionInlineStyle = (style: Partial<CSSStyleDeclaration>) => {
-    const editor = descriptionEditorRef.current;
-    if (!editor) return;
-    editor.focus();
-
-    const selection = window.getSelection();
-    if (!selection || selection.rangeCount === 0) return;
-    const range = selection.getRangeAt(0);
-
-    if (range.collapsed) return;
-    if (!editor.contains(range.commonAncestorContainer)) return;
-
-    const span = document.createElement("span");
-    Object.assign(span.style, style);
-    span.appendChild(range.extractContents());
-    range.insertNode(span);
-
-    const nextRange = document.createRange();
-    nextRange.selectNodeContents(span);
-    selection.removeAllRanges();
-    selection.addRange(nextRange);
-
-    setForm((prev) => ({ ...prev, description: editor.innerHTML }));
-  };
 
   const colorDraftHex = useMemo(() => {
     const candidate = (colorDraft.hex || "").trim();
@@ -325,15 +277,26 @@ export default function AdminDashboard() {
             <div className="glass-card p-4 space-y-3">
               <div className="flex items-center justify-between">
                 <h2 className="font-semibold">Products</h2>
-                <button
-                  className="rounded-lg bg-secondary px-3 py-1.5 text-xs"
-                  onClick={() => {
-                    setSelectedProductId("");
-                    setForm({ ...emptyProduct });
-                  }}
-                >
-                  + New
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    className="rounded-lg bg-secondary px-3 py-1.5 text-xs"
+                    onClick={() => {
+                      setSelectedProductId("");
+                      setForm({ ...emptyProduct, isBundle: false });
+                    }}
+                  >
+                    + New product
+                  </button>
+                  <button
+                    className="rounded-lg bg-secondary px-3 py-1.5 text-xs"
+                    onClick={() => {
+                      setSelectedProductId("");
+                      setForm({ ...emptyProduct, isBundle: true });
+                    }}
+                  >
+                    + New bundle
+                  </button>
+                </div>
               </div>
               <div className="space-y-2 max-h-[65vh] overflow-y-auto pr-1">
                 {products.map((p) => (
@@ -415,87 +378,13 @@ export default function AdminDashboard() {
                 </div>
               </div>
               <label className="mb-1 block text-xs font-medium text-muted-foreground">About This Product Description (inside)</label>
-              <div className="rounded-lg border border-border bg-secondary/30 p-2 space-y-2">
-                <div className="flex flex-wrap items-center gap-2">
-                  <button
-                    type="button"
-                    className="rounded border border-border px-2 py-1 text-xs font-semibold"
-                    onClick={() => applyDescriptionCommand("bold")}
-                  >
-                    Bold
-                  </button>
-                  <button
-                    type="button"
-                    className="rounded border border-border px-2 py-1 text-xs"
-                    onClick={() => applyDescriptionCommand("underline")}
-                  >
-                    Underline
-                  </button>
-
-                  <label className="ml-2 inline-flex items-center gap-1 text-xs text-muted-foreground">
-                    Size
-                    <input
-                      type="number"
-                      min={10}
-                      max={72}
-                      value={editorFontSizePx}
-                      onChange={(e) => setEditorFontSizePx(e.target.value)}
-                      className="w-16 rounded border border-border bg-secondary px-2 py-1 text-xs text-foreground"
-                    />
-                    px
-                  </label>
-                  <button
-                    type="button"
-                    className="rounded border border-border px-2 py-1 text-xs"
-                    onClick={() => {
-                      const size = Math.min(72, Math.max(10, Number(editorFontSizePx || 16)));
-                      applyDescriptionInlineStyle({ fontSize: `${size}px` });
-                    }}
-                  >
-                    Apply size
-                  </button>
-
-                  <label className="ml-2 inline-flex items-center gap-1 text-xs text-muted-foreground">
-                    Text color
-                    <input
-                      type="color"
-                      value={editorTextColor}
-                      onChange={(e) => setEditorTextColor(e.target.value)}
-                      className="h-7 w-9 rounded border border-border bg-secondary p-1"
-                    />
-                  </label>
-                  <button
-                    type="button"
-                    className="rounded border border-border px-2 py-1 text-xs"
-                    onClick={() => applyDescriptionInlineStyle({ color: editorTextColor })}
-                  >
-                    Apply color
-                  </button>
-
-                  <button
-                    type="button"
-                    className="rounded border border-border px-2 py-1 text-xs"
-                    onClick={() => applyDescriptionCommand("removeFormat")}
-                  >
-                    Clear format
-                  </button>
-                </div>
-
-                <div
-                  ref={descriptionEditorRef}
-                  contentEditable
-                  suppressContentEditableWarning
-                  className="min-h-28 rounded-lg border border-border bg-secondary px-3 py-2 text-sm focus:outline-none"
-                  onInput={(e) => {
-                    const html = (e.currentTarget as HTMLDivElement).innerHTML;
-                    setForm((prev) => ({ ...prev, description: html }));
-                  }}
-                />
-              </div>
+              <textarea className="w-full rounded-lg bg-secondary border border-border px-3 py-2 text-sm min-h-24" placeholder="Detailed description shown in About this product on the product details page."
+                value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} maxLength={5000} />
 
               <div className="flex flex-wrap items-center gap-4 text-sm">
                 <label className="inline-flex items-center gap-2"><input type="checkbox" checked={form.discountEnabled} onChange={(e) => setForm({ ...form, discountEnabled: e.target.checked })} /> Discount enabled</label>
                 <label className="inline-flex items-center gap-2"><input type="checkbox" checked={form.isPublished} onChange={(e) => setForm({ ...form, isPublished: e.target.checked })} /> Published</label>
+                <label className="inline-flex items-center gap-2"><input type="checkbox" checked={form.isBundle} onChange={(e) => setForm({ ...form, isBundle: e.target.checked })} /> This is a bundle</label>
               </div>
 
               <div className="flex flex-wrap gap-2">
@@ -520,6 +409,7 @@ export default function AdminDashboard() {
                         inStock: form.inStock,
                         isPublished: form.isPublished,
                         sortOrder: form.sortOrder,
+                        isBundle: form.isBundle,
                       });
                       await load();
                     } finally {
@@ -612,168 +502,6 @@ export default function AdminDashboard() {
                   </div>
                 );
               })}
-            </div>
-          </div>
-
-          <div className="glass-card p-4 space-y-3">
-            <h2 className="font-semibold">Bundles</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <input
-                className="w-full rounded-lg bg-secondary border border-border px-3 py-2 text-sm"
-                placeholder="Bundle name"
-                value={bundleDraft.name}
-                onChange={(e) => setBundleDraft((d) => ({ ...d, name: e.target.value }))}
-              />
-              <select
-                className="w-full rounded-lg bg-secondary border border-border px-3 py-2 text-sm"
-                value={bundleDraft.brand}
-                onChange={(e) =>
-                  setBundleDraft((d) => ({ ...d, brand: e.target.value as Brand, productAId: "", productBId: "" }))
-                }
-              >
-                <option value="pforge">Pforge</option>
-                <option value="printique">Printique</option>
-              </select>
-              <select
-                className="w-full rounded-lg bg-secondary border border-border px-3 py-2 text-sm"
-                value={bundleDraft.productAId}
-                onChange={(e) => setBundleDraft((d) => ({ ...d, productAId: e.target.value }))}
-              >
-                <option value="">Product A</option>
-                {bundleBrandProducts.map((p) => (
-                  <option key={`a-${p.id}`} value={p.id}>
-                    {p.name}
-                  </option>
-                ))}
-              </select>
-              <select
-                className="w-full rounded-lg bg-secondary border border-border px-3 py-2 text-sm"
-                value={bundleDraft.productBId}
-                onChange={(e) => setBundleDraft((d) => ({ ...d, productBId: e.target.value }))}
-              >
-                <option value="">Product B</option>
-                {bundleBrandProducts.map((p) => (
-                  <option key={`b-${p.id}`} value={p.id}>
-                    {p.name}
-                  </option>
-                ))}
-              </select>
-              <input
-                type="number"
-                min={0.01}
-                step={0.01}
-                className="w-full rounded-lg bg-secondary border border-border px-3 py-2 text-sm"
-                placeholder="Bundle price"
-                value={bundleDraft.bundlePrice}
-                onChange={(e) => setBundleDraft((d) => ({ ...d, bundlePrice: e.target.value }))}
-              />
-              <label className="inline-flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={bundleDraft.isActive}
-                  onChange={(e) => setBundleDraft((d) => ({ ...d, isActive: e.target.checked }))}
-                />
-                Active
-              </label>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <button
-                className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50"
-                disabled={busy}
-                onClick={async () => {
-                  setBusy(true);
-                  try {
-                    const res = await adminUpsertBundle({
-                      id: bundleDraft.id || undefined,
-                      brand: bundleDraft.brand,
-                      name: bundleDraft.name,
-                      productAId: bundleDraft.productAId,
-                      productBId: bundleDraft.productBId,
-                      bundlePrice: parseFloat(bundleDraft.bundlePrice || "0"),
-                      sortOrder: bundleDraft.sortOrder,
-                      isActive: bundleDraft.isActive,
-                    });
-                    const row = res?.bundle as BundleRow | undefined;
-                    if (row) {
-                      setBundles((prev) => {
-                        const next = prev.filter((b) => b.id !== row.id);
-                        return [...next, row].sort((a, b) => a.sort_order - b.sort_order);
-                      });
-                      setBundleDraft({
-                        id: "",
-                        brand: bundleDraft.brand,
-                        name: "",
-                        productAId: "",
-                        productBId: "",
-                        bundlePrice: "0.00",
-                        isActive: true,
-                        sortOrder: bundles.length,
-                      });
-                    }
-                  } catch (err: unknown) {
-                    setError(err instanceof Error ? err.message : "Failed to save bundle");
-                    await load();
-                  } finally {
-                    setBusy(false);
-                  }
-                }}
-              >
-                Save bundle
-              </button>
-            </div>
-            <div className="space-y-2">
-              {bundles
-                .slice()
-                .sort((a, b) => a.sort_order - b.sort_order)
-                .map((b) => {
-                  const a = products.find((p) => p.id === b.product_a_id)?.name || b.product_a_id;
-                  const c = products.find((p) => p.id === b.product_b_id)?.name || b.product_b_id;
-                  return (
-                    <div key={b.id} className="flex items-center gap-2 rounded-lg border border-border p-2">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold">{b.name}</p>
-                        <p className="text-xs text-muted-foreground truncate">
-                          {b.brand.toUpperCase()} • {a} + {c} • EGP {toMoneyInput(b.bundle_price)}
-                        </p>
-                      </div>
-                      <button
-                        className="text-xs px-2 py-1 rounded border"
-                        onClick={() =>
-                          setBundleDraft({
-                            id: b.id,
-                            brand: b.brand,
-                            name: b.name,
-                            productAId: b.product_a_id,
-                            productBId: b.product_b_id,
-                            bundlePrice: toMoneyInput(b.bundle_price),
-                            isActive: b.is_active,
-                            sortOrder: b.sort_order,
-                          })
-                        }
-                      >
-                        Edit
-                      </button>
-                      <button
-                        className="text-xs px-2 py-1 rounded border border-destructive/40 text-destructive"
-                        onClick={async () => {
-                          if (!confirm("Delete this bundle?")) return;
-                          setBusy(true);
-                          try {
-                            await adminDeleteBundle(b.id);
-                            setBundles((prev) => prev.filter((x) => x.id !== b.id));
-                          } catch (err: unknown) {
-                            setError(err instanceof Error ? err.message : "Failed to delete bundle");
-                            await load();
-                          } finally {
-                            setBusy(false);
-                          }
-                        }}
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  );
-                })}
             </div>
           </div>
 
@@ -1034,6 +762,141 @@ export default function AdminDashboard() {
                     </div>
                   ))}
                 </div>
+              </div>
+            </div>
+          ) : null}
+
+          {selectedProductId && form.isBundle ? (
+            <div className="glass-card p-4 space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <h2 className="font-semibold">Bundle contents</h2>
+                <button
+                  className="rounded-lg border border-border px-3 py-1.5 text-xs"
+                  onClick={() =>
+                    setBundleDraftItems((prev) => [
+                      ...prev,
+                      { key: `tmp-${Date.now()}-${Math.random().toString(16).slice(2)}`, productId: "", qty: 1 },
+                    ])
+                  }
+                >
+                  + Add item
+                </button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Choose which products are included in this bundle and how many of each.
+              </p>
+
+              {!form.id ? (
+                <p className="text-sm text-muted-foreground">
+                  Save the bundle product first, then add items.
+                </p>
+              ) : null}
+
+              <div className="space-y-2">
+                {bundleDraftItems.map((it, idx) => (
+                  <div key={it.key} className="grid grid-cols-1 md:grid-cols-12 gap-2 rounded-lg border border-border p-2">
+                    <div className="md:col-span-7">
+                      <select
+                        className="w-full rounded-lg bg-secondary border border-border px-3 py-2 text-sm"
+                        value={it.productId}
+                        onChange={(e) => {
+                          const v = e.target.value;
+                          setBundleDraftItems((prev) =>
+                            prev.map((x) => (x.key === it.key ? { ...x, productId: v } : x))
+                          );
+                        }}
+                      >
+                        <option value="">Select product</option>
+                        {bundleComponentOptions.map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="md:col-span-2">
+                      <input
+                        type="number"
+                        min={1}
+                        step={1}
+                        className="w-full rounded-lg bg-secondary border border-border px-3 py-2 text-sm"
+                        value={it.qty}
+                        onChange={(e) => {
+                          const qty = Math.max(1, Number(e.target.value || 1));
+                          setBundleDraftItems((prev) => prev.map((x) => (x.key === it.key ? { ...x, qty } : x)));
+                        }}
+                      />
+                    </div>
+                    <div className="md:col-span-3 flex items-center justify-end gap-2">
+                      <button
+                        className="text-xs px-2 py-1 rounded border"
+                        disabled={idx === 0}
+                        onClick={() => {
+                          setBundleDraftItems((prev) => {
+                            if (idx <= 0) return prev;
+                            const next = [...prev];
+                            [next[idx - 1], next[idx]] = [next[idx], next[idx - 1]];
+                            return next;
+                          });
+                        }}
+                      >
+                        Up
+                      </button>
+                      <button
+                        className="text-xs px-2 py-1 rounded border"
+                        disabled={idx === bundleDraftItems.length - 1}
+                        onClick={() => {
+                          setBundleDraftItems((prev) => {
+                            if (idx >= prev.length - 1) return prev;
+                            const next = [...prev];
+                            [next[idx], next[idx + 1]] = [next[idx + 1], next[idx]];
+                            return next;
+                          });
+                        }}
+                      >
+                        Down
+                      </button>
+                      <button
+                        className="text-xs px-2 py-1 rounded border border-destructive/40 text-destructive"
+                        onClick={() => setBundleDraftItems((prev) => prev.filter((x) => x.key !== it.key))}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                <button
+                  className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50"
+                  disabled={busy || !form.id}
+                  onClick={async () => {
+                    setBusy(true);
+                    try {
+                      const items = bundleDraftItems
+                        .map((it) => ({ productId: it.productId, qty: Math.max(1, Number(it.qty || 1)) }))
+                        .filter((it) => Boolean(it.productId));
+                      const res = await adminSetBundleItems({
+                        bundleProductId: selectedProductId,
+                        items,
+                      });
+                      const rows = (res?.items || []) as BundleItemRow[];
+                      setBundleItems((prev) => [
+                        ...prev.filter((bi) => bi.bundle_product_id !== selectedProductId),
+                        ...rows,
+                      ]);
+                      await load();
+                    } catch (err: unknown) {
+                      setError(err instanceof Error ? err.message : "Failed to save bundle contents");
+                      await load();
+                    } finally {
+                      setBusy(false);
+                    }
+                  }}
+                >
+                  Save bundle contents
+                </button>
               </div>
             </div>
           ) : null}

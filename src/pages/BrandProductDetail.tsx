@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import DOMPurify from "dompurify";
 import { brandCatalog, type BrandId } from "@/lib/brand-catalog";
 import Layout from "@/components/Layout";
 import { type ProductOrderDraft } from "@/lib/product-order";
@@ -41,26 +40,6 @@ const brandCopy: Record<BrandId, { name: string; subtitle: string }> = {
     subtitle: "Decor & objects for modern spaces.",
   },
 };
-
-function toRenderableDescriptionHtml(input: string): string {
-  const raw = String(input || "").trim();
-  if (!raw) return "";
-
-  const hasHtml = /<\/?[a-z][\s\S]*>/i.test(raw);
-  const html = hasHtml
-    ? raw
-    : raw
-        .split(/\n\n+/)
-        .map((block) => block.trim())
-        .filter(Boolean)
-        .map((block) => `<p>${block.replace(/\n/g, "<br/>")}</p>`)
-        .join("");
-
-  return DOMPurify.sanitize(html, {
-    ALLOWED_TAGS: ["p", "br", "strong", "em", "u", "span", "h3", "h4"],
-    ALLOWED_ATTR: ["style"],
-  });
-}
 
 export default function BrandProductDetail({ brand }: { brand: BrandId }) {
   const navigate = useNavigate();
@@ -167,7 +146,6 @@ export default function BrandProductDetail({ brand }: { brand: BrandId }) {
   const selectedSecondary = product.secondaryColors.find((c) => c.id === selectedSecondaryId);
   const hasSecondaryColors = product.secondaryColors.length > 0;
   const hasMultipleImages = images.length > 1;
-  const descriptionHtml = useMemo(() => toRenderableDescriptionHtml(product.description || ""), [product.description]);
 
   const nextImage = () => {
     if (!hasMultipleImages) return;
@@ -210,8 +188,13 @@ export default function BrandProductDetail({ brand }: { brand: BrandId }) {
               animate={{ opacity: 1, y: 0 }}
               className="space-y-2 text-center md:text-left"
             >
-              <div className="text-xs font-semibold tracking-[0.35em] uppercase text-primary/90">
-                {brandCopy[brand].name}
+              <div className="flex flex-wrap items-center justify-center gap-3 text-xs font-semibold uppercase md:justify-start">
+                <div className="tracking-[0.35em] text-primary/90">{brandCopy[brand].name}</div>
+                {product.isBundle ? (
+                  <span className="rounded-full border border-primary/30 bg-primary/10 px-3 py-1 tracking-[0.2em] text-primary">
+                    Bundle
+                  </span>
+                ) : null}
               </div>
               <h1 className="font-heading text-4xl md:text-5xl font-bold text-foreground">
                 {product.name}
@@ -278,7 +261,6 @@ export default function BrandProductDetail({ brand }: { brand: BrandId }) {
                           : "border-border/60 hover:border-primary/40"
                           } bg-secondary/30`}
                       >
-                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                         <img src={src} alt={`${product.name} ${idx + 1}`} className="h-full w-full object-contain p-1" />
                       </button>
                     ))}
@@ -370,6 +352,9 @@ export default function BrandProductDetail({ brand }: { brand: BrandId }) {
                       addProductToCart({
                         brand,
                         productId: product.id,
+                        productName: product.name,
+                        isBundle: product.isBundle,
+                        bundleItems: product.bundleItems,
                         qty: 1,
                         primaryColorId: selectedPrimaryId,
                         secondaryColorId: selectedSecondaryId,
@@ -381,6 +366,9 @@ export default function BrandProductDetail({ brand }: { brand: BrandId }) {
                       const draft: ProductOrderDraft = {
                         brand,
                         productId: product.id,
+                        productName: product.name,
+                        isBundle: product.isBundle,
+                        bundleItems: product.bundleItems,
                         primaryColorId: selectedPrimaryId,
                         secondaryColorId: selectedSecondaryId,
                         ledsEnabled: false,
@@ -399,6 +387,9 @@ export default function BrandProductDetail({ brand }: { brand: BrandId }) {
                       const draft: ProductOrderDraft = {
                         brand,
                         productId: product.id,
+                        productName: product.name,
+                        isBundle: product.isBundle,
+                        bundleItems: product.bundleItems,
                         primaryColorId: selectedPrimaryId,
                         secondaryColorId: selectedSecondaryId,
                         ledsEnabled: false,
@@ -413,10 +404,31 @@ export default function BrandProductDetail({ brand }: { brand: BrandId }) {
                   </button>
                 </div>
 
+                {product.isBundle && product.bundleItems?.length ? (
+                  <div className="glass-card p-6">
+                    <h3 className="font-heading font-semibold text-foreground">Bundle contents</h3>
+                    <div className="mt-4 space-y-3">
+                      {product.bundleItems.map((item) => (
+                        <div
+                          key={`${item.productId}-${item.qty}`}
+                          className="flex items-center justify-between gap-4 rounded-lg border border-border/60 bg-secondary/20 px-4 py-3"
+                        >
+                          <div className="min-w-0">
+                            <p className="font-medium text-foreground">{item.name}</p>
+                            <p className="text-xs text-muted-foreground">Included in this bundle</p>
+                          </div>
+                          <p className="shrink-0 text-sm font-semibold text-primary">
+                            x{item.qty}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
               </div>
             </div>
 
-            {descriptionHtml ? (
+            {product.description?.trim() ? (
               <motion.div
                 initial={{ opacity: 0, y: 16 }}
                 whileInView={{ opacity: 1, y: 0 }}
@@ -439,11 +451,20 @@ export default function BrandProductDetail({ brand }: { brand: BrandId }) {
                 </h2>
                 <div
                   className={[
-                    "text-sm md:text-base leading-relaxed text-muted-foreground space-y-4 [&_p]:mb-4 [&_h3]:text-xl [&_h3]:font-semibold [&_h3]:text-foreground [&_h4]:text-lg [&_h4]:font-semibold [&_h4]:text-foreground [&_span[style*='background-color']]:rounded [&_span[style*='background-color']]:px-1",
+                    "text-sm md:text-base leading-relaxed text-muted-foreground space-y-4",
                     brand === "pforge" ? "[&_strong]:text-cyan-100/95" : "[&_strong]:text-amber-100/90",
                   ].join(" ")}
-                  dangerouslySetInnerHTML={{ __html: descriptionHtml }}
-                />
+                >
+                  {product.description
+                    .split(/\n\n+/)
+                    .map((block) => block.trim())
+                    .filter(Boolean)
+                    .map((block, i) => (
+                      <p key={i} className="whitespace-pre-line">
+                        {block}
+                      </p>
+                    ))}
+                </div>
               </motion.div>
             ) : null}
           </div>
@@ -470,4 +491,3 @@ function LayoutPad({ brand, children }: { brand: BrandId; children: ReactNode })
     </div>
   );
 }
-

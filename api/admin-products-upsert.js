@@ -44,6 +44,7 @@ export const handler = async (event) => {
     in_stock: Boolean(payload.inStock),
     is_published: Boolean(payload.isPublished),
     sort_order: Number(payload.sortOrder || 0),
+    is_bundle: Boolean(payload.isBundle),
   };
   if (!Number.isFinite(row.base_price) || row.base_price < 0) {
     return json(400, { error: "Invalid base price" });

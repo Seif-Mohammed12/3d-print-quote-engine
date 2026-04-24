@@ -1,4 +1,4 @@
-import type { BrandId, Product, ProductColor } from "@/lib/brand-catalog";
+import type { BrandId, Product, ProductBundleItem, ProductColor } from "@/lib/brand-catalog";
 import { getAccessToken } from "@/lib/auth-session";
 
 export type DbProduct = {
@@ -17,6 +17,8 @@ export type DbProduct = {
   inStock?: boolean;
   isPublished?: boolean;
   sortOrder?: number;
+  isBundle?: boolean;
+  bundleItems?: ProductBundleItem[];
 };
 
 export async function fetchPublicProducts(brand?: BrandId): Promise<DbProduct[]> {
@@ -44,14 +46,55 @@ export async function fetchProductByBrandAndId(brand: BrandId, productId: string
 }
 
 export type AdminCatalogPayload = {
-  products: any[];
-  images: any[];
-  colors: any[];
-  colorLibrary?: any[];
-  bundles?: any[];
+  products: Array<{
+    id: string;
+    brand: BrandId;
+    slug: string;
+    name: string;
+    short: string;
+    description: string;
+    grams: number | null;
+    base_price: number;
+    discount_enabled: boolean;
+    discount_price: number | null;
+    stock_qty: number;
+    in_stock: boolean;
+    is_published: boolean;
+    sort_order: number;
+    is_bundle?: boolean;
+  }>;
+  images: Array<{
+    id: string;
+    product_id: string;
+    image_url: string;
+    sort_order: number;
+  }>;
+  colors: Array<{
+    id: string;
+    product_id: string;
+    role: "primary" | "secondary";
+    color_id: string;
+    name: string;
+    hex: string;
+    sort_order: number;
+  }>;
+  colorLibrary?: Array<{
+    id: string;
+    color_id: string;
+    name: string;
+    hex: string;
+    sort_order: number;
+  }>;
+  bundleItems?: Array<{
+    id: string;
+    bundle_product_id: string;
+    component_product_id: string;
+    qty: number;
+    sort_order: number;
+  }>;
 };
 
-async function adminRequest(path: string, init?: RequestInit) {
+async function adminRequest<T>(path: string, init?: RequestInit): Promise<T> {
   const token = await getAccessToken();
   if (!token) throw new Error("Not authenticated");
 
@@ -65,7 +108,7 @@ async function adminRequest(path: string, init?: RequestInit) {
   const contentType = res.headers.get("content-type") || "";
   const raw = await res.text();
 
-  let data: any = null;
+  let data: (T & { error?: string }) | null = null;
   if (contentType.includes("application/json")) {
     try {
       data = raw ? JSON.parse(raw) : {};
@@ -88,7 +131,7 @@ async function adminRequest(path: string, init?: RequestInit) {
 
 export async function adminFetchCatalog(brand?: BrandId): Promise<AdminCatalogPayload> {
   const query = brand ? `?brand=${brand}` : "";
-  return adminRequest(`/api/admin-products-list${query}`);
+  return adminRequest<AdminCatalogPayload>(`/api/admin-products-list${query}`);
 }
 
 export async function adminUpsertProduct(payload: {
@@ -106,8 +149,9 @@ export async function adminUpsertProduct(payload: {
   inStock: boolean;
   isPublished: boolean;
   sortOrder: number;
+  isBundle?: boolean;
 }) {
-  return adminRequest("/api/admin-products-upsert", {
+  return adminRequest<{ product: Record<string, unknown> }>("/api/admin-products-upsert", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
@@ -115,7 +159,7 @@ export async function adminUpsertProduct(payload: {
 }
 
 export async function adminReorderProducts(ids: string[]) {
-  return adminRequest("/api/admin-products-reorder", {
+  return adminRequest<{ ok?: boolean }>("/api/admin-products-reorder", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ ids }),
@@ -123,7 +167,7 @@ export async function adminReorderProducts(ids: string[]) {
 }
 
 export async function adminDeleteProduct(id: string) {
-  return adminRequest("/api/admin-products-delete", {
+  return adminRequest<{ ok?: boolean }>("/api/admin-products-delete", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ id }),
@@ -163,7 +207,7 @@ export async function adminUploadImages(productId: string, files: File[]) {
 }
 
 export async function adminDeleteImage(id: string) {
-  return adminRequest("/api/admin-product-images-delete", {
+  return adminRequest<{ ok?: boolean }>("/api/admin-product-images-delete", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ id }),
@@ -171,7 +215,7 @@ export async function adminDeleteImage(id: string) {
 }
 
 export async function adminReorderImages(ids: string[]) {
-  return adminRequest("/api/admin-product-images-reorder", {
+  return adminRequest<{ ok?: boolean }>("/api/admin-product-images-reorder", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ ids }),
@@ -187,7 +231,7 @@ export async function adminUpsertColor(payload: {
   hex: string;
   sortOrder: number;
 }) {
-  return adminRequest("/api/admin-product-colors-upsert", {
+  return adminRequest<{ color: Record<string, unknown> }>("/api/admin-product-colors-upsert", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
@@ -195,7 +239,7 @@ export async function adminUpsertColor(payload: {
 }
 
 export async function adminDeleteColor(id: string) {
-  return adminRequest("/api/admin-product-colors-delete", {
+  return adminRequest<{ ok?: boolean }>("/api/admin-product-colors-delete", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ id }),
@@ -203,35 +247,21 @@ export async function adminDeleteColor(id: string) {
 }
 
 export async function adminReorderColors(ids: string[]) {
-  return adminRequest("/api/admin-product-colors-reorder", {
+  return adminRequest<{ ok?: boolean }>("/api/admin-product-colors-reorder", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ ids }),
   });
 }
 
-export async function adminUpsertBundle(payload: {
-  id?: string;
-  brand: BrandId;
-  name: string;
-  productAId: string;
-  productBId: string;
-  bundlePrice: number;
-  sortOrder: number;
-  isActive: boolean;
+export async function adminSetBundleItems(payload: {
+  bundleProductId: string;
+  items: Array<{ productId: string; qty: number }>;
 }) {
-  return adminRequest("/api/admin-bundles-upsert", {
+  return adminRequest<{ items: Array<Record<string, unknown>> }>("/api/admin-bundle-items-set", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
-  });
-}
-
-export async function adminDeleteBundle(id: string) {
-  return adminRequest("/api/admin-bundles-delete", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ id }),
   });
 }
 
@@ -248,6 +278,8 @@ export function mapDbProductToLegacyProduct(p: DbProduct): Product {
     secondaryColors: p.secondaryColors || [],
     supportsLeds: false,
     ledExtraPrice: 0,
+    isBundle: Boolean(p.isBundle),
+    bundleItems: p.bundleItems || [],
   };
 }
 

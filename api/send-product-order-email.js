@@ -81,6 +81,13 @@ function safe(v) {
   return String(v ?? "").replace(/[<>]/g, "");
 }
 
+function renderBundleItems(bundleItems) {
+  if (!Array.isArray(bundleItems) || bundleItems.length === 0) return "";
+  return bundleItems
+    .map((item) => `${safe(item?.name)}${Number(item?.qty || 1) > 1 ? ` x${safe(item?.qty)}` : ""}`)
+    .join(", ");
+}
+
 function createAdminHtml(orderId, payload) {
   const p = payload?.product || {};
   const c = payload?.customer || {};
@@ -104,12 +111,14 @@ function createAdminHtml(orderId, payload) {
           return `
           <tr><td colspan="2" style="padding: 10px 0 4px; font-size: 15px; font-weight: 700; color: #1e3a8a; border-top: ${i === 0 ? "none" : "1px solid #e5e7eb"};">Item ${i + 1}</td></tr>
           <tr><td style="padding: 6px 0; color: #6b7280;">Brand</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${safe(it.brand)}</td></tr>
+          <tr><td style="padding: 6px 0; color: #6b7280;">Type</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${it?.isBundle ? "Bundle" : "Product"}</td></tr>
           <tr><td style="padding: 6px 0; color: #6b7280;">Product</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${safe(it.name)}</td></tr>
           <tr><td style="padding: 6px 0; color: #6b7280;">Qty</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${safe(it.qty)}</td></tr>
           <tr><td style="padding: 6px 0; color: #6b7280;">Unit price</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">EGP${safe(it.unitPrice)}</td></tr>
           <tr><td style="padding: 6px 0; color: #6b7280;">Line total</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">EGP${safe(it.subtotal)}</td></tr>
           <tr><td style="padding: 6px 0; color: #6b7280;">Primary color</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${safe(it.primaryColor)}</td></tr>
           <tr><td style="padding: 6px 0; color: #6b7280;">Secondary color</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${safe(it.secondaryColor)}</td></tr>
+          ${it?.isBundle && renderBundleItems(it.bundleItems) ? `<tr><td style="padding: 6px 0; color: #6b7280;">Bundle contents</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${renderBundleItems(it.bundleItems)}</td></tr>` : ""}
           ${discountRow}
         `;
         })
@@ -119,10 +128,12 @@ function createAdminHtml(orderId, payload) {
     return `
         <table style="width: 100%; border-collapse: collapse; font-size: 14px; margin-bottom: 14px;">
           <tr><td style="padding: 6px 0; color: #6b7280;">Brand</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${safe(payload?.brand)}</td></tr>
+          <tr><td style="padding: 6px 0; color: #6b7280;">Type</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${p?.isBundle ? "Bundle" : "Product"}</td></tr>
           <tr><td style="padding: 6px 0; color: #6b7280;">Product</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${safe(p.name)}</td></tr>
           <tr><td style="padding: 6px 0; color: #6b7280;">Qty</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${safe(p.qty)}</td></tr>
           <tr><td style="padding: 6px 0; color: #6b7280;">Primary color</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${safe(p.primaryColor)}</td></tr>
           <tr><td style="padding: 6px 0; color: #6b7280;">Secondary color</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${safe(p.secondaryColor)}</td></tr>
+          ${p?.isBundle && renderBundleItems(p.bundleItems) ? `<tr><td style="padding: 6px 0; color: #6b7280;">Bundle contents</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${renderBundleItems(p.bundleItems)}</td></tr>` : ""}
         </table>`;
   })();
 
@@ -182,9 +193,11 @@ function createCustomerHtml(orderId, payload) {
           (it, i) => `
         <tr><td colspan="2" style="padding: 8px 0 2px; font-weight: 700; color: #1e3a8a; border-top: ${i === 0 ? "none" : "1px solid #e5e7eb"};">Item ${i + 1}</td></tr>
         <tr><td style="padding: 6px 0; color: #6b7280;">Product</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${safe(it.name)} (${safe(it.brand)})</td></tr>
+        <tr><td style="padding: 6px 0; color: #6b7280;">Type</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${it?.isBundle ? "Bundle" : "Product"}</td></tr>
         <tr><td style="padding: 6px 0; color: #6b7280;">Qty</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${safe(it.qty)}</td></tr>
         <tr><td style="padding: 6px 0; color: #6b7280;">Primary color</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${safe(it.primaryColor)}</td></tr>
         <tr><td style="padding: 6px 0; color: #6b7280;">Secondary color</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${safe(it.secondaryColor)}</td></tr>
+        ${it?.isBundle && renderBundleItems(it.bundleItems) ? `<tr><td style="padding: 6px 0; color: #6b7280;">Bundle contents</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${renderBundleItems(it.bundleItems)}</td></tr>` : ""}
         <tr><td style="padding: 6px 0; color: #6b7280;">Line total</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">EGP${safe(it.subtotal)}</td></tr>
       `
         )
@@ -194,9 +207,11 @@ function createCustomerHtml(orderId, payload) {
     return `
         <table style="width: 100%; border-collapse: collapse; font-size: 14px; margin-bottom: 14px;">
           <tr><td style="padding: 6px 0; color: #6b7280;">Product</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${safe(p.name)}</td></tr>
+          <tr><td style="padding: 6px 0; color: #6b7280;">Type</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${p?.isBundle ? "Bundle" : "Product"}</td></tr>
           <tr><td style="padding: 6px 0; color: #6b7280;">Qty</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${safe(p.qty)}</td></tr>
           <tr><td style="padding: 6px 0; color: #6b7280;">Primary color</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${safe(p.primaryColor)}</td></tr>
           <tr><td style="padding: 6px 0; color: #6b7280;">Secondary color</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${safe(p.secondaryColor)}</td></tr>
+          ${p?.isBundle && renderBundleItems(p.bundleItems) ? `<tr><td style="padding: 6px 0; color: #6b7280;">Bundle contents</td><td style="padding: 6px 0; text-align: right; font-weight: 600;">${renderBundleItems(p.bundleItems)}</td></tr>` : ""}
         </table>`;
   })();
 

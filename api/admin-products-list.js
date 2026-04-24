@@ -30,13 +30,6 @@ export const handler = async (event) => {
 
   if (libraryError) return json(500, { error: libraryError.message });
 
-  const { data: bundles, error: bundlesError } = await supabase
-    .from("product_bundles")
-    .select("*")
-    .order("sort_order", { ascending: true })
-    .order("created_at", { ascending: true });
-  if (bundlesError) return json(500, { error: bundlesError.message });
-
   const productIds = (products || []).map((p) => p.id);
   if (!productIds.length) {
     return json(200, {
@@ -44,7 +37,7 @@ export const handler = async (event) => {
       images: [],
       colors: [],
       colorLibrary: colorLibrary || [],
-      bundles: bundles || [],
+      bundleItems: [],
     });
   }
 
@@ -66,12 +59,20 @@ export const handler = async (event) => {
   if (imagesError) return json(500, { error: imagesError.message });
   if (colorsError) return json(500, { error: colorsError.message });
 
+  const { data: bundleItems, error: bundleItemsError } = await supabase
+    .from("product_bundle_items")
+    .select("*")
+    .in("bundle_product_id", productIds)
+    .order("sort_order", { ascending: true })
+    .order("created_at", { ascending: true });
+  if (bundleItemsError) return json(500, { error: bundleItemsError.message });
+
   return json(200, {
     products: products || [],
     images: images || [],
     colors: colors || [],
     colorLibrary: colorLibrary || [],
-    bundles: bundles || [],
+    bundleItems: bundleItems || [],
   });
 };
 

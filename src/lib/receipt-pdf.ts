@@ -29,6 +29,19 @@ function formatText(value: unknown) {
   return String(value);
 }
 
+function formatBundleItems(value: unknown) {
+  if (!Array.isArray(value) || value.length === 0) return null;
+  return value
+    .map((entry) => {
+      if (!entry || typeof entry !== "object") return "Item";
+      const item = entry as { name?: unknown; qty?: unknown };
+      const name = String(item.name || "Item");
+      const qty = Number(item.qty || 1);
+      return qty > 1 ? `${name} x${qty}` : name;
+    })
+    .join(", ");
+}
+
 function joinParts(parts: Array<string | null | undefined>) {
   return parts.filter(Boolean).join(" • ");
 }
@@ -42,6 +55,7 @@ function itemPrice(item: Record<string, unknown>) {
 function buildItemDetails(item: Record<string, unknown>) {
   return joinParts([
     item.brand ? String(item.brand).toUpperCase() : null,
+    item.isBundle ? "Bundle" : null,
     item.material ? `Material: ${item.material}` : null,
     item.quality ? `Quality: ${item.quality}` : null,
     item.infill !== undefined && item.infill !== null ? `Infill: ${item.infill}%` : null,
@@ -50,6 +64,7 @@ function buildItemDetails(item: Record<string, unknown>) {
     item.time ? `Time: ${item.time}h` : null,
     item.primaryColor ? `Primary: ${item.primaryColor}` : null,
     item.secondaryColor ? `Secondary: ${item.secondaryColor}` : null,
+    formatBundleItems(item.bundleItems) ? `Includes: ${formatBundleItems(item.bundleItems)}` : null,
   ]) || "-";
 }
 
