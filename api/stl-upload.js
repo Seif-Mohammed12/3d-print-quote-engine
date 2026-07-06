@@ -153,9 +153,30 @@ export const handler = async (event) => {
         authorizationToken: null,
       });
     } catch (analysisError) {
-      await supabase.storage.from(STL_UPLOAD_BUCKET).remove([storagePath]);
-      await supabase.from("stl_upload_jobs").update({ status: "failed", validation: { error: analysisError?.message || "Geometry analysis failed" } }).eq("id", jobId);
-      return json(502, { error: analysisError?.message || "Geometry analysis failed" });
+      const analysisMessage = analysisError?.message || "Geometry analysis failed";
+
+      await supabase
+        .from("stl_upload_jobs")
+        .update({
+          validation: {
+            status: "analysis_pending",
+            error: analysisMessage,
+          },
+        })
+        .eq("id", jobId);
+
+      return json(200, {
+        success: true,
+        jobId,
+        storagePath,
+        checksum,
+        uploadedAt: new Date().toISOString(),
+        fileSize: file.size,
+        stlResult: validation.stlResult,
+        analysis: null,
+        analysisStatus: "pending",
+        analysisError: analysisMessage,
+      });
     }
 
     await supabase.from("stl_upload_jobs").update({ validation: analysis }).eq("id", jobId);
