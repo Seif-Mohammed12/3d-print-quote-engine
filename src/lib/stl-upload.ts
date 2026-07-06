@@ -31,6 +31,36 @@ export type StlUploadApiResponse = {
   isLocalFallback?: boolean;
 };
 
+export type GeometryAnalysisResult = {
+  success: true;
+  analysisId: string;
+  uploadJobId: string;
+  fileName: string;
+  fileSize: number;
+  geometry: {
+    boundingBox: {
+      min: { x: number; y: number; z: number };
+      max: { x: number; y: number; z: number };
+    };
+    width: number;
+    height: number;
+    depth: number;
+    aspectRatio: number;
+    centerOfMass: { x: number; y: number; z: number };
+  };
+  mesh: {
+    volume: number;
+    surfaceArea: number;
+    triangleCount: number;
+    faceCount: number;
+  };
+  quality: {
+    watertight: boolean;
+    nonManifold: boolean;
+    estimatedComplexity: "low" | "medium" | "high";
+  };
+};
+
 export type StlSelectionValidation =
   | { ok: true; file: File }
   | { ok: false; error: string };
@@ -187,6 +217,45 @@ export function uploadStlFile(
     formData.append("jobId", jobId);
     formData.append("file", file, file.name);
     request.send(formData);
+  });
+}
+
+export function analyzeGeometryFromUpload(
+  upload: StlUploadApiResponse,
+  options?: { authorizationToken?: string | null }
+): Promise<GeometryAnalysisResult> {
+  return new Promise((resolve, reject) => {
+    const request = new XMLHttpRequest();
+    request.open("POST", "/api/geometry-analysis", true);
+    request.responseType = "json";
+
+    if (options?.authorizationToken) {
+      request.setRequestHeader("Authorization", `Bearer ${options.authorizationToken}`);
+    }
+
+    request.setRequestHeader("Content-Type", "application/json");
+    request.onerror = () => reject(new Error("Geometry analysis failed."));
+    request.onload = () => {
+      const response = request.response as Partial<GeometryAnalysisResult> | null;
+      if (request.status < 200 || request.status >= 300) {
+        reject(new Error((response as { error?: string } | null)?.error || `Geometry analysis failed (${request.status})`));
+        return;
+      }
+
+      if (!response?.success || !response.analysisId) {
+        reject(new Error("Analysis endpoint returned an unexpected response."));
+        return;
+      }
+
+      resolve(response as GeometryAnalysisResult);
+    };
+
+    request.send(JSON.stringify({
+      uploadJobId: upload.jobId,
+      fileName: upload.jobId,
+      storagePath: upload.storagePath,
+      fileSize: upload.fileSize,
+    }));
   });
 }
 

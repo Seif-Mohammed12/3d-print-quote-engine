@@ -3,6 +3,7 @@ import { Readable } from "node:stream";
 import { json } from "./_lib/http.js";
 import { getSupabaseAdmin, getSupabaseForAuthVerify } from "./_lib/supabase-admin.js";
 import { buildStoragePath, createUploadJobId, sha256, validateStlBuffer, STL_UPLOAD_BUCKET } from "./_lib/stl-validation.js";
+import { analyzeStoredUpload } from "./_lib/geometry-analysis.js";
 
 function normalizeHeaders(headers = {}) {
   const normalized = {};
@@ -130,13 +131,34 @@ export const handler = async (event) => {
       storage_bucket: STL_UPLOAD_BUCKET,
       storage_path: storagePath,
       status: "stored",
-      validation: validation.stlResult,
+      validation: { status: "uploaded" },
     });
 
     if (insertError) {
       await supabase.storage.from(STL_UPLOAD_BUCKET).remove([storagePath]);
       return json(500, { error: insertError.message });
     }
+
+    let analysis;
+    try {
+      analysis = await analyzeStoredUpload({
+        supabase,
+        uploadJob: {
+          id: jobId,
+          storage_bucket: STL_UPLOAD_BUCKET,
+          storage_path: storagePath,
+          original_name: fileName,
+          size_bytes: file.size,
+        },
+        authorizationToken: null,
+      });
+    } catch (analysisError) {
+      await supabase.storage.from(STL_UPLOAD_BUCKET).remove([storagePath]);
+      await supabase.from("stl_upload_jobs").update({ status: "failed", validation: { error: analysisError?.message || "Geometry analysis failed" } }).eq("id", jobId);
+      return json(502, { error: analysisError?.message || "Geometry analysis failed" });
+    }
+
+    await supabase.from("stl_upload_jobs").update({ validation: analysis }).eq("id", jobId);
 
     return json(200, {
       success: true,
@@ -146,6 +168,7 @@ export const handler = async (event) => {
       uploadedAt: new Date().toISOString(),
       fileSize: file.size,
       stlResult: validation.stlResult,
+      analysis,
     });
   } catch (error) {
     return json(400, { error: error?.message || "Failed to upload STL" });
