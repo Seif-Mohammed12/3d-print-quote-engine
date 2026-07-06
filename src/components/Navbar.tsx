@@ -1,6 +1,6 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Menu, X, ShoppingCart, Minus, Plus, Trash2, UserCircle2, LayoutDashboard, ClipboardList, Shield, LogOut } from "lucide-react";
+import { Menu, X, ShoppingCart, Minus, Plus, Trash2, UserCircle2, LayoutDashboard, ClipboardList, Shield, LogOut, Home, Zap, Package, Image, Users, Mail, FileText } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCart } from "@/lib/cart-context";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -13,17 +13,17 @@ import { cacheProducts } from "@/lib/runtime-product-cache";
 import type { BrandId, Product } from "@/lib/brand-catalog";
 
 const navLinks = [
-  { to: "/", label: "Home" },
-  { to: "/services", label: "Services" },
-  { to: "/products", label: "Products" },
-  { to: "/gallery", label: "Gallery" },
-  { to: "/about", label: "About" },
-  { to: "/contact", label: "Contact" },
-  { to: "/quote", label: "Get a Quote", highlight: true },
+  { to: "/", label: "Home", icon: Home },
+  { to: "/services", label: "Services", icon: Zap },
+  { to: "/products", label: "Products", icon: Package },
+  { to: "/gallery", label: "Gallery", icon: Image },
+  { to: "/about", label: "About", icon: Users },
+  { to: "/contact", label: "Contact", icon: Mail },
+  { to: "/quote", label: "Get a Quote", icon: FileText, highlight: true },
 ];
 
 const Navbar = () => {
-  const [open, setOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [cartPreviewOpen, setCartPreviewOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
@@ -31,6 +31,11 @@ const Navbar = () => {
   const { productCart, getProductSubtotal, removeProductFromCart, updateProductQty } = useCart();
   const productCount = productCart.reduce((sum, item) => sum + Math.max(1, item.qty || 1), 0);
   const subtotal = getProductSubtotal();
+
+  // Close sidebar when location changes
+  useEffect(() => {
+    setSidebarOpen(false);
+  }, [location]);
 
   const brandsInCart = useMemo(
     () => Array.from(new Set(productCart.map((item) => item.brand))) as BrandId[],
@@ -71,233 +76,181 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/50">
-      <div className="container mx-auto flex items-center justify-between h-16 px-4">
-        <Link to="/" className="flex items-center gap-3 group">
-          <div className="relative h-9 w-9 overflow-hidden rounded-xl bg-slate-900/80 ring-1 ring-primary/40 shadow-[0_0_18px_-6px_hsl(var(--neon-glow)/0.8)]">
-            <img
-              src="/logos/3d-print-it-logo.png"
-              alt="3D Print It logo"
-              className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-105"
-            />
-          </div>
-          <span className="font-heading font-bold text-lg text-foreground">
-            3D Print <span className="text-primary">It</span>
-          </span>
-        </Link>
-
-        {/* Desktop */}
-        <div className="hidden md:flex items-center gap-1">
-          {navLinks.map((link) => (
-            <Link
-              key={link.to}
-              to={link.to}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${link.highlight
-                ? "bg-primary text-primary-foreground hover:shadow-[0_0_20px_-5px_hsl(var(--neon-glow)/0.5)]"
-                : location.pathname === link.to
-                  ? "text-primary bg-primary/10"
-                  : "text-muted-foreground hover:text-foreground hover:bg-secondary"
-                }`}
+    <>
+      {/* Clean Navbar */}
+      <nav className="fixed top-0 left-0 right-0 z-40 bg-background/80 backdrop-blur-xl border-b border-border/50">
+        <div className="container mx-auto flex items-center justify-between h-16 px-8">
+          {/* Left side - Menu and Logo */}
+          <div className="flex items-center gap-3">
+            {/* Sidebar Toggle */}
+            <button
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="p-2 text-foreground hover:bg-secondary rounded-lg transition-all duration-300"
+              aria-label="Open navigation menu"
             >
-              {link.label}
-            </Link>
-          ))}
-          <button
-            type="button"
-            onClick={() => setCartPreviewOpen(true)}
-            className="relative ml-1 px-4 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary transition-all duration-300 flex items-center gap-2"
-          >
-            <ShoppingCart className="w-4 h-4" />
-            {productCart.length > 0 && (
-              <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-primary text-white text-xs flex items-center justify-center font-bold">
-                {productCount}
+              {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
+
+            {/* Logo */}
+            <Link to="/" className="flex items-center gap-3 group">
+              <div className="relative h-9 w-9 overflow-hidden rounded-xl bg-slate-900/80 ring-1 ring-primary/40 shadow-[0_0_18px_-6px_hsl(var(--neon-glow)/0.8)]">
+                <img
+                  src="/logos/3d-print-it-logo.png"
+                  alt="3D Print It logo"
+                  className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-105"
+                />
+              </div>
+              <span className="font-heading font-bold text-lg text-foreground">
+                3D Print <span className="text-primary">It</span>
               </span>
-            )}
-          </button>
-          {isAuthenticated ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button
-                  type="button"
-                  className="ml-4 inline-flex h-10 w-10 items-center justify-center rounded-full border border-border/70 text-muted-foreground hover:text-foreground hover:bg-secondary transition-all duration-300"
-                  aria-label="Open user menu"
-                >
-                  <UserCircle2 className="h-5 w-5" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-52">
-                <DropdownMenuLabel>
-                  <p className="text-xs text-muted-foreground">Signed in as</p>
-                  <p className="truncate">{user?.email || "My account"}</p>
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link to={isAdmin ? "/admin" : "/account"} className="cursor-pointer">
-                    <LayoutDashboard className="mr-2 h-4 w-4" />
-                    {isAdmin ? "Admin Dashboard" : "Dashboard"}
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/orders" className="cursor-pointer">
-                    <ClipboardList className="mr-2 h-4 w-4" />
-                    Orders
-                  </Link>
-                </DropdownMenuItem>
-                {isAdmin ? (
+            </Link>
+          </div>
+
+          {/* Right side controls */}
+          <div className="flex items-center gap-3">
+            {/* Cart Button */}
+            <button
+              type="button"
+              onClick={() => setCartPreviewOpen(true)}
+              className="relative p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-all duration-300 flex items-center gap-2"
+              aria-label="Shopping cart"
+            >
+              <ShoppingCart className="w-5 h-5" />
+              {productCart.length > 0 && (
+                <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-primary text-white text-xs flex items-center justify-center font-bold">
+                  {productCount}
+                </span>
+              )}
+            </button>
+
+            {/* User Menu */}
+            {isAuthenticated ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    type="button"
+                    className="p-2 rounded-lg border border-border/70 text-muted-foreground hover:text-foreground hover:bg-secondary transition-all duration-300"
+                    aria-label="Open user menu"
+                  >
+                    <UserCircle2 className="w-5 h-5" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-52">
+                  <DropdownMenuLabel>
+                    <p className="text-xs text-muted-foreground">Signed in as</p>
+                    <p className="truncate">{user?.email || "My account"}</p>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
-                    <Link to="/admin/orders" className="cursor-pointer">
-                      <Shield className="mr-2 h-4 w-4" />
-                      Admin
+                    <Link to={isAdmin ? "/admin" : "/account"} className="cursor-pointer">
+                      <LayoutDashboard className="mr-2 h-4 w-4" />
+                      {isAdmin ? "Admin Dashboard" : "Dashboard"}
                     </Link>
                   </DropdownMenuItem>
-                ) : null}
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={async () => {
-                    await signOut();
-                    navigate("/");
-                  }}
-                >
-                  <LogOut className="mr-2 h-4 w-4" />
-                  Sign out
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          ) : (
-            <Link
-              to="/login"
-              className="ml-4 px-4 py-2 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:shadow-[0_0_20px_-5px_hsl(var(--neon-glow)/0.5)] transition-all duration-300"
-            >
-              Login
-            </Link>
-          )}
-        </div>
-
-        {/* Mobile toggle */}
-        <div className="md:hidden flex items-center gap-2">
-          {isAuthenticated ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button
-                  type="button"
-                  className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border/70 text-muted-foreground hover:text-foreground hover:bg-secondary"
-                  aria-label="Open user menu"
-                >
-                  <UserCircle2 className="h-5 w-5" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-52">
-                <DropdownMenuLabel>
-                  <p className="text-xs text-muted-foreground">Signed in as</p>
-                  <p className="truncate">{user?.email || "My account"}</p>
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link to={isAdmin ? "/admin" : "/account"} onClick={() => setOpen(false)} className="cursor-pointer">
-                    <LayoutDashboard className="mr-2 h-4 w-4" />
-                    {isAdmin ? "Admin Dashboard" : "Dashboard"}
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/orders" onClick={() => setOpen(false)} className="cursor-pointer">
-                    <ClipboardList className="mr-2 h-4 w-4" />
-                    Orders
-                  </Link>
-                </DropdownMenuItem>
-                {isAdmin ? (
                   <DropdownMenuItem asChild>
-                    <Link to="/admin/orders" onClick={() => setOpen(false)} className="cursor-pointer">
-                      <Shield className="mr-2 h-4 w-4" />
-                      Admin
+                    <Link to="/orders" className="cursor-pointer">
+                      <ClipboardList className="mr-2 h-4 w-4" />
+                      Orders
                     </Link>
                   </DropdownMenuItem>
-                ) : null}
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={async () => {
-                    setOpen(false);
-                    await signOut();
-                    navigate("/");
-                  }}
-                >
-                  <LogOut className="mr-2 h-4 w-4" />
-                  Sign out
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          ) : (
-            <Link
-              to="/login"
-              className="px-3 py-2 rounded-lg text-xs font-semibold bg-primary text-primary-foreground"
-              onClick={() => setOpen(false)}
-            >
-              Login
-            </Link>
-          )}
-
-          <button
-            onClick={() => setOpen(!open)}
-            className="text-foreground p-2"
-          >
-            {open ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-          </button>
-        </div>
-      </div>
-
-      {/* Mobile menu */}
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            className="md:hidden bg-background/95 backdrop-blur-xl border-b border-border/50 overflow-hidden"
-          >
-            <div className="flex flex-col p-4 gap-1">
-              {navLinks.map((link) => (
-                <Link
-                  key={link.to}
-                  to={link.to}
-                  onClick={() => setOpen(false)}
-                  className={`px-4 py-3 rounded-lg text-sm font-medium transition-all ${link.highlight
-                    ? "bg-primary text-primary-foreground"
-                    : location.pathname === link.to
-                      ? "text-primary bg-primary/10"
-                      : "text-muted-foreground hover:text-foreground hover:bg-secondary"
-                    }`}
-                >
-                  {link.label}
-                </Link>
-              ))}
-              <button
-                type="button"
-                onClick={() => {
-                  setOpen(false);
-                  setCartPreviewOpen(true);
-                }}
-                className="relative mt-1 px-4 py-3 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary transition-all text-left"
+                  {isAdmin && (
+                    <DropdownMenuItem asChild>
+                      <Link to="/admin/orders" className="cursor-pointer">
+                        <Shield className="mr-2 h-4 w-4" />
+                        Admin
+                      </Link>
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={async () => {
+                      await signOut();
+                      navigate("/");
+                    }}
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Sign out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <Link
+                to="/login"
+                className="px-3 py-2 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:shadow-[0_0_20px_-5px_hsl(var(--neon-glow)/0.5)] transition-all"
               >
-                View cart
-                {productCart.length > 0 && (
-                  <span className="absolute top-2 right-3 min-w-5 h-5 px-1 rounded-full bg-primary text-white text-xs flex items-center justify-center font-bold">
-                    {productCount}
-                  </span>
-                )}
+                Login
+              </Link>
+            )}
+          </div>
+        </div>
+      </nav>
+
+      {/* Sidebar Overlay */}
+      <AnimatePresence>
+        {sidebarOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setSidebarOpen(false)}
+            className="fixed inset-0 z-30 bg-black/50 backdrop-blur-sm"
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Sidebar */}
+      <AnimatePresence>
+        {sidebarOpen && (
+          <motion.div
+            initial={{ x: -300, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: -300, opacity: 0 }}
+            transition={{ type: "spring", damping: 25, stiffness: 200 }}
+            className="fixed top-0 left-0 z-40 h-screen w-72 bg-background/95 backdrop-blur-xl border-r border-border/50 overflow-y-auto flex flex-col"
+          >
+            {/* Sidebar Header */}
+            <div className="flex items-center justify-between p-6 border-b border-border/50">
+              <span className="font-heading font-bold text-xl text-foreground">
+                Menu
+              </span>
+              <button
+                onClick={() => setSidebarOpen(false)}
+                className="p-1 rounded-lg hover:bg-secondary transition-colors"
+                aria-label="Close sidebar"
+              >
+                <X className="w-5 h-5" />
               </button>
-              {!isAuthenticated ? (
-                <Link
-                  to="/login"
-                  onClick={() => setOpen(false)}
-                  className="px-4 py-3 rounded-lg text-sm font-medium bg-primary text-primary-foreground transition-all"
-                >
-                  Login
-                </Link>
-              ) : null}
             </div>
+
+            {/* Navigation Links */}
+            <nav className="flex-1 overflow-y-auto p-4 space-y-2">
+              {navLinks.map((link) => {
+                const IconComponent = link.icon;
+                const isActive = location.pathname === link.to;
+                
+                return (
+                  <Link
+                    key={link.to}
+                    to={link.to}
+                    className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${
+                      link.highlight
+                        ? "bg-primary text-primary-foreground hover:shadow-[0_0_20px_-5px_hsl(var(--neon-glow)/0.5)]"
+                        : isActive
+                          ? "text-primary bg-primary/10"
+                          : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+                    }`}
+                  >
+                    <IconComponent className="w-4 h-4" />
+                    {link.label}
+                  </Link>
+                );
+              })}
+            </nav>
           </motion.div>
         )}
       </AnimatePresence>
 
+      {/* Cart Preview Dialog */}
       <Dialog open={cartPreviewOpen} onOpenChange={setCartPreviewOpen}>
         <DialogContent className="max-w-xl border-slate-800 bg-slate-950 text-slate-100">
           <DialogHeader>
@@ -429,7 +382,7 @@ const Navbar = () => {
           )}
         </DialogContent>
       </Dialog>
-    </nav>
+    </>
   );
 };
 

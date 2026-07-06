@@ -12,6 +12,13 @@ type QuoteRequestState = {
   fileName: string;
   fileType: string;
   fileBuffer: ArrayBuffer;
+  upload?: {
+    jobId: string;
+    storagePath: string;
+    checksum: string;
+    uploadedAt: string;
+    fileSize: number;
+  };
   settings: {
     material: string;
     quality: string;
@@ -111,6 +118,7 @@ export default function QuoteRequest() {
         orderType: "quote",
         createdAt: new Date().toISOString(),
         file: { name: state.fileName, type: state.fileType },
+        upload: state.upload || null,
         settings: state.settings,
         estimate: {
           totalPrice: state.estimate.totalPrice.toFixed(2),

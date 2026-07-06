@@ -1,6 +1,7 @@
 import { Suspense, useMemo, useRef } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import * as THREE from "three";
+import { parseSTL } from "@/lib/stl-parser";
 
 interface Props {
   fileBuffer: ArrayBuffer;
@@ -9,10 +10,13 @@ interface Props {
 function STLModel({ buffer }: { buffer: ArrayBuffer }) {
   const geometry = useMemo(() => {
     const geo = new THREE.BufferGeometry();
-    const view = new DataView(buffer);
+    try {
+      const parsed = parseSTL(buffer);
+      if (!parsed.triangleCount) {
+        return geo;
+      }
 
-    // Try binary STL
-    if (buffer.byteLength > 84) {
+      const view = new DataView(buffer);
       const triangleCount = view.getUint32(80, true);
       const positions = new Float32Array(triangleCount * 9);
       const normals = new Float32Array(triangleCount * 9);
@@ -37,12 +41,17 @@ function STLModel({ buffer }: { buffer: ArrayBuffer }) {
 
       geo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
       geo.setAttribute("normal", new THREE.BufferAttribute(normals, 3));
+      geo.computeBoundingSphere();
+      geo.center();
+    } catch {
+      geo.dispose();
     }
-
-    geo.computeBoundingSphere();
-    geo.center();
     return geo;
   }, [buffer]);
+
+  if (!geometry.attributes.position || geometry.getAttribute("position").count === 0) {
+    return null;
+  }
 
   return (
     <mesh geometry={geometry}>
