@@ -4,7 +4,6 @@ import Layout from "@/components/Layout";
 import SectionHeading from "@/components/SectionHeading";
 import { FileText } from "lucide-react";
 import ReceiptPdfDialog from "@/components/ReceiptPdfDialog";
-import { createReceiptPdfBlob } from "@/lib/receipt-pdf";
 
 export default function ProductOrderConfirmation() {
   const navigate = useNavigate();
@@ -31,57 +30,65 @@ export default function ProductOrderConfirmation() {
     if (!order) return;
 
     const items = Array.isArray(order.items) ? order.items : order.product ? [order.product] : [];
-    const blob = createReceiptPdfBlob({
-      title: "Product Order Receipt",
-      subtitle: "Your product order has been received and is ready for review.",
-      referenceLabel: "Order code",
-      referenceValue: order.orderCode || order.orderId || "-",
-      customerName: order.customer?.name || null,
-      createdAt: order.createdAt || null,
-      sections: [
-        {
-          title: "Customer details",
-          rows: [
-            { label: "Customer", value: order.customer?.name || "-" },
-            { label: "Email", value: order.customer?.email || "-" },
-            { label: "Phone", value: order.customer?.phone || "-" },
-          ],
-        },
-        {
-          title: "Delivery & payment",
-          rows: [
-            { label: "Shipping", value: order.shipping?.method === "pickup" ? "Pickup" : "Aramex" },
-            { label: "Payment", value: order.payment?.method === "cod" ? "Cash on delivery" : "Instapay" },
-            {
-              label: "Address",
-              value: order.shipping?.address
-                ? [
-                    order.shipping.address.line1,
-                    order.shipping.address.line2,
-                    order.shipping.address.city,
-                    order.shipping.address.governorate,
-                  ]
-                    .filter(Boolean)
-                    .join(", ")
-                : "-",
-            },
-          ],
-        },
-      ],
-      items,
-      totals: [
-        { label: "Subtotal", value: `${Number(order.totals?.subtotal || 0).toFixed(0)} EGP` },
-        { label: "Shipping", value: `${Number(order.totals?.shipping || 0).toFixed(0)} EGP` },
-        { label: "Total", value: `${Number(order.totals?.total || 0).toFixed(0)} EGP` },
-      ],
-      notes: order.customer?.notes || null,
+    // jspdf is loaded on demand so it stays out of the storefront bundle.
+    let cancelled = false;
+    let url: string | null = null;
+
+    void import("@/lib/receipt-pdf").then(({ createReceiptPdfBlob }) => {
+      if (cancelled) return;
+      const blob = createReceiptPdfBlob({
+        title: "Product Order Receipt",
+        subtitle: "Your product order has been received and is ready for review.",
+        referenceLabel: "Order code",
+        referenceValue: order.orderCode || order.orderId || "-",
+        customerName: order.customer?.name || null,
+        createdAt: order.createdAt || null,
+        sections: [
+          {
+            title: "Customer details",
+            rows: [
+              { label: "Customer", value: order.customer?.name || "-" },
+              { label: "Email", value: order.customer?.email || "-" },
+              { label: "Phone", value: order.customer?.phone || "-" },
+            ],
+          },
+          {
+            title: "Delivery & payment",
+            rows: [
+              { label: "Shipping", value: order.shipping?.method === "pickup" ? "Pickup" : "Aramex" },
+              { label: "Payment", value: order.payment?.method === "cod" ? "Cash on delivery" : "Instapay" },
+              {
+                label: "Address",
+                value: order.shipping?.address
+                  ? [
+                      order.shipping.address.line1,
+                      order.shipping.address.line2,
+                      order.shipping.address.city,
+                      order.shipping.address.governorate,
+                    ]
+                      .filter(Boolean)
+                      .join(", ")
+                  : "-",
+              },
+            ],
+          },
+        ],
+        items,
+        totals: [
+          { label: "Subtotal", value: `${Number(order.totals?.subtotal || 0).toFixed(0)} EGP` },
+          { label: "Shipping", value: `${Number(order.totals?.shipping || 0).toFixed(0)} EGP` },
+          { label: "Total", value: `${Number(order.totals?.total || 0).toFixed(0)} EGP` },
+        ],
+        notes: order.customer?.notes || null,
     });
 
-    const url = URL.createObjectURL(blob);
+    url = URL.createObjectURL(blob);
     setReceiptPdfUrl(url);
+    });
 
     return () => {
-      URL.revokeObjectURL(url);
+      cancelled = true;
+      if (url) URL.revokeObjectURL(url);
     };
   }, [order]);
 

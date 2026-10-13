@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Navigate, Route, Routes, useParams } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -8,36 +9,37 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import AdminRoleRoute from "@/components/AdminRoleRoute";
 import ScrollToTop from "@/components/ScrollToTop";
 import CookieConsentBanner from "@/components/CookieConsentBanner";
-import Index from "./pages/Index";
-import Services from "./pages/Services";
-import Products from "./pages/Products";
-import ProductDetail from "./pages/ProductDetail";
-import Gallery from "./pages/Gallery";
-import About from "./pages/About";
-import Contact from "./pages/Contact";
-import PrivacyPolicy from "./pages/PrivacyPolicy";
-import TermsOfService from "./pages/TermsOfService";
-import RefundPolicy from "./pages/RefundPolicy";
-import Quote from "./pages/Quote";
-import QuoteRequest from "./pages/QuoteRequest";
-import QuoteConfirmation from "./pages/QuoteConfirmation";
-import Cart from "./pages/Cart";
-import Checkout from "./pages/Checkout";
-import OrderConfirmation from "./pages/OrderConfirmation";
-import ProductCheckout from "./pages/ProductCheckout";
-import ProductOrderConfirmation from "./pages/ProductOrderConfirmation";
-import ProductCart from "./pages/ProductCart";
-import Login from "./pages/Login";
-import Signup from "./pages/Signup";
-import AuthCallback from "./pages/AuthCallback";
-import ResetPassword from "./pages/ResetPassword";
-import Account from "./pages/Account";
-import Orders from "./pages/Orders";
-import OrderDetail from "./pages/OrderDetail";
-import AdminDashboard from "./pages/admin/AdminDashboard";
-import AdminOrders from "./pages/admin/AdminOrders";
-import AdminStats from "./pages/admin/AdminStats";
-import NotFound from "./pages/NotFound";
+import RouteFallback from "@/components/RouteFallback";
+const Index = lazy(() => import("./pages/Index"));
+const Services = lazy(() => import("./pages/Services"));
+const Products = lazy(() => import("./pages/Products"));
+const ProductDetail = lazy(() => import("./pages/ProductDetail"));
+const Gallery = lazy(() => import("./pages/Gallery"));
+const About = lazy(() => import("./pages/About"));
+const Contact = lazy(() => import("./pages/Contact"));
+const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
+const TermsOfService = lazy(() => import("./pages/TermsOfService"));
+const RefundPolicy = lazy(() => import("./pages/RefundPolicy"));
+const Quote = lazy(() => import("./pages/Quote"));
+const QuoteRequest = lazy(() => import("./pages/QuoteRequest"));
+const QuoteConfirmation = lazy(() => import("./pages/QuoteConfirmation"));
+const Cart = lazy(() => import("./pages/Cart"));
+const Checkout = lazy(() => import("./pages/Checkout"));
+const OrderConfirmation = lazy(() => import("./pages/OrderConfirmation"));
+const ProductCheckout = lazy(() => import("./pages/ProductCheckout"));
+const ProductOrderConfirmation = lazy(() => import("./pages/ProductOrderConfirmation"));
+const ProductCart = lazy(() => import("./pages/ProductCart"));
+const Login = lazy(() => import("./pages/Login"));
+const Signup = lazy(() => import("./pages/Signup"));
+const AuthCallback = lazy(() => import("./pages/AuthCallback"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
+const Account = lazy(() => import("./pages/Account"));
+const Orders = lazy(() => import("./pages/Orders"));
+const OrderDetail = lazy(() => import("./pages/OrderDetail"));
+const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
+const AdminOrders = lazy(() => import("./pages/admin/AdminOrders"));
+const AdminStats = lazy(() => import("./pages/admin/AdminStats"));
+const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
 
@@ -52,9 +54,12 @@ const App = () => (
       <CartProvider>
         <TooltipProvider>
           <Sonner />
-          <BrowserRouter>
+          {/* Navigations run as transitions so the current page stays on screen
+              while the next lazy chunk loads; the skeleton only shows on first load. */}
+          <BrowserRouter future={{ v7_startTransition: true }}>
             <ScrollToTop />
             <CookieConsentBanner />
+            <Suspense fallback={<RouteFallback />}>
             <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/services" element={<Services />} />
@@ -137,6 +142,7 @@ const App = () => (
             />
             <Route path="*" element={<NotFound />} />
             </Routes>
+            </Suspense>
           </BrowserRouter>
         </TooltipProvider>
       </CartProvider>

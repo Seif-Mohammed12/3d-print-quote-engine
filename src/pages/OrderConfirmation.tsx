@@ -4,7 +4,6 @@ import { motion } from "framer-motion";
 import { CheckCircle, MessageCircle, ArrowLeft, FileText } from "lucide-react";
 import Layout from "@/components/Layout";
 import ReceiptPdfDialog from "@/components/ReceiptPdfDialog";
-import { createReceiptPdfBlob } from "@/lib/receipt-pdf";
 
 interface OrderData {
   customer: string;
@@ -33,43 +32,51 @@ const OrderConfirmation = () => {
   useEffect(() => {
     if (!order) return;
 
-    const blob = createReceiptPdfBlob({
-      title: "Quote Receipt",
-      subtitle: "Your quote request has been received and is ready for review.",
-      referenceLabel: "Receipt ID",
-      referenceValue: order.timestamp ? new Date(order.timestamp).toISOString().slice(0, 10) : "Quote request",
-      customerName: order.customer,
-      createdAt: order.timestamp,
-      sections: [
-        {
-          title: "Customer details",
-          rows: [
-            { label: "Customer", value: order.customer },
-            { label: "Email", value: order.email },
-            { label: "Phone", value: order.phone },
-            { label: "Company", value: order.company || "-" },
-          ],
-        },
-        {
-          title: "Order details",
-          rows: [
-            { label: "Item count", value: String(order.items?.length || 0) },
-            { label: "Submitted", value: order.timestamp ? new Date(order.timestamp).toLocaleString() : "-" },
-          ],
-        },
-      ],
-      items: order.items,
-      totals: [
-        { label: "Estimated total", value: `${Number(order.total || 0).toFixed(2)} EGP` },
-      ],
-      notes: order.notes || null,
+    // jspdf is loaded on demand so it stays out of the storefront bundle.
+    let cancelled = false;
+    let url: string | null = null;
+
+    void import("@/lib/receipt-pdf").then(({ createReceiptPdfBlob }) => {
+      if (cancelled) return;
+      const blob = createReceiptPdfBlob({
+        title: "Quote Receipt",
+        subtitle: "Your quote request has been received and is ready for review.",
+        referenceLabel: "Receipt ID",
+        referenceValue: order.timestamp ? new Date(order.timestamp).toISOString().slice(0, 10) : "Quote request",
+        customerName: order.customer,
+        createdAt: order.timestamp,
+        sections: [
+          {
+            title: "Customer details",
+            rows: [
+              { label: "Customer", value: order.customer },
+              { label: "Email", value: order.email },
+              { label: "Phone", value: order.phone },
+              { label: "Company", value: order.company || "-" },
+            ],
+          },
+          {
+            title: "Order details",
+            rows: [
+              { label: "Item count", value: String(order.items?.length || 0) },
+              { label: "Submitted", value: order.timestamp ? new Date(order.timestamp).toLocaleString() : "-" },
+            ],
+          },
+        ],
+        items: order.items,
+        totals: [
+          { label: "Estimated total", value: `${Number(order.total || 0).toFixed(2)} EGP` },
+        ],
+        notes: order.notes || null,
     });
 
-    const url = URL.createObjectURL(blob);
+    url = URL.createObjectURL(blob);
     setReceiptPdfUrl(url);
+    });
 
     return () => {
-      URL.revokeObjectURL(url);
+      cancelled = true;
+      if (url) URL.revokeObjectURL(url);
     };
   }, [order]);
 

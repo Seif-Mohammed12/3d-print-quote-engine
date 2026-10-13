@@ -1,10 +1,9 @@
-import { useCallback, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { FileType, RotateCcw, ShieldCheck, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import ModelViewer from "@/components/ModelViewer";
 import { getAccessToken } from "@/lib/auth-session";
 import {
   formatFileSize,
@@ -15,6 +14,9 @@ import {
   uploadStlFile,
   validateStlSelection,
 } from "@/lib/stl-upload";
+
+// three.js + @react-three only load once an STL preview is actually shown.
+const ModelViewer = lazy(() => import("@/components/ModelViewer"));
 
 type UploadStatus = "idle" | "validating" | "uploading" | "ready" | "error";
 
@@ -180,7 +182,11 @@ export default function StlUploadCard({ onReady, onReset }: StlUploadCardProps) 
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            <ModelViewer fileBuffer={draft.fileBuffer} />
+            <Suspense
+              fallback={<div className="panel aspect-square w-full motion-safe:animate-pulse" aria-hidden="true" />}
+            >
+              <ModelViewer fileBuffer={draft.fileBuffer} />
+            </Suspense>
 
             <div className="grid grid-cols-3 gap-3">
               {[
