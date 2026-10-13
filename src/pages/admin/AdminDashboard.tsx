@@ -339,7 +339,7 @@ export default function AdminDashboard() {
                   <label className="mb-1 block text-xs font-medium text-muted-foreground">Card Hook (outside)</label>
                   <input className="w-full rounded-lg bg-secondary border border-border px-3 py-2 text-sm" placeholder="Clean desk, hero setup."
                     value={form.short} onChange={(e) => setForm({ ...form, short: e.target.value })} maxLength={200} />
-                  <p className="mt-1 text-[11px] text-muted-foreground">
+                  <p className="mt-1 text-xs text-muted-foreground">
                     This is the short line shown on product cards.
                   </p>
                 </div>
@@ -354,7 +354,7 @@ export default function AdminDashboard() {
                     min={0}
                     step={0.01}
                   />
-                  <p className="mt-1 text-[11px] text-muted-foreground">
+                  <p className="mt-1 text-xs text-muted-foreground">
                     Used for stats and estimating filament usage per product.
                   </p>
                 </div>
@@ -372,7 +372,7 @@ export default function AdminDashboard() {
                   <label className="mb-1 block text-xs font-medium text-muted-foreground">Display Order</label>
                   <input type="number" className="w-full rounded-lg bg-secondary border border-border px-3 py-2 text-sm" placeholder="0"
                     value={form.sortOrder} onChange={(e) => setForm({ ...form, sortOrder: Number(e.target.value) })} min={0} step={1} />
-                  <p className="mt-1 text-[11px] text-muted-foreground">
+                  <p className="mt-1 text-xs text-muted-foreground">
                     Lower number shows first on the brand page.
                   </p>
                 </div>

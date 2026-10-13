@@ -1,0 +1,485 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-13T03:03:45+00:00",
+  "title": "Design System: 3D Print It",
+  "extensions": {
+    "colorMeta": {
+      "label-orange": {
+        "role": "primary",
+        "displayName": "Label Orange",
+        "canonical": "hsl(16 100% 56%)",
+        "cssVar": "--ink",
+        "tonalRamp": [
+          "hsl(16 100% 15%)",
+          "hsl(16 100% 26%)",
+          "hsl(16 100% 37%)",
+          "hsl(16 100% 48%)",
+          "hsl(16 100% 60%)",
+          "hsl(16 100% 71%)",
+          "hsl(16 100% 83%)",
+          "hsl(16 100% 95%)"
+        ]
+      },
+      "paper-white": {
+        "role": "neutral",
+        "displayName": "Paper White",
+        "canonical": "hsl(40 18% 91%)",
+        "cssVar": "--foreground",
+        "tonalRamp": [
+          "hsl(40 18% 15%)",
+          "hsl(40 18% 26%)",
+          "hsl(40 18% 37%)",
+          "hsl(40 18% 48%)",
+          "hsl(40 18% 60%)",
+          "hsl(40 18% 71%)",
+          "hsl(40 18% 83%)",
+          "hsl(40 18% 95%)"
+        ]
+      },
+      "graphite": {
+        "role": "neutral",
+        "displayName": "Graphite",
+        "canonical": "hsl(240 3% 6%)",
+        "cssVar": "--background",
+        "tonalRamp": [
+          "hsl(240 3% 15%)",
+          "hsl(240 3% 26%)",
+          "hsl(240 3% 37%)",
+          "hsl(240 3% 48%)",
+          "hsl(240 3% 60%)",
+          "hsl(240 3% 71%)",
+          "hsl(240 3% 83%)",
+          "hsl(240 3% 95%)"
+        ]
+      },
+      "graphite-raised": {
+        "role": "neutral",
+        "displayName": "Raised Graphite",
+        "canonical": "hsl(240 4% 9%)",
+        "cssVar": "--card",
+        "tonalRamp": [
+          "hsl(240 4% 15%)",
+          "hsl(240 4% 26%)",
+          "hsl(240 4% 37%)",
+          "hsl(240 4% 48%)",
+          "hsl(240 4% 60%)",
+          "hsl(240 4% 71%)",
+          "hsl(240 4% 83%)",
+          "hsl(240 4% 95%)"
+        ]
+      },
+      "graphite-lift": {
+        "role": "neutral",
+        "displayName": "Lifted Graphite",
+        "canonical": "hsl(240 4% 12%)",
+        "cssVar": "--secondary",
+        "tonalRamp": [
+          "hsl(240 4% 15%)",
+          "hsl(240 4% 26%)",
+          "hsl(240 4% 37%)",
+          "hsl(240 4% 48%)",
+          "hsl(240 4% 60%)",
+          "hsl(240 4% 71%)",
+          "hsl(240 4% 83%)",
+          "hsl(240 4% 95%)"
+        ]
+      },
+      "graphite-hover": {
+        "role": "neutral",
+        "displayName": "Hover Graphite",
+        "canonical": "hsl(240 4% 15%)",
+        "cssVar": "--accent",
+        "tonalRamp": [
+          "hsl(240 4% 15%)",
+          "hsl(240 4% 26%)",
+          "hsl(240 4% 37%)",
+          "hsl(240 4% 48%)",
+          "hsl(240 4% 60%)",
+          "hsl(240 4% 71%)",
+          "hsl(240 4% 83%)",
+          "hsl(240 4% 95%)"
+        ]
+      },
+      "hairline": {
+        "role": "neutral",
+        "displayName": "Hairline",
+        "canonical": "hsl(240 4% 17%)",
+        "cssVar": "--border",
+        "tonalRamp": [
+          "hsl(240 4% 15%)",
+          "hsl(240 4% 26%)",
+          "hsl(240 4% 37%)",
+          "hsl(240 4% 48%)",
+          "hsl(240 4% 60%)",
+          "hsl(240 4% 71%)",
+          "hsl(240 4% 83%)",
+          "hsl(240 4% 95%)"
+        ]
+      },
+      "rule": {
+        "role": "neutral",
+        "displayName": "Rule",
+        "canonical": "hsl(240 4% 22%)",
+        "cssVar": "--rule",
+        "tonalRamp": [
+          "hsl(240 4% 15%)",
+          "hsl(240 4% 26%)",
+          "hsl(240 4% 37%)",
+          "hsl(240 4% 48%)",
+          "hsl(240 4% 60%)",
+          "hsl(240 4% 71%)",
+          "hsl(240 4% 83%)",
+          "hsl(240 4% 95%)"
+        ]
+      },
+      "warm-grey": {
+        "role": "neutral",
+        "displayName": "Warm Grey",
+        "canonical": "hsl(40 3% 58%)",
+        "cssVar": "--muted-foreground",
+        "tonalRamp": [
+          "hsl(40 3% 15%)",
+          "hsl(40 3% 26%)",
+          "hsl(40 3% 37%)",
+          "hsl(40 3% 48%)",
+          "hsl(40 3% 60%)",
+          "hsl(40 3% 71%)",
+          "hsl(40 3% 83%)",
+          "hsl(40 3% 95%)"
+        ]
+      },
+      "signal-red": {
+        "role": "status",
+        "displayName": "Signal Red",
+        "canonical": "hsl(4 78% 60%)",
+        "cssVar": "--destructive",
+        "tonalRamp": [
+          "hsl(4 78% 15%)",
+          "hsl(4 78% 26%)",
+          "hsl(4 78% 37%)",
+          "hsl(4 78% 48%)",
+          "hsl(4 78% 60%)",
+          "hsl(4 78% 71%)",
+          "hsl(4 78% 83%)",
+          "hsl(4 78% 95%)"
+        ]
+      },
+      "print-green": {
+        "role": "status",
+        "displayName": "Print Green",
+        "canonical": "hsl(142 45% 55%)",
+        "cssVar": "--success",
+        "tonalRamp": [
+          "hsl(142 45% 15%)",
+          "hsl(142 45% 26%)",
+          "hsl(142 45% 37%)",
+          "hsl(142 45% 48%)",
+          "hsl(142 45% 60%)",
+          "hsl(142 45% 71%)",
+          "hsl(142 45% 83%)",
+          "hsl(142 45% 95%)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Home hero release name, desktop."
+      },
+      "display-mobile": {
+        "displayName": "Display Mobile",
+        "purpose": "Home hero release name, phone."
+      },
+      "page-title": {
+        "displayName": "Page Title",
+        "purpose": "Services, About, Not Found titles, desktop."
+      },
+      "page-title-shelf": {
+        "displayName": "Page Title Shelf",
+        "purpose": "Shop, Gallery, Contact titles, desktop."
+      },
+      "page-title-mobile": {
+        "displayName": "Page Title Mobile",
+        "purpose": "All page and product titles, phone."
+      },
+      "product-title": {
+        "displayName": "Product Title",
+        "purpose": "Release name on the product page, desktop."
+      },
+      "section-heading": {
+        "displayName": "Section Heading",
+        "purpose": "Shared SectionHeading, desktop."
+      },
+      "section-heading-mobile": {
+        "displayName": "Section Heading Mobile",
+        "purpose": "Shared SectionHeading, phone."
+      },
+      "headline-lg": {
+        "displayName": "Headline Lg",
+        "purpose": "Maker statement, desktop."
+      },
+      "headline-lg-mobile": {
+        "displayName": "Headline Lg Mobile",
+        "purpose": "Maker statement, phone."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Section h2, desktop."
+      },
+      "headline-sm": {
+        "displayName": "Headline Sm",
+        "purpose": "Service route names, desktop."
+      },
+      "headline-mobile": {
+        "displayName": "Headline Mobile",
+        "purpose": "Section h2 and product price, phone."
+      },
+      "menu-link": {
+        "displayName": "Menu Link",
+        "purpose": "Phone menu track-list links."
+      },
+      "title-lg": {
+        "displayName": "Title Lg",
+        "purpose": "Sub-section and dialog titles."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Product names in the shop grid."
+      },
+      "wordmark": {
+        "displayName": "Wordmark",
+        "purpose": "3D Print It wordmark in the nav."
+      },
+      "title-sm": {
+        "displayName": "Title Sm",
+        "purpose": "Catalogue-row and commission-row names."
+      },
+      "liner-notes": {
+        "displayName": "Liner Notes",
+        "purpose": "Long-form descriptions and About story, max 60-65ch."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Default running text with tabular figures."
+      },
+      "ui": {
+        "displayName": "Ui",
+        "purpose": "Nav, legends, labels, filter tabs, quiet links."
+      },
+      "small": {
+        "displayName": "Small",
+        "purpose": "Spec labels, descriptions, swatch names."
+      },
+      "count": {
+        "displayName": "Count",
+        "purpose": "Cart count badge."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Vertical catalogue number on the sleeve spine."
+      }
+    },
+    "shadows": [
+      {
+        "name": "toast",
+        "value": "0 8px 24px -8px rgba(0,0,0,0.6)",
+        "purpose": "The only shadow: lifts a transient toast off the board."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-out-expo",
+        "value": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "Easing for the spine wipe (--ease-out-expo)."
+      },
+      {
+        "name": "spine-wipe",
+        "value": "520ms, clip-path inset(0 0 100% 0) to inset(0 0 0 0)",
+        "purpose": "The one authored motion: a newly chosen plastic colour wipes down the sleeve spine."
+      },
+      {
+        "name": "state-transition",
+        "value": "200ms colors",
+        "purpose": "Button fill and outline colour changes on hover."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "animation and transition duration 0.01ms",
+        "purpose": "prefers-reduced-motion collapses all motion to instant."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "sm",
+        "value": "640px"
+      },
+      {
+        "name": "md",
+        "value": "768px"
+      },
+      {
+        "name": "lg",
+        "value": "1024px"
+      },
+      {
+        "name": "frame-max",
+        "value": "1240px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Solid paper-white action, worded; price may ride in the label.",
+      "html": "<button class=\"ds-btn-primary\">Add to cart · 450 EGP</button>",
+      "css": ".ds-btn-primary { display:inline-flex; align-items:center; justify-content:center; gap:8px; min-height:48px; padding:0 24px; background:hsl(var(--primary)); color:hsl(var(--primary-foreground)); font-family:Host Grotesk, Noto Sans Arabic, system-ui, sans-serif; font-size:16px; font-weight:600; border:0; border-radius:0; cursor:pointer; transition:background-color 200ms; font-variant-numeric:tabular-nums; } .ds-btn-primary:hover { background:#fff; } .ds-btn-primary:focus-visible { outline:2px solid hsl(var(--ring)); outline-offset:2px; } .ds-btn-primary:disabled { opacity:.5; cursor:not-allowed; }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Rule-outlined worded action; outline turns paper-white on hover.",
+      "html": "<button class=\"ds-btn-secondary\">Buy now</button>",
+      "css": ".ds-btn-secondary { display:inline-flex; align-items:center; justify-content:center; min-height:48px; padding:0 24px; background:transparent; color:hsl(var(--foreground)); border:1px solid hsl(var(--rule)); border-radius:0; font-family:Host Grotesk, Noto Sans Arabic, system-ui, sans-serif; font-size:16px; font-weight:600; cursor:pointer; transition:border-color 200ms; } .ds-btn-secondary:hover { border-color:hsl(var(--foreground)); } .ds-btn-secondary:focus-visible { outline:2px solid hsl(var(--ring)); outline-offset:2px; }"
+    },
+    {
+      "name": "Input Field",
+      "kind": "input",
+      "refersTo": "input-field",
+      "description": "Labelled 48px field, rule outline, paper-white on focus, orange caret.",
+      "html": "<label class=\"ds-field\"><span class=\"ds-field-label\">Name</span><input class=\"ds-input\" type=\"text\" placeholder=\"you@example.com\"></label>",
+      "css": ".ds-field { display:block; font-family:Host Grotesk, Noto Sans Arabic, system-ui, sans-serif; color:hsl(var(--foreground)); } .ds-field-label { display:block; margin-bottom:6px; font-size:15px; font-weight:600; } .ds-input { width:100%; min-height:48px; padding:0 12px; background:hsl(var(--background)); color:hsl(var(--foreground)); border:1px solid hsl(var(--input)); border-radius:0; font:inherit; font-size:16px; caret-color:hsl(var(--ink)); } .ds-input::placeholder { color:hsl(var(--muted-foreground)); } .ds-input:focus { outline:none; border-color:hsl(var(--foreground)); }"
+    },
+    {
+      "name": "Navigation Bar",
+      "kind": "nav",
+      "refersTo": "nav-bar",
+      "description": "Fixed 56px graphite bar, worded links, orange underline on active, square cart count.",
+      "html": "<header class=\"ds-nav\"><a class=\"ds-nav-mark\" href=\"#\">3D Print It</a><nav class=\"ds-nav-links\"><a class=\"ds-nav-link is-active\" href=\"#\">Shop</a><a class=\"ds-nav-link\" href=\"#\">Custom prints</a><a class=\"ds-nav-link\" href=\"#\">About</a></nav><button class=\"ds-nav-cart\">Cart <span class=\"ds-nav-count\">2</span></button></header>",
+      "css": ".ds-nav { display:flex; align-items:center; justify-content:space-between; gap:24px; height:56px; padding:0 16px; background:hsl(var(--background)); border-bottom:1px solid hsl(var(--border)); font-family:Host Grotesk, Noto Sans Arabic, system-ui, sans-serif; } .ds-nav-mark { font-size:19px; font-weight:800; letter-spacing:-0.03em; color:hsl(var(--foreground)); text-decoration:none; } .ds-nav-links { display:flex; gap:28px; } .ds-nav-link { display:inline-flex; align-items:center; min-height:44px; font-size:15px; color:hsl(var(--muted-foreground)); text-decoration:none; transition:color 150ms; } .ds-nav-link:hover { color:hsl(var(--foreground)); } .ds-nav-link.is-active { color:hsl(var(--foreground)); text-decoration:underline; text-decoration-color:hsl(var(--ink)); text-decoration-thickness:2px; text-underline-offset:10px; } .ds-nav-link:focus-visible, .ds-nav-cart:focus-visible { outline:2px solid hsl(var(--ring)); outline-offset:2px; } .ds-nav-cart { display:inline-flex; align-items:center; min-height:44px; padding:0 8px; background:none; border:0; color:hsl(var(--foreground)); font:inherit; font-size:15px; font-weight:600; cursor:pointer; } .ds-nav-count { display:inline-flex; align-items:center; justify-content:center; height:24px; min-width:24px; margin-left:6px; padding:0 6px; background:hsl(var(--ink)); color:hsl(var(--ink-foreground)); font-size:13px; font-variant-numeric:tabular-nums; }"
+    },
+    {
+      "name": "Colour Chips",
+      "kind": "chip",
+      "refersTo": "color-chip",
+      "description": "Named colour chips; selected gets a paper-white outline and lifted fill.",
+      "html": "<fieldset class=\"ds-chips\"><legend class=\"ds-chips-legend\"><b>Colour</b><span>Sunset Orange</span></legend><div class=\"ds-chips-row\"><button class=\"ds-chip is-active\" aria-pressed=\"true\"><i style=\"background:#ff6a2a\"></i>Sunset Orange</button><button class=\"ds-chip\" aria-pressed=\"false\"><i style=\"background:#1d1d1f\"></i>Matte Black</button><button class=\"ds-chip\" aria-pressed=\"false\"><i style=\"background:#f2f0ea\"></i>Bone White</button></div></fieldset>",
+      "css": ".ds-chips { border:0; padding:0; margin:0; font-family:Host Grotesk, Noto Sans Arabic, system-ui, sans-serif; color:hsl(var(--foreground)); } .ds-chips-legend { display:flex; width:100%; justify-content:space-between; gap:12px; font-size:15px; } .ds-chips-legend span { color:hsl(var(--muted-foreground)); } .ds-chips-row { display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; } .ds-chip { display:flex; align-items:center; gap:8px; min-height:44px; padding:0 10px; background:transparent; border:1px solid hsl(var(--rule)); border-radius:0; color:hsl(var(--muted-foreground)); font:inherit; font-size:14px; cursor:pointer; transition:color 150ms, border-color 150ms; } .ds-chip i { width:20px; height:20px; border:1px solid rgba(255,255,255,.15); } .ds-chip:hover { border-color:hsl(var(--muted-foreground)); color:hsl(var(--foreground)); } .ds-chip.is-active { border-color:hsl(var(--foreground)); background:hsl(var(--secondary)); color:hsl(var(--foreground)); } .ds-chip:focus-visible { outline:2px solid hsl(var(--ring)); outline-offset:2px; }"
+    },
+    {
+      "name": "Sleeve",
+      "kind": "custom",
+      "refersTo": "sleeve-spine",
+      "description": "Square sleeve with a coloured left spine carrying the catalogue number; the spine wipes on colour change.",
+      "html": "<div class=\"ds-sleeve\"><div class=\"ds-sleeve-spine\" style=\"background:#ff6a2a\"><span>3DP-004 · Sunset Orange</span></div><div class=\"ds-sleeve-face\"></div></div>",
+      "css": ".ds-sleeve { position:relative; display:flex; width:280px; aspect-ratio:1/1; overflow:hidden; background:#000; font-family:Host Grotesk, Noto Sans Arabic, system-ui, sans-serif; } .ds-sleeve-spine { position:relative; width:28px; flex-shrink:0; display:flex; align-items:flex-end; justify-content:center; padding-bottom:12px; color:hsl(var(--background)); border-right:1px solid rgba(255,255,255,.1); animation:ds-spine-wipe 520ms var(--ease-out-expo, cubic-bezier(0.16,1,0.3,1)) both; } .ds-sleeve-spine span { writing-mode:vertical-rl; transform:rotate(180deg); white-space:nowrap; font-size:12px; font-weight:600; letter-spacing:0.06em; } .ds-sleeve-face { flex:1; background:hsl(var(--card)); } @keyframes ds-spine-wipe { from { clip-path:inset(0 0 100% 0); } to { clip-path:inset(0 0 0 0); } } @media (prefers-reduced-motion: reduce) { .ds-sleeve-spine { animation-duration:0.01ms; } }"
+    },
+    {
+      "name": "Catalogue Row",
+      "kind": "card",
+      "refersTo": "catalogue-row",
+      "description": "One release per ruled row: number, banded-spine thumbnail, name, price.",
+      "html": "<div class=\"ds-ruled\"><a class=\"ds-row\" href=\"#\"><span class=\"ds-row-no\">3DP-002</span><span class=\"ds-row-thumb\"><span class=\"ds-row-spine\"><i style=\"background:#ff6a2a\"></i><i style=\"background:#1d1d1f\"></i><i style=\"background:#f2f0ea\"></i></span></span><span class=\"ds-row-text\"><b>Controller Stand</b><small>Holds two pads upright.</small></span><span class=\"ds-row-price\">450 EGP</span></a><a class=\"ds-row\" href=\"#\"><span class=\"ds-row-no\">3DP-003</span><span class=\"ds-row-thumb\"><span class=\"ds-row-spine\"><i style=\"background:#4a7a5a\"></i></span></span><span class=\"ds-row-text\"><b>Ribbed Vase</b><small>Layer lines left on purpose.</small></span><span class=\"ds-row-price\">380 EGP</span></a></div>",
+      "css": ".ds-ruled { border-bottom:1px solid hsl(var(--border)); font-family:Host Grotesk, Noto Sans Arabic, system-ui, sans-serif; font-variant-numeric:tabular-nums; } .ds-ruled > * + * { border-top:1px solid hsl(var(--border)); } .ds-row { display:grid; grid-template-columns:72px 72px 1fr auto; align-items:center; gap:16px; padding:16px 0; color:hsl(var(--foreground)); text-decoration:none; } .ds-row-no { font-size:14px; color:hsl(var(--ink)); } .ds-row-thumb { display:flex; width:72px; aspect-ratio:1/1; background:hsl(var(--card)); } .ds-row-spine { display:flex; flex-direction:column; width:6px; } .ds-row-spine i { flex:1; } .ds-row-text b { display:block; font-size:18px; font-weight:600; letter-spacing:-0.01em; line-height:1.25; } .ds-row-text small { display:block; margin-top:2px; font-size:14px; color:hsl(var(--muted-foreground)); } .ds-row:hover b { text-decoration:underline; text-decoration-color:hsl(var(--ink)); text-decoration-thickness:2px; text-underline-offset:4px; } .ds-row:focus-visible { outline:2px solid hsl(var(--ring)); outline-offset:2px; } .ds-row-price { font-weight:600; text-align:right; }"
+    },
+    {
+      "name": "Photo Pending",
+      "kind": "custom",
+      "refersTo": "photo-pending",
+      "description": "Dashed honest placeholder carrying the shot-list description.",
+      "html": "<div class=\"ds-pending\" role=\"img\" aria-label=\"Photo coming soon\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z\"/><circle cx=\"12\" cy=\"13\" r=\"3\"/></svg><div><p class=\"ds-pending-title\">Photo on the way</p><p class=\"ds-pending-shot\">Shot 1: the founder at the printers in New Cairo.</p></div></div>",
+      "css": ".ds-pending { display:flex; flex-direction:column; justify-content:space-between; width:280px; aspect-ratio:4/3; padding:12px; background:hsl(var(--card)); border:1px dashed hsl(var(--rule)); color:hsl(var(--muted-foreground)); font-family:Host Grotesk, Noto Sans Arabic, system-ui, sans-serif; box-sizing:border-box; } .ds-pending p { margin:0; } .ds-pending-title { font-size:14px; font-weight:600; color:hsl(var(--foreground)); } .ds-pending-shot { margin-top:4px; font-size:12px; line-height:1.375; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Label Catalogue",
+    "overview": "Every product is a release from a small independent label: it gets a catalogue number, a square sleeve, and one ink. The storefront reads like a label's back catalogue laid out on a graphite board. The object comes first, in a square sleeve whose coloured spine carries the plastic colour the visitor picked. Price, material and the roughly 48-hour print time follow straight after, in ruled spec rows. The maker in New Cairo comes in further down the page, signed and dated.\n\nThe system is dark, flat and quiet so the prints carry the colour. The board is a near-black graphite, type is a warm paper-white, and one matte orange ink appears only in small, flat doses: catalogue numbers, active underlines, the cart count, focus rings and text selection. Composition comes from 1px ruled tables, not floating cards. Lists, spec sheets, terms of sale and the phone menu all sit as ruled rows, like a track list. Every control is labelled in words (\"Menu\", \"Cart\", \"Close\"), and every colour has a visible name.\n\nThis system replaces an earlier neon-on-navy, glass-card storefront. The user confirmed those devices as bans (see Do's and Don'ts).",
+    "keyCharacteristics": [
+      "Graphite board, paper-white type, one matte orange ink used flat and small.",
+      "Host Grotesk only, tabular figures throughout, display set tight and large.",
+      "Square sleeves with a coloured spine that carries the catalogue number.",
+      "1px ruled tables as the main compositional device; no card grids.",
+      "Corners are square. 2px is the most rounding anything gets.",
+      "Flat. Depth comes only from rules and a slightly raised graphite panel.",
+      "One authored motion: the spine wipe when a colour is chosen."
+    ],
+    "rules": [
+      {
+        "name": "The One Ink Rule",
+        "body": "Label Orange covers well under 5% of any screen. It marks numbers, active state and focus, never an area. No button is filled orange.",
+        "section": "colors"
+      },
+      {
+        "name": "The Paper Button Rule",
+        "body": "The primary action is a solid paper-white block with graphite text. On hover it brightens to pure white. Colour never carries the call to action.",
+        "section": "colors"
+      },
+      {
+        "name": "The Prints Bring the Colour Rule",
+        "body": "The only saturated colours beyond the ink are plastic colours: spines, swatches and photos. The interface stays graphite so a chosen filament reads true.",
+        "section": "colors"
+      },
+      {
+        "name": "The One Family Rule",
+        "body": "Host Grotesk only, weights 400 to 800. Noto Sans Arabic is there as a fallback for user-entered Arabic (names, addresses), which keeps its own direction through `dir=\"auto\"`.",
+        "section": "typography"
+      },
+      {
+        "name": "The Tight Display Rule",
+        "body": "Headings track negative (-0.02em by default, down to -0.04em at display size), balance their line breaks, and sit at line-height 1 or below from 36px up.",
+        "section": "typography"
+      },
+      {
+        "name": "The Words Not Badges Rule",
+        "body": "Labels are sentence case in plain words. Uppercase tracked kickers and eyebrows above headings are not part of this system.",
+        "section": "typography"
+      },
+      {
+        "name": "The Ruled Table Rule",
+        "body": "Lists, specs, terms of sale, contact details and the phone menu are rows separated by 1px rules. A section heading sits on a full-strength paper-white rule. Groups of rows close with a hairline. Never use floating card grids for lists.",
+        "section": "layout"
+      },
+      {
+        "name": "The One Object Rule",
+        "body": "On a phone, one release fills the viewport at a time. Its name, price and action stay with it.",
+        "section": "layout"
+      },
+      {
+        "name": "The Flat Board Rule",
+        "body": "If something needs to stand apart, give it a rule or the raised graphite fill. Don't use a shadow, a blur or a glow.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Square Sleeve Rule",
+        "body": "Product imagery is always 1:1, always with a spine on the left. Maker and studio photography is the one exception and runs at 4:3.",
+        "section": "shapes"
+      },
+      {
+        "name": "The Spine Rule",
+        "body": "The sleeve spine is the only moving part. Choosing a colour wipes it; nothing else animates on its own. Under reduced motion, animations and transitions collapse to instant. Content never fades or slides up on scroll.",
+        "section": "components"
+      }
+    ],
+    "dos": [
+      "**Do** keep Label Orange to numbers, active underlines, the cart count, focus, caret and selection.",
+      "**Do** make the primary action a solid paper-white button, at least 48px tall, labelled in words. Put the price in the label when it helps.",
+      "**Do** set lists, specs and terms as 1px ruled rows, and open sections with a heading on a paper-white rule.",
+      "**Do** show product imagery in a square sleeve with a left colour spine carrying the catalogue number.",
+      "**Do** name every colour visibly next to its swatch.",
+      "**Do** keep every touch target at least 44px, and keep the phone buy bar and toast offsets clear of each other.",
+      "**Do** use the dashed Photo Pending plate, with its shot-list description, wherever a real photo is missing.",
+      "**Do** respect `prefers-reduced-motion`. The spine wipe is the one authored animation (520ms, `cubic-bezier(0.16, 1, 0.3, 1)`)."
+    ],
+    "donts": [
+      "**Don't** round corners past 2px, and don't use pill shapes.",
+      "**Don't** add shadows beyond the toast, or blur or translucent surfaces.",
+      "**Don't** set uppercase, letter-spaced kickers or eyebrows above headings.",
+      "**Don't** introduce a second typeface, or switch off tabular figures for prices.",
+      "**Don't** fade or slide content in on scroll.",
+      "**Don't** fill large areas or buttons with Label Orange.",
+      "**Don't** bring back the replaced system: no gradient text, no glass, no neon glow, no centred hero with two buttons, no icon-tile card grids."
+    ]
+  }
+}

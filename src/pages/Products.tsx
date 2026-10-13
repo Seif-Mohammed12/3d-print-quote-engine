@@ -48,7 +48,7 @@ export default function Products() {
     <Layout>
       <section className="frame pt-8 md:pt-14">
         <div className="grid gap-3 md:grid-cols-12 md:items-end">
-          <h1 className="text-[40px] font-bold leading-none tracking-[-0.035em] md:col-span-5 md:text-6xl">Shop</h1>
+          <h1 className="text-[40px] font-bold leading-none tracking-[-0.035em] md:col-span-5 md:text-[72px]">Shop</h1>
           <p className="max-w-lg text-muted-foreground md:col-span-7 md:justify-self-end md:text-right">
             Printed to order in PLA or PETG, in the colours you pick. About 48 hours, then Aramex or pickup. Pay on delivery or by InstaPay.
           </p>

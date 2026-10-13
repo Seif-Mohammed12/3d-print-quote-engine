@@ -51,7 +51,7 @@ const Printique = () => {
             <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(59,130,246,0.12),_transparent_70%)]" />
             <div className="relative flex items-center gap-4 md:gap-6">
               <div className="h-px flex-1 bg-gradient-to-r from-transparent via-blue-300/45 to-amber-200/10" />
-              <p className="text-[11px] md:text-xs font-semibold tracking-[0.28em] uppercase text-blue-200/85">
+              <p className="text-xs md:text-xs font-semibold tracking-[0.28em] uppercase text-blue-200/85">
                 Signature Collection
               </p>
               <div className="h-px flex-1 bg-gradient-to-l from-transparent via-blue-300/45 to-amber-200/10" />
@@ -93,7 +93,7 @@ const Printique = () => {
                 <Link to={`/printique/${product.id}`} className="block">
                   <div className="relative mb-4 h-44 border border-slate-800/70 bg-gradient-to-b from-slate-900/35 to-slate-950/70 overflow-hidden">
                     {product.isBundle ? (
-                      <span className="absolute left-3 top-3 z-10 rounded-full border border-amber-200/30 bg-black/55 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-amber-200">
+                      <span className="absolute left-3 top-3 z-10 rounded-full border border-amber-200/30 bg-black/55 px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-amber-200">
                         Bundle
                       </span>
                     ) : null}
@@ -131,7 +131,7 @@ const Printique = () => {
                       {product.short}
                     </p>
                     {product.isBundle && product.bundleItems?.length ? (
-                      <p className="mt-2 text-[11px] text-slate-400">
+                      <p className="mt-2 text-xs text-slate-400">
                         Includes {product.bundleItems.map((item) => `${item.name}${item.qty > 1 ? ` x${item.qty}` : ""}`).join(", ")}
                       </p>
                     ) : null}
@@ -167,7 +167,7 @@ const Printique = () => {
             ))}
           </motion.div>
 
-          <p className="text-center text-[11px] text-slate-400">
+          <p className="text-center text-xs text-slate-400">
             For custom decor, mention{" "}
             <span className="font-semibold text-blue-200">“Printique”</span> when you message us.
           </p>

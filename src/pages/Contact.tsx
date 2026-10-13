@@ -25,7 +25,7 @@ const Contact = () => {
   return (
     <Layout>
       <section className="frame pt-8 md:pt-14">
-        <h1 className="text-[40px] font-bold leading-none tracking-[-0.035em] md:text-6xl">Contact</h1>
+        <h1 className="text-[40px] font-bold leading-none tracking-[-0.035em] md:text-[72px]">Contact</h1>
         <p className="mt-3 max-w-lg text-muted-foreground md:text-lg">WhatsApp is the fastest way to reach us. Email works too.</p>
       </section>
 

@@ -154,7 +154,7 @@ export default function StlUploadCard({ onReady, onReset }: StlUploadCardProps) 
           />
         </motion.div>
       ) : (
-        <Card className="overflow-hidden border-border/60 bg-card/70 backdrop-blur-sm">
+        <Card className="overflow-hidden border-border/60 bg-card">
           <CardHeader className="space-y-3 pb-3">
             <div className="flex items-center justify-between gap-4">
               <CardTitle className="flex items-center gap-2 text-lg">

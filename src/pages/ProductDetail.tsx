@@ -88,7 +88,7 @@ export default function ProductDetail() {
     return (
       <Layout>
         <section className="frame pb-20 pt-10 md:pb-28 md:pt-16">
-          <h1 className="text-[36px] font-bold leading-none tracking-[-0.03em] md:text-5xl">That one isn't on the shelf.</h1>
+          <h1 className="text-[40px] font-bold leading-[0.95] tracking-[-0.035em] md:text-[56px]">That one isn't on the shelf.</h1>
           <p className="mt-4 max-w-lg text-muted-foreground">
             The link may be old or the piece was retired. Here's what's printing now, or{" "}
             <a href="https://wa.me/201099228486" className="link-quiet text-foreground" rel="noopener">

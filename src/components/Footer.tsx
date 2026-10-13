@@ -58,7 +58,7 @@ const Footer = () => (
               <ul className="mt-3 space-y-1">
                 {column.links.map((link) => (
                   <li key={link.to}>
-                    <Link to={link.to} className="inline-flex min-h-10 items-center text-[15px] text-foreground hover:text-ink">
+                    <Link to={link.to} className="inline-flex min-h-11 items-center text-[15px] text-foreground hover:text-ink">
                       {link.label}
                     </Link>
                   </li>

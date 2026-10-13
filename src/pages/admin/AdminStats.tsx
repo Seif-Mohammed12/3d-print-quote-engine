@@ -510,7 +510,7 @@ export default function AdminStats() {
                             contentStyle={{
                               backgroundColor: "hsl(var(--secondary))",
                               border: "1px solid hsl(var(--border))",
-                              borderRadius: "10px",
+                              borderRadius: "2px",
                               color: "hsl(var(--foreground))",
                             }}
                             labelStyle={{ color: "hsl(var(--foreground))" }}
@@ -521,9 +521,9 @@ export default function AdminStats() {
                             type="monotone"
                             dataKey="revenue"
                             name="Revenue"
-                            stroke="#22c55e"
+                            stroke="hsl(var(--success))"
                             strokeWidth={3}
-                            dot={{ r: 3, fill: "#22c55e" }}
+                            dot={{ r: 3, fill: "hsl(var(--success))" }}
                             activeDot={{ r: 6 }}
                           />
                         </LineChart>
@@ -541,7 +541,7 @@ export default function AdminStats() {
                             contentStyle={{
                               backgroundColor: "hsl(var(--secondary))",
                               border: "1px solid hsl(var(--border))",
-                              borderRadius: "10px",
+                              borderRadius: "2px",
                               color: "hsl(var(--foreground))",
                             }}
                             labelStyle={{ color: "hsl(var(--foreground))" }}
@@ -552,9 +552,9 @@ export default function AdminStats() {
                             type="monotone"
                             dataKey="weight"
                             name="Filament"
-                            stroke="#38bdf8"
+                            stroke="hsl(var(--ink))"
                             strokeWidth={3}
-                            dot={{ r: 3, fill: "#38bdf8" }}
+                            dot={{ r: 3, fill: "hsl(var(--ink))" }}
                             activeDot={{ r: 6 }}
                           />
                         </LineChart>

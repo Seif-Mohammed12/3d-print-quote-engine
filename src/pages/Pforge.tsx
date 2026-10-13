@@ -50,7 +50,7 @@ const Pforge = () => {
             <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(56,189,248,0.12),_transparent_70%)]" />
             <div className="relative flex items-center gap-4 md:gap-6">
               <div className="h-px flex-1 bg-gradient-to-r from-transparent via-cyan-300/45 to-cyan-300/10" />
-              <p className="text-[11px] md:text-xs font-semibold tracking-[0.28em] uppercase text-cyan-200/85">
+              <p className="text-xs md:text-xs font-semibold tracking-[0.28em] uppercase text-cyan-200/85">
                 Featured Collection
               </p>
               <div className="h-px flex-1 bg-gradient-to-l from-transparent via-cyan-300/45 to-cyan-300/10" />
@@ -92,7 +92,7 @@ const Pforge = () => {
                 <Link to={`/pforge/${product.id}`} className="block">
                   <div className="relative mb-4 h-44 border border-slate-800/70 bg-gradient-to-b from-slate-900/35 to-slate-950/70 overflow-hidden">
                     {product.isBundle ? (
-                      <span className="absolute left-3 top-3 z-10 rounded-full border border-cyan-200/30 bg-black/55 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-cyan-100">
+                      <span className="absolute left-3 top-3 z-10 rounded-full border border-cyan-200/30 bg-black/55 px-2.5 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-cyan-100">
                         Bundle
                       </span>
                     ) : null}
@@ -130,7 +130,7 @@ const Pforge = () => {
                       {product.short}
                     </p>
                     {product.isBundle && product.bundleItems?.length ? (
-                      <p className="mt-2 text-[11px] text-slate-400">
+                      <p className="mt-2 text-xs text-slate-400">
                         Includes {product.bundleItems.map((item) => `${item.name}${item.qty > 1 ? ` x${item.qty}` : ""}`).join(", ")}
                       </p>
                     ) : null}
@@ -166,7 +166,7 @@ const Pforge = () => {
             ))}
           </motion.div>
 
-          <p className="text-center text-[11px] text-slate-400">
+          <p className="text-center text-xs text-slate-400">
             Looking for a custom mount or stand? Use the quote page and mention{" "}
             <span className="font-semibold text-cyan-300">“Pforge”</span> in your notes.
           </p>

@@ -28,7 +28,7 @@ const Gallery = () => {
     <Layout>
       <section className="frame pt-8 md:pt-14">
         <div className="grid gap-3 md:grid-cols-12 md:items-end">
-          <h1 className="text-[40px] font-bold leading-none tracking-[-0.035em] md:col-span-6 md:text-6xl">Gallery</h1>
+          <h1 className="text-[40px] font-bold leading-none tracking-[-0.035em] md:col-span-6 md:text-[72px]">Gallery</h1>
           <p className="max-w-md text-muted-foreground md:col-span-6 md:justify-self-end md:text-right">
             Every shot of every piece on the shelf, plus custom work as we photograph it. Tap a frame to open the product.
           </p>
