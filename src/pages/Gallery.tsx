@@ -1,54 +1,70 @@
-import { motion } from "framer-motion";
-import { Box } from "lucide-react";
+import { useMemo } from "react";
+import { Link } from "react-router-dom";
 import Layout from "@/components/Layout";
-import SectionHeading from "@/components/SectionHeading";
-import { useIsMobile } from "@/hooks/use-mobile";
+import PhotoPending from "@/components/catalog/PhotoPending";
+import { useProducts } from "@/hooks/use-brand-products";
+import { catalogueNo, productHref } from "@/lib/catalog-format";
 
-const items = [
-  { title: "Mechanical Gears", category: "Engineering", gradient: "from-primary/30 to-accent/10" },
-  { title: "Phone Stand", category: "Consumer Products", gradient: "from-accent/30 to-primary/10" },
-  { title: "Architectural Model", category: "Architecture", gradient: "from-primary/20 to-neon-purple/20" },
-  { title: "Chess Set", category: "Art & Design", gradient: "from-neon-purple/20 to-primary/20" },
-  { title: "Drone Parts", category: "Engineering", gradient: "from-primary/30 to-accent/10" },
-  { title: "Custom Figurine", category: "Art & Design", gradient: "from-accent/20 to-primary/20" },
-  { title: "Medical Prototype", category: "Medical", gradient: "from-primary/20 to-neon-purple/10" },
-  { title: "Lamp Shade", category: "Home Decor", gradient: "from-neon-purple/30 to-primary/10" },
-  { title: "Robot Parts", category: "Robotics", gradient: "from-primary/20 to-accent/20" },
+/* PHOTO PLACEHOLDERS: custom work the studio should photograph (shot list #13–#15) */
+const customShots = [
+  "Shot 13: a batch of the same custom part laid out in rows on the print bed.",
+  "Shot 14: close-up of layer lines on a curved print, raking light.",
+  "Shot 15: a custom gift print being packed for delivery.",
 ];
 
 const Gallery = () => {
-  const isMobile = useIsMobile();
+  const { data: products, isPending } = useProducts();
+
+  // Every photo in the catalogue, as one contact sheet
+  const frames = useMemo(
+    () =>
+      (products ?? []).flatMap((product) =>
+        product.images.map((src, i) => ({ key: `${product.id}-${i}`, src, product, i }))
+      ),
+    [products]
+  );
 
   return (
-  <Layout>
-    <section className="section-padding">
-      <div className="container mx-auto">
-        <SectionHeading title="Gallery" subtitle="Explore our portfolio of 3D printed creations." />
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {items.map((item, i) => (
-            <motion.div
-              key={item.title}
-              initial={isMobile ? false : { opacity: 0, y: 20 }}
-              animate={isMobile ? { opacity: 1, y: 0 } : undefined}
-              whileInView={isMobile ? undefined : { opacity: 1, y: 0 }}
-              viewport={isMobile ? undefined : { once: true }}
-              transition={{ delay: i * 0.05, duration: 0.5 }}
-              className="glass-card-hover aspect-[4/3] relative overflow-hidden group cursor-pointer"
-            >
-              <div className={`absolute inset-0 bg-gradient-to-br ${item.gradient}`} />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <Box className="w-20 h-20 text-primary/10 group-hover:text-primary/20 transition-colors duration-500 group-hover:scale-110 transform" />
-              </div>
-              <div className="absolute bottom-0 left-0 right-0 p-5 bg-gradient-to-t from-background/80 to-transparent">
-                <span className="text-xs text-primary font-medium">{item.category}</span>
-                <h3 className="font-heading font-semibold text-foreground">{item.title}</h3>
-              </div>
-            </motion.div>
-          ))}
+    <Layout>
+      <section className="frame pt-8 md:pt-14">
+        <div className="grid gap-3 md:grid-cols-12 md:items-end">
+          <h1 className="text-[40px] font-bold leading-none tracking-[-0.035em] md:col-span-6 md:text-6xl">Gallery</h1>
+          <p className="max-w-md text-muted-foreground md:col-span-6 md:justify-self-end md:text-right">
+            Every shot of every piece on the shelf, plus custom work as we photograph it. Tap a frame to open the product.
+          </p>
         </div>
-      </div>
-    </section>
-  </Layout>
+      </section>
+
+      <section className="frame mb-20 mt-8 md:mb-28 md:mt-12" aria-busy={isPending}>
+        <ul className="grid grid-cols-2 gap-1 sm:grid-cols-3 lg:grid-cols-4">
+          {isPending
+            ? Array.from({ length: 8 }).map((_, i) => <li key={i} className="aspect-square animate-pulse bg-card" aria-hidden="true" />)
+            : frames.map((frame) => (
+                <li key={frame.key}>
+                  <Link to={productHref(frame.product)} className="group relative block aspect-square overflow-hidden bg-black">
+                    <img
+                      src={frame.src}
+                      alt={`${frame.product.name}, photo ${frame.i + 1}`}
+                      loading="lazy"
+                      decoding="async"
+                      className="h-full w-full object-cover transition-opacity duration-300 group-hover:opacity-80"
+                    />
+                    <span className="absolute inset-x-0 bottom-0 bg-background/85 px-2 py-1.5 text-xs">
+                      <span className="text-muted-foreground">{catalogueNo(products, frame.product.id)}</span> {frame.product.name}
+                    </span>
+                  </Link>
+                </li>
+              ))}
+          {!isPending
+            ? customShots.map((shot) => (
+                <li key={shot} className="aspect-square">
+                  <PhotoPending shot={shot} />
+                </li>
+              ))
+            : null}
+        </ul>
+      </section>
+    </Layout>
   );
 };
 

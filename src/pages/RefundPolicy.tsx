@@ -3,18 +3,18 @@ import SectionHeading from "@/components/SectionHeading";
 
 const RefundPolicy = () => (
   <Layout>
-    <section className="section-padding">
-      <div className="container mx-auto max-w-4xl space-y-8">
+    <section className="pb-20 pt-8 md:pb-28 md:pt-14">
+      <div className="frame">
         <SectionHeading
           title="Refund Policy"
           subtitle="How refunds and replacements are handled at 3D Print It."
         />
 
-        <div className="glass-card p-6 md:p-8 space-y-6 text-sm leading-relaxed text-muted-foreground">
+        <div className="ruled max-w-[68ch] border-t border-border text-[16px] leading-relaxed text-muted-foreground [&>*]:py-5">
           <p>Last updated: April 5, 2026</p>
 
           <div className="space-y-2">
-            <h2 className="font-heading text-lg font-semibold text-foreground">1. Custom Items</h2>
+            <h2 className="mb-2 text-lg font-semibold tracking-[-0.01em] text-foreground">1. Custom Items</h2>
             <p>
               Custom-made items are non-refundable. Refunds are not provided for custom products unless
               the delivered item is defective.
@@ -22,7 +22,7 @@ const RefundPolicy = () => (
           </div>
 
           <div className="space-y-2">
-            <h2 className="font-heading text-lg font-semibold text-foreground">2. Defective Items</h2>
+            <h2 className="mb-2 text-lg font-semibold tracking-[-0.01em] text-foreground">2. Defective Items</h2>
             <p>
               If your custom item arrives defective, contact us within 7 days of delivery with your order
               code, photos, and a brief description of the issue. We will review and, if approved, offer a
@@ -31,7 +31,7 @@ const RefundPolicy = () => (
           </div>
 
           <div className="space-y-2">
-            <h2 className="font-heading text-lg font-semibold text-foreground">3. Non-Custom Products</h2>
+            <h2 className="mb-2 text-lg font-semibold tracking-[-0.01em] text-foreground">3. Non-Custom Products</h2>
             <p>
               For non-custom catalog items, requests are evaluated case by case based on product condition,
               delivery status, and applicable consumer protection requirements.
@@ -39,7 +39,7 @@ const RefundPolicy = () => (
           </div>
 
           <div className="space-y-2">
-            <h2 className="font-heading text-lg font-semibold text-foreground">4. How to Request Support</h2>
+            <h2 className="mb-2 text-lg font-semibold tracking-[-0.01em] text-foreground">4. How to Request Support</h2>
             <p>
               Email 3d.print.ittt@gmail.com with your order details and the reason for your request.
               We aim to respond as quickly as possible.

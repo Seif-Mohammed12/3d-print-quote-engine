@@ -1,107 +1,123 @@
-import { motion } from "framer-motion";
-import { Printer, Cog, Package, Palette, ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
+import { ArrowUpRight } from "lucide-react";
 import Layout from "@/components/Layout";
-import SectionHeading from "@/components/SectionHeading";
+import PhotoPending from "@/components/catalog/PhotoPending";
 
-const services = [
+const routes = [
   {
-    icon: Printer,
-    title: "Custom 3D Printing",
-    desc: "Upload any STL or OBJ file and we'll print it in the material of your choice with precision accuracy.",
-    features: ["FDM & SLA printing", "Layer resolution from 0.05mm", "Parts up to 300×300×400mm"],
+    to: "/quote",
+    title: "You have an STL",
+    body: "Upload it, pick PLA or PETG, a quality and an infill. The price is calculated from the actual volume of your model, in about a minute.",
+    action: "Price my file",
   },
   {
-    icon: Cog,
-    title: "Rapid Prototyping",
-    desc: "Go from CAD to physical prototype in as little as 24 hours. Perfect for startups and engineers.",
-    features: ["24–48hr turnaround", "Iterative design support", "Functional testing ready"],
+    to: "/quote-request",
+    title: "You have an idea, not a file",
+    body: "Send a sketch, a photo or measurements. We model it with you, then print it.",
+    action: "Ask for design help",
   },
   {
-    icon: Package,
-    title: "Bulk Orders",
-    desc: "Need 100+ identical parts? We offer volume pricing and consistent quality across batches.",
-    features: ["Volume discounts", "Quality-checked batches", "Dedicated project manager"],
-  },
-  {
-    icon: Palette,
-    title: "Design Assistance",
-    desc: "Don't have a 3D model? Our design team can turn your sketches or concepts into printable files.",
-    features: ["Sketch-to-CAD", "File optimization", "DFM analysis"],
+    to: "/contact",
+    title: "You need a lot of them",
+    body: "Volume runs for events, shops, teams and giveaways. Tell us the part and the quantity and we'll quote the batch.",
+    action: "Ask about volume",
   },
 ];
 
 const materials = [
-  { name: "PLA", desc: "Eco-friendly, great surface finish", color: "text-green-400", available: true },
-  { name: "ABS", desc: "Heat resistant, durable", color: "text-orange-400", available: false },
-  { name: "PETG", desc: "Chemical resistant, strong", color: "text-blue-400", available: true },
-  { name: "Resin", desc: "Ultra-fine detail, smooth", color: "text-purple-400", available: false },
-  { name: "Nylon", desc: "Flexible, high impact strength", color: "text-cyan-400", available: false },
-  { name: "TPU", desc: "Rubber-like flexibility", color: "text-pink-400", available: false },
+  { name: "PLA", use: "Desk gear, decor, display pieces", traits: "Crisp detail, matte finish, widest colour range", available: true },
+  { name: "PETG", use: "Parts that get handled or sit in the sun", traits: "Tougher, more heat and impact resistant", available: true },
+  { name: "ABS", use: "", traits: "Not offered yet", available: false },
+  { name: "TPU", use: "", traits: "Not offered yet", available: false },
+];
+
+const quality = [
+  { name: "Draft", layer: "0.3 mm", note: "Fast and cheapest. Visible layers." },
+  { name: "Standard", layer: "0.2 mm", note: "The balance of detail and print time." },
+  { name: "High", layer: "0.12 mm", note: "Smoother curves, longer print." },
 ];
 
 const Services = () => (
   <Layout>
-    <section className="section-padding">
-      <div className="container mx-auto">
-        <SectionHeading title="Our Services" subtitle="End-to-end 3D printing solutions for every need." />
+    <section className="frame pt-8 md:pt-14">
+      <div className="grid gap-6 md:grid-cols-12 md:items-end">
+        <h1 className="text-[40px] font-bold leading-[0.95] tracking-[-0.035em] md:col-span-7 md:text-[72px]">
+          Custom prints, from your file or your idea.
+        </h1>
+        <p className="max-w-md text-muted-foreground md:col-span-5 md:justify-self-end md:text-lg">
+          Same printers and the same 48-hour turnaround as the shop. You bring the design, or we make it with you.
+        </p>
+      </div>
+    </section>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-20">
-          {services.map((s, i) => (
-            <motion.div
-              key={s.title}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.1 }}
-              className="glass-card-hover p-8"
-            >
-              <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-5">
-                <s.icon className="w-6 h-6 text-primary" />
-              </div>
-              <h3 className="font-heading font-semibold text-xl text-foreground mb-3">{s.title}</h3>
-              <p className="text-muted-foreground text-sm mb-4">{s.desc}</p>
-              <ul className="space-y-2">
-                {s.features.map((f) => (
-                  <li key={f} className="text-sm text-muted-foreground flex items-center gap-2">
-                    <span className="w-1 h-1 rounded-full bg-primary" />
-                    {f}
-                  </li>
-                ))}
-              </ul>
-            </motion.div>
+    {/* Three ways in, as one ruled list */}
+    <section className="frame mt-10 md:mt-16" aria-label="Ways to order a custom print">
+      <ol className="ruled border-y border-border">
+        {routes.map((route) => (
+          <li key={route.to}>
+            <Link to={route.to} className="group grid gap-3 py-6 md:grid-cols-12 md:items-baseline md:gap-6 md:py-8">
+              <span className="text-2xl font-bold tracking-[-0.025em] md:col-span-5 md:text-3xl">{route.title}</span>
+              <span className="max-w-xl text-muted-foreground md:col-span-5">{route.body}</span>
+              <span className="inline-flex items-center gap-1.5 font-semibold group-hover:text-ink md:col-span-2 md:justify-self-end">
+                {route.action} <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
+              </span>
+            </Link>
+          </li>
+        ))}
+      </ol>
+    </section>
+
+    {/* Materials and quality: dense reference tables */}
+    <section className="frame mt-20 grid gap-12 md:mt-28 md:grid-cols-12 md:gap-10">
+      <div className="md:col-span-7">
+        <h2 className="text-[28px] font-bold tracking-[-0.03em] md:text-4xl">Materials</h2>
+        <table className="mt-5 w-full border-y border-border text-left text-[15px]">
+          <thead className="text-sm text-muted-foreground">
+            <tr className="border-b border-border">
+              <th scope="col" className="py-3 pr-4 font-normal">Material</th>
+              <th scope="col" className="py-3 pr-4 font-normal">Good for</th>
+              <th scope="col" className="hidden py-3 font-normal sm:table-cell">Why</th>
+            </tr>
+          </thead>
+          <tbody className="ruled">
+            {materials.map((m) => (
+              <tr key={m.name} className={m.available ? "" : "text-muted-foreground"}>
+                <th scope="row" className="py-3 pr-4 text-lg font-bold">{m.name}</th>
+                <td className="py-3 pr-4">{m.available ? m.use : "Not offered yet"}</td>
+                <td className="hidden py-3 sm:table-cell">{m.available ? m.traits : ""}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div className="md:col-span-5">
+        <h2 className="text-[28px] font-bold tracking-[-0.03em] md:text-4xl">Quality</h2>
+        <dl className="ruled mt-5 border-y border-border text-[15px]">
+          {quality.map((q) => (
+            <div key={q.name} className="grid grid-cols-[96px_72px_1fr] gap-3 py-3">
+              <dt className="font-semibold">{q.name}</dt>
+              <dd className="text-muted-foreground">{q.layer}</dd>
+              <dd className="text-muted-foreground">{q.note}</dd>
+            </div>
           ))}
-        </div>
+        </dl>
+        <p className="mt-4 text-sm text-muted-foreground">Infill from 5% to 100%. Under five hours of print time costs nothing extra.</p>
+      </div>
+    </section>
 
-        <SectionHeading title="Materials" subtitle="Choose from a wide range of printing materials." />
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-          {materials.map((m, i) => (
-            <motion.div
-              key={m.name}
-              initial={{ opacity: 0, scale: 0.9 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.05 }}
-              className={`glass-card p-5 text-center relative ${!m.available ? 'opacity-60' : ''}`}
-            >
-              <span className={`font-heading font-bold text-lg ${m.color}`}>{m.name}</span>
-              <p className="text-xs text-muted-foreground mt-2">{m.desc}</p>
-              {!m.available && (
-                <div className="absolute -top-1 -right-1 bg-primary/90 text-primary-foreground text-xs px-2 py-0.5 rounded-full font-medium">
-                  Soon
-                </div>
-              )}
-            </motion.div>
-          ))}
-        </div>
-
-        <div className="text-center mt-12">
-          <Link
-            to="/quote"
-            className="inline-flex items-center gap-2 px-8 py-3.5 rounded-lg bg-primary text-primary-foreground font-semibold hover:shadow-[0_0_30px_-5px_hsl(var(--neon-glow)/0.5)] transition-all duration-300"
-          >
-            Get a Quote <ArrowRight className="w-4 h-4" />
-          </Link>
+    <section className="frame mb-20 mt-20 grid gap-8 md:mb-28 md:mt-28 md:grid-cols-12 md:gap-10">
+      <div className="aspect-[4/3] md:col-span-6">
+        {/* PHOTO PLACEHOLDER: shot list #11 */}
+        <PhotoPending shot="Shot 11: a customer's custom print next to their sketch or the STL on a laptop screen." />
+      </div>
+      <div className="md:col-span-5 md:col-start-8 md:self-center">
+        <h2 className="text-[28px] font-bold leading-[1.05] tracking-[-0.03em] md:text-4xl">Not sure it can be printed?</h2>
+        <p className="mt-4 max-w-md text-muted-foreground">
+          Send it anyway. If a part needs changing to print well, we'll tell you why and suggest a fix.
+        </p>
+        <div className="mt-6 flex flex-wrap gap-3">
+          <Link to="/quote" className="btn-primary">Price my file</Link>
+          <a href="https://wa.me/201099228486" className="btn-secondary" rel="noopener">WhatsApp us</a>
         </div>
       </div>
     </section>

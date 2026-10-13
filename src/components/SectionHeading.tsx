@@ -1,26 +1,19 @@
-import { motion } from "framer-motion";
+import type { ReactNode } from "react";
 
 interface Props {
   title: string;
-  subtitle?: string;
+  subtitle?: ReactNode;
+  /** Kept for older call sites; headings are never gradient. */
   gradient?: boolean;
+  as?: "h1" | "h2";
 }
 
-const SectionHeading = ({ title, subtitle, gradient = true }: Props) => (
-  <motion.div
-    initial={{ opacity: 0, y: 20 }}
-    whileInView={{ opacity: 1, y: 0 }}
-    viewport={{ once: true }}
-    transition={{ duration: 0.6 }}
-    className="text-center mb-12 md:mb-16"
-  >
-    <h2 className={`text-3xl md:text-4xl lg:text-5xl font-heading font-bold mb-4 ${gradient ? "gradient-text" : "text-foreground"}`}>
-      {title}
-    </h2>
-    {subtitle && (
-      <p className="text-muted-foreground max-w-2xl mx-auto text-base md:text-lg">{subtitle}</p>
-    )}
-  </motion.div>
+/** Page or section title: left-aligned, set large, one plain line under it. */
+const SectionHeading = ({ title, subtitle, as: Tag = "h1" }: Props) => (
+  <div className="mb-8 md:mb-12">
+    <Tag className="text-[36px] font-bold leading-[1] tracking-[-0.035em] md:text-[56px]">{title}</Tag>
+    {subtitle ? <p className="mt-3 max-w-xl text-muted-foreground md:text-lg">{subtitle}</p> : null}
+  </div>
 );
 
 export default SectionHeading;
