@@ -25,7 +25,7 @@ export default function Signup() {
     <Layout>
       <section className="section-padding">
         <div className="container mx-auto max-w-md">
-          <div className="glass-card p-6 space-y-4">
+          <div className="panel p-6 space-y-4">
             <h1 className="font-heading text-2xl font-bold text-foreground">Create account</h1>
             <p className="text-sm text-muted-foreground">Sign up to view full order history and live status updates.</p>
 

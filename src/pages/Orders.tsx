@@ -9,12 +9,12 @@ import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 
 const statusClass: Record<string, string> = {
-  pending: "bg-amber-500/10 text-amber-300 border-amber-500/30",
-  confirmed: "bg-blue-500/10 text-blue-300 border-blue-500/30",
-  processing: "bg-indigo-500/10 text-indigo-300 border-indigo-500/30",
-  shipped: "bg-cyan-500/10 text-cyan-300 border-cyan-500/30",
-  completed: "bg-emerald-500/10 text-emerald-300 border-emerald-500/30",
-  cancelled: "bg-rose-500/10 text-rose-300 border-rose-500/30",
+  pending: "border-rule text-muted-foreground",
+  confirmed: "border-rule text-foreground",
+  processing: "border-ink/60 text-ink",
+  shipped: "border-ink text-ink",
+  completed: "border-success/60 text-success",
+  cancelled: "border-destructive/60 text-destructive",
 };
 
 export default function Orders() {
@@ -77,13 +77,13 @@ export default function Orders() {
           {error ? <p className="text-sm text-destructive">{(error as Error).message}</p> : null}
 
           {!isLoading && orders.length === 0 ? (
-            <div className="glass-card p-6">
+            <div className="panel p-6">
               <p className="text-sm text-muted-foreground">No orders yet.</p>
             </div>
           ) : null}
 
           {orders.length > 0 ? (
-            <div className="glass-card overflow-x-auto">
+            <div className="panel overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border">
@@ -105,13 +105,13 @@ export default function Orders() {
                       <td className="p-4 font-semibold text-foreground">{order.order_code}</td>
                       <td className="p-4 uppercase text-muted-foreground">{order.order_type}</td>
                       <td className="p-4">
-                        <span className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${statusClass[order.status] || ""}`}>
+                        <span className={`inline-flex border px-2 py-0.5 text-xs font-semibold ${statusClass[order.status] || ""}`}>
                           {order.status}
                         </span>
                       </td>
                       <td className="p-4 text-muted-foreground">{new Date(order.created_at).toLocaleString()}</td>
                       <td className="p-4 text-right font-semibold text-foreground">
-                        {order.totals?.total != null ? `EGP${Number(order.totals.total).toFixed(0)}` : "-"}
+                        {order.totals?.total != null ? `${Number(order.totals.total).toFixed(0)} EGP` : "-"}
                       </td>
                       <td className="p-4 text-right">
                         {CUSTOMER_CANCELLABLE_STATUSES.includes(order.status) ? (
@@ -122,7 +122,7 @@ export default function Orders() {
                               setSelectedOrderId(order.id);
                             }}
                             disabled={cancelOrder.isPending && cancelingOrderId === order.id}
-                            className="rounded-lg border border-rose-500/50 px-3 py-1.5 text-xs font-semibold text-rose-300 hover:bg-rose-500/10 disabled:opacity-60"
+                            className="rounded-lg border border-destructive/60 px-3 py-1.5 text-xs font-semibold text-destructive hover:bg-destructive/10 disabled:opacity-60"
                           >
                             {cancelOrder.isPending && cancelingOrderId === order.id ? "Cancelling..." : "Cancel"}
                           </button>

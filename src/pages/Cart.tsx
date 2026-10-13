@@ -16,14 +16,14 @@ const Cart = () => {
       <Layout>
         <section className="section-padding">
           <div className="container mx-auto max-w-2xl">
-            <SectionHeading title="Your Cart" subtitle="Order multiple prints at once" />
-            <div className="glass-card p-12 text-center">
+            <SectionHeading title="Your print cart" subtitle="Custom prints you priced, ready to request together." />
+            <div className="panel p-12 text-center">
               <ShoppingCart className="w-16 h-16 text-muted-foreground/30 mx-auto mb-4" />
               <h3 className="text-xl font-semibold text-foreground mb-2">Your cart is empty</h3>
               <p className="text-muted-foreground mb-6">Add some 3D prints to get started</p>
               <Link
                 to="/quote"
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-primary text-primary-foreground font-semibold hover:shadow-[0_0_20px_-5px_hsl(var(--neon-glow)/0.5)] transition-all"
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-primary text-primary-foreground font-semibold transition-all"
               >
                 <ArrowLeft className="w-4 h-4" /> Back to Quote
               </Link>
@@ -47,11 +47,11 @@ const Cart = () => {
                 {cart.map((item, i) => (
                   <motion.div
                     key={item.id}
-                    initial={{ opacity: 0, y: 20 }}
+                    initial={false}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, x: -100 }}
                     transition={{ delay: i * 0.05 }}
-                    className="glass-card p-6"
+                    className="panel p-6"
                   >
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex items-center gap-3">
@@ -64,7 +64,7 @@ const Cart = () => {
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="text-xl font-bold text-primary">EGP{item.quote.totalPrice.toFixed(2)}</p>
+                        <p className="text-xl font-bold text-primary">{item.quote.totalPrice.toFixed(2)} EGP</p>
                       </div>
                     </div>
 
@@ -79,13 +79,13 @@ const Cart = () => {
                       </div>
                       <div className="flex items-center gap-2 text-muted-foreground">
                         <DollarSign className="w-4 h-4" />
-                        <span>EGP{item.quote.materialCost.toFixed(2)}</span>
+                        <span>{item.quote.materialCost.toFixed(2)} EGP</span>
                       </div>
                     </div>
 
                     <button
                       onClick={() => removeFromCart(item.id)}
-                      className="w-full py-2 rounded-lg border border-border hover:border-red-500 hover:text-red-500 text-muted-foreground transition-colors flex items-center justify-center gap-2"
+                      className="w-full py-2 rounded-lg border border-border hover:border-destructive hover:text-destructive text-muted-foreground transition-colors flex items-center justify-center gap-2"
                     >
                       <Trash2 className="w-4 h-4" /> Remove from Cart
                     </button>
@@ -97,9 +97,9 @@ const Cart = () => {
             {/* Order Summary */}
             <div className="lg:col-span-1">
               <motion.div
-                initial={{ opacity: 0, y: 20 }}
+                initial={false}
                 animate={{ opacity: 1, y: 0 }}
-                className="glass-card p-6 sticky top-24 space-y-4"
+                className="panel p-6 sticky top-24 space-y-4"
               >
                 <h3 className="font-heading font-semibold text-foreground">Order Summary</h3>
 
@@ -116,8 +116,8 @@ const Cart = () => {
 
                 <div className="flex justify-between items-center">
                   <span className="text-lg font-semibold text-foreground">Total</span>
-                  <p className="text-3xl font-heading font-bold neon-text">
-                    EGP{getTotalPrice().toFixed(2)}
+                  <p className="text-3xl font-heading font-bold">
+                    {getTotalPrice().toFixed(2)} EGP
                   </p>
                 </div>
 
@@ -128,7 +128,7 @@ const Cart = () => {
                 <button
                   onClick={() => navigate("/checkout")}
                   disabled={isCheckingOut}
-                  className="w-full py-3 rounded-lg bg-primary text-primary-foreground font-semibold hover:shadow-[0_0_20px_-5px_hsl(var(--neon-glow)/0.5)] transition-all disabled:opacity-50"
+                  className="w-full py-3 rounded-lg bg-primary text-primary-foreground font-semibold transition-all disabled:opacity-50"
                 >
                   Proceed to Checkout
                 </button>

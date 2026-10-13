@@ -144,7 +144,7 @@ export default function Login() {
     <Layout>
       <section className="section-padding">
         <div className="container mx-auto max-w-md">
-          <div className="glass-card p-6 space-y-4">
+          <div className="panel p-6 space-y-4">
             <h1 className="font-heading text-2xl font-bold text-foreground">Sign in</h1>
             <p className="text-sm text-muted-foreground">Access your account and track all your orders.</p>
 
@@ -241,7 +241,7 @@ export default function Login() {
                     required
                   />
                   {canShowResend ? (
-                    <p className="text-xs text-emerald-400">
+                    <p className="text-xs text-success">
                       Reset link already sent to this email. Did not receive it? Click Resend link.
                     </p>
                   ) : null}

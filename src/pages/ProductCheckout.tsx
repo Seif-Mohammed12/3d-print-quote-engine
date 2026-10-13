@@ -494,9 +494,9 @@ export default function ProductCheckout() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2 space-y-6">
               <motion.div
-                initial={{ opacity: 0, y: 18 }}
+                initial={false}
                 animate={{ opacity: 1, y: 0 }}
-                className="glass-card p-6 space-y-4"
+                className="panel p-6 space-y-4"
               >
                 <h3 className="font-heading font-semibold text-foreground">Order Summary</h3>
 
@@ -515,7 +515,7 @@ export default function ProductCheckout() {
                             <div className="flex flex-wrap items-center gap-2">
                               <p className="font-semibold text-foreground">{line.itemName}</p>
                               {line.item.isBundle ? (
-                                <span className="rounded-full border border-primary/30 bg-primary/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-primary">
+                                <span className="text-sm font-normal text-ink">
                                   Bundle
                                 </span>
                               ) : null}
@@ -531,7 +531,7 @@ export default function ProductCheckout() {
                             ) : null}
                           </div>
                           <p className="font-semibold text-primary shrink-0">
-                            EGP{line.lineSubtotal.toFixed(0)}
+                            {line.lineSubtotal.toFixed(0)} EGP
                           </p>
                         </div>
                       ))}
@@ -549,7 +549,7 @@ export default function ProductCheckout() {
                         <div className="flex flex-wrap items-center gap-2">
                           <p className="font-semibold text-foreground">{product!.name}</p>
                           {draft!.isBundle ? (
-                            <span className="rounded-full border border-primary/30 bg-primary/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-primary">
+                            <span className="text-sm font-normal text-ink">
                               Bundle
                             </span>
                           ) : null}
@@ -564,7 +564,7 @@ export default function ProductCheckout() {
                           </p>
                         ) : null}
                       </div>
-                      <p className="font-semibold text-primary">EGP{subtotal.toFixed(0)}</p>
+                      <p className="font-semibold text-primary">{subtotal.toFixed(0)} EGP</p>
                     </div>
 
                     <div className="flex items-center justify-between text-sm">
@@ -573,7 +573,7 @@ export default function ProductCheckout() {
                     </div>
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-muted-foreground">Unit price</span>
-                      <span className="text-foreground font-medium">EGP{unitPrice.toFixed(0)}</span>
+                      <span className="text-foreground font-medium">{unitPrice.toFixed(0)} EGP</span>
                     </div>
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-muted-foreground">Shipping</span>
@@ -586,10 +586,10 @@ export default function ProductCheckout() {
               </motion.div>
 
               <motion.form
-                initial={{ opacity: 0, y: 18 }}
+                initial={false}
                 animate={{ opacity: 1, y: 0 }}
                 onSubmit={placeOrder}
-                className="glass-card p-6 space-y-6"
+                className="panel p-6 space-y-6"
               >
                 <h3 className="font-heading font-semibold text-foreground">Shipping & Payment</h3>
 
@@ -750,7 +750,7 @@ export default function ProductCheckout() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full py-3 rounded-lg bg-primary text-primary-foreground font-semibold hover:shadow-[0_0_20px_-5px_hsl(var(--neon-glow)/0.5)] transition-all disabled:opacity-50"
+                  className="w-full py-3 rounded-lg bg-primary text-primary-foreground font-semibold transition-all disabled:opacity-50"
                 >
                   {isSubmitting ? "Placing order..." : "Place order"}
                 </button>
@@ -759,25 +759,25 @@ export default function ProductCheckout() {
 
             <div className="lg:col-span-1">
               <motion.div
-                initial={{ opacity: 0, y: 18 }}
+                initial={false}
                 animate={{ opacity: 1, y: 0 }}
-                className="glass-card p-6 sticky top-24 space-y-4"
+                className="panel p-6 sticky top-24 space-y-4"
               >
                 <h3 className="font-heading font-semibold text-foreground">Total</h3>
                 <div className="space-y-2 pb-4 border-b border-border">
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Subtotal</span>
-                    <span className="text-foreground">EGP{subtotal.toFixed(0)}</span>
+                    <span className="text-foreground">{subtotal.toFixed(0)} EGP</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Shipping</span>
-                    <span className="text-foreground">EGP{shippingCost.toFixed(0)}</span>
+                    <span className="text-foreground">{shippingCost.toFixed(0)} EGP</span>
                   </div>
                 </div>
 
                 <div className="flex justify-between items-center">
                   <span className="text-lg font-semibold text-foreground">Total</span>
-                  <p className="text-3xl font-heading font-bold neon-text">EGP{total.toFixed(0)}</p>
+                  <p className="text-3xl font-heading font-bold">{total.toFixed(0)} EGP</p>
                 </div>
 
                 <p className="text-xs text-muted-foreground bg-primary/10 p-3 rounded-lg">

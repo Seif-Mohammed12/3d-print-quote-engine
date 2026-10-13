@@ -78,7 +78,7 @@ function AutoRotate({ children }: { children: React.ReactNode }) {
 }
 
 const ModelViewer = ({ fileBuffer }: Props) => (
-  <div className="w-full aspect-square rounded-xl overflow-hidden glass-card">
+  <div className="w-full aspect-square overflow-hidden panel">
     <Canvas camera={{ fov: 45, position: [0, 0, 140] }}>
       <Suspense fallback={null}>
         <ambientLight intensity={0.55} />

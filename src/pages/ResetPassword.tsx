@@ -19,7 +19,7 @@ export default function ResetPassword() {
     <Layout>
       <section className="section-padding">
         <div className="container mx-auto max-w-md">
-          <div className="glass-card p-6 space-y-4">
+          <div className="panel p-6 space-y-4">
             <h1 className="font-heading text-2xl font-bold text-foreground">Reset your password</h1>
             <p className="text-sm text-muted-foreground">
               Set a new password for your account. Use at least 8 characters.

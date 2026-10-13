@@ -124,7 +124,7 @@ export default function StlUploadCard({ onReady, onReset }: StlUploadCardProps) 
             void handleSelection(event.dataTransfer.files);
           }}
           onClick={openFilePicker}
-          className={`glass-card border-2 border-dashed p-12 text-center cursor-pointer transition-all duration-300 ${
+          className={`panel border-2 border-dashed p-12 text-center cursor-pointer transition-all duration-300 ${
             dragOver ? "border-primary bg-primary/5" : "border-border hover:border-primary/50"
           }`}
         >
@@ -171,12 +171,12 @@ export default function StlUploadCard({ onReady, onReset }: StlUploadCardProps) 
               </button>
             </div>
             <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-              <span className="inline-flex items-center gap-1 rounded-full border border-border bg-secondary/40 px-2.5 py-1">
-                <ShieldCheck className="h-3.5 w-3.5 text-emerald-500" />
+              <span className="inline-flex items-center gap-1 border border-border px-2.5 py-1">
+                <ShieldCheck className="h-3.5 w-3.5 text-success" />
                 Secure storage
               </span>
-              <span className="rounded-full border border-border bg-secondary/40 px-2.5 py-1">Job {draft.jobId.slice(0, 8)}</span>
-              <span className="rounded-full border border-border bg-secondary/40 px-2.5 py-1">{formatFileSize(draft.fileSize)}</span>
+              <span className="border border-border px-2.5 py-1">Job {draft.jobId.slice(0, 8)}</span>
+              <span className="border border-border px-2.5 py-1">{formatFileSize(draft.fileSize)}</span>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -191,7 +191,7 @@ export default function StlUploadCard({ onReady, onReset }: StlUploadCardProps) 
                   value: `${draft.stlResult.boundingBox.x.toFixed(0)}×${draft.stlResult.boundingBox.y.toFixed(0)}×${draft.stlResult.boundingBox.z.toFixed(0)}mm`,
                 },
               ].map((stat) => (
-                <div key={stat.label} className="glass-card p-3 text-center">
+                <div key={stat.label} className="panel p-3 text-center">
                   <span className="text-xs text-muted-foreground">{stat.label}</span>
                   <p className="mt-0.5 text-sm font-semibold text-foreground">{stat.value}</p>
                 </div>

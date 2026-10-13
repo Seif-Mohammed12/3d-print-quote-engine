@@ -60,7 +60,7 @@ const OrderConfirmation = () => {
       ],
       items: order.items,
       totals: [
-        { label: "Estimated total", value: `EGP${Number(order.total || 0).toFixed(2)}` },
+        { label: "Estimated total", value: `${Number(order.total || 0).toFixed(2)} EGP` },
       ],
       notes: order.notes || null,
     });
@@ -83,7 +83,7 @@ const OrderConfirmation = () => {
       <section className="section-padding">
         <div className="container mx-auto max-w-2xl">
           <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
+            initial={false}
             animate={{ opacity: 1, scale: 1 }}
             className="text-center mb-8"
           >
@@ -93,7 +93,7 @@ const OrderConfirmation = () => {
               transition={{ delay: 0.2, type: "spring" }}
               className="inline-block"
             >
-              <CheckCircle className="w-24 h-24 text-green-400 mx-auto" />
+              <CheckCircle className="w-24 h-24 text-success mx-auto" />
             </motion.div>
             <h1 className="text-3xl font-heading font-bold text-foreground mt-4 mb-2">
               Order Confirmed!
@@ -104,10 +104,10 @@ const OrderConfirmation = () => {
           </motion.div>
 
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={false}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="glass-card p-8 space-y-6 mb-6"
+            className="panel p-8 space-y-6 mb-6"
           >
             <div className="bg-primary/10 border border-primary/20 rounded-lg p-4 space-y-3 text-sm">
               <p className="font-semibold text-foreground">✓ What happens next:</p>
@@ -126,7 +126,7 @@ const OrderConfirmation = () => {
                   <button
                     type="button"
                     onClick={() => setReceiptOpen(true)}
-                    className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:shadow-[0_0_20px_-5px_hsl(var(--neon-glow)/0.5)] transition-all"
+                    className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-all"
                   >
                     <FileText className="h-4 w-4" />
                     View receipt
@@ -155,7 +155,7 @@ const OrderConfirmation = () => {
                   </div>
                   <div className="flex justify-between py-2">
                     <span className="text-muted-foreground">Estimated Total</span>
-                    <span className="text-foreground font-bold">EGP{order.total}</span>
+                    <span className="text-foreground font-bold">{order.total} EGP</span>
                   </div>
                 </div>
               </div>
@@ -172,10 +172,10 @@ const OrderConfirmation = () => {
           />
 
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={false}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
-            className="glass-card p-6 text-center space-y-4"
+            className="panel p-6 text-center space-y-4"
           >
             <h3 className="font-heading font-semibold text-foreground">Questions?</h3>
             <p className="text-muted-foreground text-sm">
@@ -184,7 +184,7 @@ const OrderConfirmation = () => {
             <div className="flex gap-3 justify-center">
               <a
                 href="whatsapp://send?phone=201099228486&text=Hi%20there!%20I%20just%20placed%20an%20order"
-                className="px-4 py-2 rounded-lg bg-green-500/10 border border-green-500/20 text-green-400 hover:bg-green-500/20 text-sm font-medium transition-colors flex items-center gap-2"
+                className="px-4 py-2 rounded-lg border border-success/40 text-success hover:bg-success/10 text-sm font-medium transition-colors flex items-center gap-2"
               >
                 <MessageCircle className="w-4 h-4" />
                 WhatsApp Us

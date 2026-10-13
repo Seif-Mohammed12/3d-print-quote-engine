@@ -132,8 +132,8 @@ export default function OrderDetail() {
           {data ? (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2 space-y-6">
-                <div className="glass-card p-6 space-y-2">
-                  <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Order</p>
+                <div className="panel p-6 space-y-2">
+                  <p className="text-sm text-muted-foreground">Order</p>
                   <h2 className="font-heading text-2xl font-semibold text-foreground">{data.order.order_code}</h2>
                   <p className="text-sm text-muted-foreground">Status: <span className="text-foreground font-semibold">{data.order.status}</span></p>
                   <p className="text-sm text-muted-foreground">Placed: {new Date(data.order.created_at).toLocaleString()}</p>
@@ -142,14 +142,14 @@ export default function OrderDetail() {
                       type="button"
                       onClick={() => setCancelDialogOpen(true)}
                       disabled={cancelOrder.isPending}
-                      className="mt-2 rounded-lg border border-rose-500/50 px-3 py-2 text-xs font-semibold text-rose-300 hover:bg-rose-500/10 disabled:opacity-60"
+                      className="mt-2 rounded-lg border border-destructive/60 px-3 py-2 text-xs font-semibold text-destructive hover:bg-destructive/10 disabled:opacity-60"
                     >
                       {cancelOrder.isPending ? "Cancelling..." : "Cancel this order"}
                     </button>
                   ) : null}
                 </div>
 
-                <div className="glass-card p-6 space-y-4">
+                <div className="panel p-6 space-y-4">
                   <h3 className="font-heading text-lg font-semibold text-foreground">Order Info</h3>
                   <div className="space-y-2">
                     <MetadataRow label="Customer" value={data.order.customer_name} />
@@ -163,7 +163,7 @@ export default function OrderDetail() {
                   </div>
                 </div>
 
-                <div className="glass-card p-6">
+                <div className="panel p-6">
                   <h3 className="font-heading text-lg font-semibold text-foreground mb-4">Items</h3>
                   <div className="space-y-3">
                     {data.items.map((item: any) => (
@@ -176,22 +176,22 @@ export default function OrderDetail() {
                           <MetadataRow label="Secondary color" value={extractItemData(item).secondaryColor} />
                           {data.order.order_type !== "quote" && (
                             <>
-                              <MetadataRow label="Unit price" value={extractItemData(item).unitPrice != null ? `EGP${Number(extractItemData(item).unitPrice).toFixed(0)}` : null} />
-                              <MetadataRow label="Subtotal" value={extractItemData(item).subtotal != null ? `EGP${Number(extractItemData(item).subtotal).toFixed(0)}` : null} />
+                              <MetadataRow label="Unit price" value={extractItemData(item).unitPrice != null ? `${Number(extractItemData(item).unitPrice).toFixed(0)} EGP` : null} />
+                              <MetadataRow label="Subtotal" value={extractItemData(item).subtotal != null ? `${Number(extractItemData(item).subtotal).toFixed(0)} EGP` : null} />
                             </>
                           )}
                           <MetadataRow label="Discount" value={extractItemData(item).discount ? "Applied" : null} />
                           <MetadataRow label="Item notes" value={extractItemData(item).notes} />
                         </div>
                         {data.order.order_type !== "quote" && item.subtotal != null ? (
-                          <p className="text-sm text-primary font-semibold mt-1">EGP{Number(item.subtotal).toFixed(0)}</p>
+                          <p className="text-sm text-primary font-semibold mt-1">{Number(item.subtotal).toFixed(0)} EGP</p>
                         ) : null}
                       </div>
                     ))}
                   </div>
                 </div>
 
-                <div className="glass-card p-6">
+                <div className="panel p-6">
                   <h3 className="font-heading text-lg font-semibold text-foreground mb-4">Submission Metadata</h3>
                   <div className="space-y-2">
                     <MetadataRow label="Brand" value={metadata?.brand} />
@@ -200,7 +200,7 @@ export default function OrderDetail() {
                     <MetadataRow label="Quality" value={metadata?.settings?.quality} />
                     <MetadataRow label="Infill" value={metadata?.settings?.infill != null ? `${metadata.settings.infill}%` : null} />
                     {data.order.order_type !== "quote" && (
-                      <MetadataRow label="Estimate" value={metadata?.estimate?.totalPrice != null ? `EGP${Number(metadata.estimate.totalPrice).toFixed(0)}` : null} />
+                      <MetadataRow label="Estimate" value={metadata?.estimate?.totalPrice != null ? `${Number(metadata.estimate.totalPrice).toFixed(0)} EGP` : null} />
                     )}
                     <MetadataRow label="Address" value={shipping?.address ? [shipping.address.line1, shipping.address.line2, shipping.address.city, shipping.address.governorate].filter(Boolean).join(", ") : null} />
                   </div>
@@ -209,15 +209,15 @@ export default function OrderDetail() {
 
               <div className="space-y-6">
                 {data.order.order_type !== "quote" && (
-                  <div className="glass-card p-6 space-y-2">
+                  <div className="panel p-6 space-y-2">
                     <h3 className="font-heading text-lg font-semibold text-foreground">Totals</h3>
-                    <div className="flex justify-between text-sm"><span className="text-muted-foreground">Subtotal</span><span className="text-foreground">EGP{Number(totals.subtotal || 0).toFixed(0)}</span></div>
-                    <div className="flex justify-between text-sm"><span className="text-muted-foreground">Shipping</span><span className="text-foreground">EGP{Number(totals.shipping || 0).toFixed(0)}</span></div>
-                    <div className="flex justify-between text-base font-semibold"><span className="text-foreground">Total</span><span className="text-primary">EGP{Number(totals.total || 0).toFixed(0)}</span></div>
+                    <div className="flex justify-between text-sm"><span className="text-muted-foreground">Subtotal</span><span className="text-foreground">{Number(totals.subtotal || 0).toFixed(0)} EGP</span></div>
+                    <div className="flex justify-between text-sm"><span className="text-muted-foreground">Shipping</span><span className="text-foreground">{Number(totals.shipping || 0).toFixed(0)} EGP</span></div>
+                    <div className="flex justify-between text-base font-semibold"><span className="text-foreground">Total</span><span className="text-primary">{Number(totals.total || 0).toFixed(0)} EGP</span></div>
                   </div>
                 )}
 
-                <div className="glass-card p-6">
+                <div className="panel p-6">
                   <h3 className="font-heading text-lg font-semibold text-foreground mb-4">Status timeline</h3>
                   <div className="space-y-3">
                     {data.history.map((entry: any) => (

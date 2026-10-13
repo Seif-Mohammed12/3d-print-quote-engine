@@ -14,7 +14,7 @@ export default function CheckoutAuthPrompt({
   onContinueGuest,
 }: CheckoutAuthPromptProps) {
   return (
-    <div className="glass-card p-6 md:p-8 space-y-4 text-center">
+    <div className="panel p-6 md:p-8 space-y-4 text-center">
       <h2 className="font-heading text-2xl md:text-3xl font-semibold text-foreground">{title}</h2>
       <p className="text-sm md:text-base text-muted-foreground max-w-2xl mx-auto">{subtitle}</p>
 

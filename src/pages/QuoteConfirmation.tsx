@@ -32,9 +32,9 @@ export default function QuoteConfirmation() {
           />
 
           <motion.div
-            initial={{ opacity: 0, y: 14 }}
+            initial={false}
             animate={{ opacity: 1, y: 0 }}
-            className="glass-card p-6 space-y-4"
+            className="panel p-6 space-y-4"
           >
             <h3 className="font-heading font-semibold text-foreground">Details</h3>
             <div className="text-sm text-muted-foreground space-y-2">
@@ -59,7 +59,7 @@ export default function QuoteConfirmation() {
             </button>
             <Link
               to="/"
-              className="inline-flex items-center justify-center rounded-lg bg-primary px-5 py-2.5 font-semibold text-primary-foreground hover:shadow-[0_0_20px_-5px_hsl(var(--neon-glow)/0.5)] transition-all"
+              className="inline-flex items-center justify-center rounded-lg bg-primary px-5 py-2.5 font-semibold text-primary-foreground transition-all"
             >
               Back to home
             </Link>

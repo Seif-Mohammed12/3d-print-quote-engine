@@ -174,7 +174,7 @@ export default function QuoteRequest() {
       <section className="section-padding">
         <div className="container mx-auto max-w-5xl space-y-6">
           <div className="flex items-center justify-between gap-4">
-            <SectionHeading title="Request a Quote" subtitle="Send your file and settings for final pricing." />
+            <SectionHeading title="Request a quote" subtitle="Send your file or idea with your settings. We reply with the final price." />
             <button
               type="button"
               onClick={() => navigate(-1)}
@@ -187,9 +187,9 @@ export default function QuoteRequest() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-1">
               <motion.div
-                initial={{ opacity: 0, y: 16 }}
+                initial={false}
                 animate={{ opacity: 1, y: 0 }}
-                className="glass-card p-6 space-y-4 sticky top-24"
+                className="panel p-6 space-y-4 sticky top-24"
               >
                 <h3 className="font-heading font-semibold text-foreground">Summary</h3>
                 <div className="space-y-2 text-sm">
@@ -219,10 +219,10 @@ export default function QuoteRequest() {
 
             <div className="lg:col-span-2">
               <motion.form
-                initial={{ opacity: 0, y: 16 }}
+                initial={false}
                 animate={{ opacity: 1, y: 0 }}
                 onSubmit={placeRequest}
-                className="glass-card p-6 space-y-5"
+                className="panel p-6 space-y-5"
               >
                 <h3 className="font-heading font-semibold text-foreground">Your details</h3>
 
@@ -289,7 +289,7 @@ export default function QuoteRequest() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full py-3 rounded-lg bg-primary text-primary-foreground font-semibold hover:shadow-[0_0_20px_-5px_hsl(var(--neon-glow)/0.5)] transition-all disabled:opacity-50"
+                  className="w-full py-3 rounded-lg bg-primary text-primary-foreground font-semibold transition-all disabled:opacity-50"
                 >
                   {isSubmitting ? "Sending..." : "Send request"}
                 </button>

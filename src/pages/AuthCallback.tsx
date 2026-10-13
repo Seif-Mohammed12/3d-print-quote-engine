@@ -58,7 +58,7 @@ export default function AuthCallback() {
     <Layout>
       <section className="section-padding">
         <div className="container mx-auto max-w-xl">
-          <div className="glass-card p-8 text-center">
+          <div className="panel p-8 text-center">
             <h1 className="font-heading text-2xl font-bold text-foreground">Signing you in...</h1>
             <p className="text-sm text-muted-foreground mt-2">Please wait while we finish authentication.</p>
           </div>

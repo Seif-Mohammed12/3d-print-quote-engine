@@ -60,7 +60,7 @@ export default function ProductCart() {
       <section className="section-padding">
         <div className="container mx-auto max-w-5xl space-y-6">
           <div className="flex items-center justify-between gap-4">
-            <SectionHeading title="Product Cart" subtitle="Review your items before checkout." />
+            <SectionHeading title="Your cart" subtitle="Printed to order. Pay on delivery or by InstaPay." />
             <button
               type="button"
               onClick={() => navigate(-1)}
@@ -71,7 +71,7 @@ export default function ProductCart() {
           </div>
 
           {items.length === 0 ? (
-            <div className="glass-card p-8 text-center">
+            <div className="panel p-8 text-center">
               <p className="text-muted-foreground">Your product cart is empty.</p>
               <Link
                 to="/products"
@@ -99,17 +99,17 @@ export default function ProductCart() {
                   return (
                     <motion.div
                       key={item.id}
-                      initial={{ opacity: 0, y: 10 }}
+                      initial={false}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: idx * 0.05 }}
-                      className="glass-card p-6"
+                      className="panel p-6"
                     >
                       <div className="flex items-start justify-between gap-4">
                         <div>
                           <div className="flex flex-wrap items-center gap-2">
                             <p className="font-semibold text-foreground">{itemName}</p>
                             {item.isBundle ? (
-                              <span className="rounded-full border border-primary/30 bg-primary/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-primary">
+                              <span className="text-sm font-normal text-ink">
                                 Bundle
                               </span>
                             ) : null}
@@ -127,7 +127,7 @@ export default function ProductCart() {
                         </div>
 
                         <div className="text-right">
-                          <p className="font-semibold text-primary">EGP{(item.unitPrice * Math.max(1, item.qty)).toFixed(0)}</p>
+                          <p className="font-semibold text-primary">{(item.unitPrice * Math.max(1, item.qty)).toFixed(0)} EGP</p>
                           <button
                             type="button"
                             onClick={() => removeProductFromCart(item.id)}
@@ -143,7 +143,7 @@ export default function ProductCart() {
               </div>
 
               <div className="lg:col-span-1">
-                <div className="glass-card sticky top-24 space-y-4 p-6">
+                <div className="panel sticky top-24 space-y-4 p-6">
                   <h3 className="font-heading font-semibold text-foreground">Summary</h3>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">Items</span>
@@ -151,7 +151,7 @@ export default function ProductCart() {
                   </div>
                   <div className="flex items-center justify-between border-b border-border pb-4 text-sm">
                     <span className="text-muted-foreground">Subtotal</span>
-                    <span className="text-foreground">EGP{subtotal.toFixed(0)}</span>
+                    <span className="text-foreground">{subtotal.toFixed(0)} EGP</span>
                   </div>
 
                   <button
@@ -160,7 +160,7 @@ export default function ProductCart() {
                       sessionStorage.setItem("productCartCheckout", "true");
                       navigate("/product-checkout");
                     }}
-                    className="w-full rounded-lg bg-primary py-3 font-semibold text-primary-foreground transition-all hover:shadow-[0_0_20px_-5px_hsl(var(--neon-glow)/0.5)]"
+                    className="w-full rounded-lg bg-primary py-3 font-semibold text-primary-foreground transition-all"
                   >
                     Checkout
                   </button>

@@ -231,9 +231,9 @@ const Checkout = () => {
             {/* Order Review */}
             <div className="lg:col-span-2 space-y-6">
               <motion.div
-                initial={{ opacity: 0, y: 20 }}
+                initial={false}
                 animate={{ opacity: 1, y: 0 }}
-                className="glass-card p-6 space-y-4"
+                className="panel p-6 space-y-4"
               >
                 <h3 className="font-heading font-semibold text-foreground mb-4">Order Summary</h3>
                 <div className="space-y-3">
@@ -246,7 +246,7 @@ const Checkout = () => {
                           <p className="text-xs text-muted-foreground">{item.material} • {item.quality} • {item.infill}%</p>
                         </div>
                       </div>
-                      <p className="font-semibold text-primary">EGP{item.quote.totalPrice.toFixed(2)}</p>
+                      <p className="font-semibold text-primary">{item.quote.totalPrice.toFixed(2)} EGP</p>
                     </div>
                   ))}
                 </div>
@@ -254,10 +254,10 @@ const Checkout = () => {
 
               {/* Contact Form */}
               <motion.form
-                initial={{ opacity: 0, y: 20 }}
+                initial={false}
                 animate={{ opacity: 1, y: 0 }}
                 onSubmit={handleSubmit}
-                className="glass-card p-6 space-y-5"
+                className="panel p-6 space-y-5"
               >
                 <h3 className="font-heading font-semibold text-foreground">Contact Information</h3>
 
@@ -330,7 +330,7 @@ const Checkout = () => {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full py-3 rounded-lg bg-primary text-primary-foreground font-semibold hover:shadow-[0_0_20px_-5px_hsl(var(--neon-glow)/0.5)] transition-all disabled:opacity-50"
+                  className="w-full py-3 rounded-lg bg-primary text-primary-foreground font-semibold transition-all disabled:opacity-50"
                 >
                   {isSubmitting ? "Processing..." : "Place Order"}
                 </button>
@@ -340,9 +340,9 @@ const Checkout = () => {
             {/* Order Total */}
             <div className="lg:col-span-1">
               <motion.div
-                initial={{ opacity: 0, y: 20 }}
+                initial={false}
                 animate={{ opacity: 1, y: 0 }}
-                className="glass-card p-6 sticky top-24 space-y-4"
+                className="panel p-6 sticky top-24 space-y-4"
               >
                 <h3 className="font-heading font-semibold text-foreground">Order Total</h3>
 
@@ -353,14 +353,14 @@ const Checkout = () => {
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Subtotal</span>
-                    <span className="text-foreground">EGP{getTotalPrice().toFixed(2)}</span>
+                    <span className="text-foreground">{getTotalPrice().toFixed(2)} EGP</span>
                   </div>
                 </div>
 
                 <div className="flex justify-between items-center">
                   <span className="text-lg font-semibold text-foreground">Total</span>
-                  <p className="text-3xl font-heading font-bold neon-text">
-                    EGP{getTotalPrice().toFixed(2)}
+                  <p className="text-3xl font-heading font-bold">
+                    {getTotalPrice().toFixed(2)} EGP
                   </p>
                 </div>
 
@@ -373,7 +373,7 @@ const Checkout = () => {
 
           {/* Info Section */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={false}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
             className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6"
@@ -383,7 +383,7 @@ const Checkout = () => {
               { icon: Phone, label: "WhatsApp", value: "+20 109 922 8486" },
               { icon: MapPin, label: "Location", value: "New Cairo, Egypt" },
             ].map(info => (
-              <div key={info.label} className="glass-card p-4 text-center">
+              <div key={info.label} className="panel p-4 text-center">
                 <info.icon className="w-6 h-6 text-primary mx-auto mb-2" />
                 <p className="text-xs text-muted-foreground mb-1">{info.label}</p>
                 <p className="font-medium text-foreground text-sm">{info.value}</p>

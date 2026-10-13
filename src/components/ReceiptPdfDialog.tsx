@@ -39,10 +39,10 @@ export default function ReceiptPdfDialog({
               <iframe
                 title={title}
                 src={pdfUrl}
-                className="h-full w-full rounded-xl border border-border bg-background"
+                className="h-full w-full border border-border bg-background"
               />
             ) : (
-              <div className="flex h-full items-center justify-center rounded-xl border border-border bg-background text-sm text-muted-foreground">
+              <div className="flex h-full items-center justify-center border border-border bg-background text-sm text-muted-foreground">
                 Preparing receipt preview...
               </div>
             )}

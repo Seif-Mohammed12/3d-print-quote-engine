@@ -57,8 +57,8 @@ const Quote = () => {
       <section className="section-padding">
         <div className="container mx-auto max-w-6xl">
           <SectionHeading
-            title="Smart Quote"
-            subtitle="Upload your 3D model, choose settings, and send a quote request."
+            title="Price your file"
+            subtitle="Upload an STL, pick material, quality and infill, and see the price before you send it."
           />
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -71,7 +71,7 @@ const Quote = () => {
 
             {/* Right: Configuration */}
             <div className="space-y-6">
-              <div className="glass-card p-6 space-y-6">
+              <div className="panel p-6 space-y-6">
                 <h3 className="font-heading font-semibold text-foreground">Configure Your Print</h3>
 
                 {/* Material */}
@@ -136,7 +136,7 @@ const Quote = () => {
                 <button
                   onClick={handleGetQuote}
                   disabled={!uploadedModel}
-                  className="w-full py-3 rounded-lg bg-primary text-primary-foreground font-semibold hover:shadow-[0_0_20px_-5px_hsl(var(--neon-glow)/0.5)] transition-all duration-300 disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="w-full py-3 rounded-lg bg-primary text-primary-foreground font-semibold transition-all duration-300 disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   <span className="inline-flex items-center gap-2">
                     <Send className="w-4 h-4" />

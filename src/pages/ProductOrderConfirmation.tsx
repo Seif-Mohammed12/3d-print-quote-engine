@@ -70,9 +70,9 @@ export default function ProductOrderConfirmation() {
       ],
       items,
       totals: [
-        { label: "Subtotal", value: `EGP${Number(order.totals?.subtotal || 0).toFixed(0)}` },
-        { label: "Shipping", value: `EGP${Number(order.totals?.shipping || 0).toFixed(0)}` },
-        { label: "Total", value: `EGP${Number(order.totals?.total || 0).toFixed(0)}` },
+        { label: "Subtotal", value: `${Number(order.totals?.subtotal || 0).toFixed(0)} EGP` },
+        { label: "Shipping", value: `${Number(order.totals?.shipping || 0).toFixed(0)} EGP` },
+        { label: "Total", value: `${Number(order.totals?.total || 0).toFixed(0)} EGP` },
       ],
       notes: order.customer?.notes || null,
     });
@@ -98,13 +98,13 @@ export default function ProductOrderConfirmation() {
             subtitle="We’ve received your request and sent a confirmation email."
           />
 
-          <div className="glass-card p-6 space-y-4">
+          <div className="panel p-6 space-y-4">
             <div className="flex items-center justify-between gap-3 flex-wrap">
               <h3 className="font-heading font-semibold text-foreground">Summary</h3>
               <button
                 type="button"
                 onClick={() => setReceiptOpen(true)}
-                className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:shadow-[0_0_20px_-5px_hsl(var(--neon-glow)/0.5)] transition-all"
+                className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-all"
               >
                 <FileText className="h-4 w-4" />
                 View receipt
@@ -154,7 +154,7 @@ export default function ProductOrderConfirmation() {
               </div>
               <div>
                 <span className="text-foreground font-medium">Total:</span>{" "}
-                EGP{order.totals?.total}
+                {order.totals?.total} EGP
               </div>
             </div>
           </div>
@@ -169,7 +169,7 @@ export default function ProductOrderConfirmation() {
             </button>
             <Link
               to="/"
-              className="inline-flex items-center justify-center rounded-lg bg-primary px-5 py-2.5 font-semibold text-primary-foreground hover:shadow-[0_0_20px_-5px_hsl(var(--neon-glow)/0.5)] transition-all"
+              className="inline-flex items-center justify-center rounded-lg bg-primary px-5 py-2.5 font-semibold text-primary-foreground transition-all"
             >
               Back to home
             </Link>
