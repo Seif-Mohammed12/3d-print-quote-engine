@@ -35,6 +35,17 @@ export function productHref(product: Pick<Product, "id" | "slug">) {
   return `/products/${product.slug || product.id}`;
 }
 
+/** PHOTO PLACEHOLDER copy: which shot-list photo each product is waiting for. */
+const pendingShots: Record<string, string> = {
+  "printique-vase": "Shot 8: the vase on a desk with dried stems, soft side light so the layer lines show.",
+  "printique-panel": "Shot 9: three panels mounted on a plain wall, light raking from one side to show depth.",
+  "printique-tray": "Shot 10: the tray from above holding keys, a watch and earbuds.",
+};
+
+export function shotFor(product: Pick<Product, "id" | "slug" | "name">) {
+  return pendingShots[product.slug || product.id] || `Real photo of the ${product.name} on a desk, printed in its default colour.`;
+}
+
 export function firstColorHex(product: Pick<Product, "primaryColors">) {
   return product.primaryColors[0]?.hex || "hsl(var(--rule))";
 }
