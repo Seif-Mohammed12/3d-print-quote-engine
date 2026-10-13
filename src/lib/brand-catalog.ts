@@ -19,6 +19,7 @@ export type ProductBundleItem = {
 
 export type Product = {
   id: string;
+  slug?: string;
   brand?: BrandId;
   name: string;
   short: string;

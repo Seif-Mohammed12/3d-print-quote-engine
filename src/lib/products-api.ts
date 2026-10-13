@@ -268,6 +268,7 @@ export async function adminSetBundleItems(payload: {
 export function mapDbProductToLegacyProduct(p: DbProduct): Product {
   return {
     id: p.id,
+    slug: p.slug,
     brand: p.brand,
     name: p.name,
     short: p.short,

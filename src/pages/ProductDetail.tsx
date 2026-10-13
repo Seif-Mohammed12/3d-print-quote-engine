@@ -37,7 +37,7 @@ export default function ProductDetail() {
   const { addProductToCart } = useCart();
   const { data: products, isPending } = useProducts();
   const product = useMemo(
-    () => (products || []).find((entry) => entry.id === productId) || null,
+    () => (products || []).find((entry) => entry.id === productId || entry.slug === productId) || null,
     [products, productId]
   );
 

@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Menu, X, ShoppingCart, Minus, Plus, Trash2, UserCircle2, LayoutDashboard, ClipboardList, Shield, LogOut, Home, Zap, Package, Image, Users, Mail, FileText } from "lucide-react";
+import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
+import { Minus, Plus, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCart } from "@/lib/cart-context";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -10,20 +10,19 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { useQueries } from "@tanstack/react-query";
 import { fetchPublicProducts, mapDbProductToLegacyProduct } from "@/lib/products-api";
 import { cacheProducts } from "@/lib/runtime-product-cache";
+import { formatEGP } from "@/lib/catalog-format";
 import type { BrandId, Product } from "@/lib/brand-catalog";
 
 const navLinks = [
-  { to: "/", label: "Home", icon: Home },
-  { to: "/services", label: "Services", icon: Zap },
-  { to: "/products", label: "Products", icon: Package },
-  { to: "/gallery", label: "Gallery", icon: Image },
-  { to: "/about", label: "About", icon: Users },
-  { to: "/contact", label: "Contact", icon: Mail },
-  { to: "/quote", label: "Get a Quote", icon: FileText, highlight: true },
+  { to: "/products", label: "Shop" },
+  { to: "/services", label: "Custom prints" },
+  { to: "/gallery", label: "Gallery" },
+  { to: "/about", label: "About" },
+  { to: "/contact", label: "Contact" },
 ];
 
 const Navbar = () => {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [cartPreviewOpen, setCartPreviewOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
@@ -32,10 +31,19 @@ const Navbar = () => {
   const productCount = productCart.reduce((sum, item) => sum + Math.max(1, item.qty || 1), 0);
   const subtotal = getProductSubtotal();
 
-  // Close sidebar when location changes
+  // Close the menu when location changes
   useEffect(() => {
-    setSidebarOpen(false);
+    setMenuOpen(false);
   }, [location]);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMenuOpen(false);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [menuOpen]);
 
   const brandsInCart = useMemo(
     () => Array.from(new Set(productCart.map((item) => item.brand))) as BrandId[],
@@ -75,89 +83,58 @@ const Navbar = () => {
     return liveProductMap.get(`${brand}:${productId}`) || getProduct(brand, productId);
   };
 
+  const navItemClass = ({ isActive }: { isActive: boolean }) =>
+    `inline-flex min-h-11 items-center text-[15px] transition-colors ${
+      isActive ? "text-foreground underline decoration-ink decoration-2 underline-offset-[10px]" : "text-muted-foreground hover:text-foreground"
+    }`;
+
   return (
     <>
-      {/* Clean Navbar */}
-      <nav className="fixed top-0 left-0 right-0 z-40 bg-background/80 backdrop-blur-xl border-b border-border/50">
-        <div className="container mx-auto flex items-center justify-between h-16 px-8">
-          {/* Left side - Menu and Logo */}
-          <div className="flex items-center gap-3">
-            {/* Sidebar Toggle */}
-            <button
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="p-2 text-foreground hover:bg-secondary rounded-lg transition-all duration-300"
-              aria-label="Open navigation menu"
-            >
-              {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-            </button>
+      <header className="fixed inset-x-0 top-0 z-40 border-b border-border bg-background">
+        <div className="frame flex h-14 items-center justify-between gap-6">
+          <Link to="/" className="text-[19px] font-extrabold tracking-[-0.03em] text-foreground">
+            3D Print It
+          </Link>
 
-            {/* Logo */}
-            <Link to="/" className="flex items-center gap-3 group">
-              <div className="relative h-9 w-9 overflow-hidden rounded-xl bg-slate-900/80 ring-1 ring-primary/40 shadow-[0_0_18px_-6px_hsl(var(--neon-glow)/0.8)]">
-                <img
-                  src="/logos/3d-print-it-logo.png"
-                  alt="3D Print It logo"
-                  className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-105"
-                />
-              </div>
-              <span className="font-heading font-bold text-lg text-foreground">
-                3D Print <span className="text-primary">It</span>
-              </span>
-            </Link>
-          </div>
+          <nav aria-label="Main" className="hidden items-center gap-7 md:flex">
+            {navLinks.map((link) => (
+              <NavLink key={link.to} to={link.to} className={navItemClass}>
+                {link.label}
+              </NavLink>
+            ))}
+          </nav>
 
-          {/* Right side controls */}
-          <div className="flex items-center gap-3">
-            {/* Cart Button */}
-            <button
-              type="button"
-              onClick={() => setCartPreviewOpen(true)}
-              className="relative p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-all duration-300 flex items-center gap-2"
-              aria-label="Shopping cart"
-            >
-              <ShoppingCart className="w-5 h-5" />
-              {productCart.length > 0 && (
-                <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-primary text-white text-xs flex items-center justify-center font-bold">
-                  {productCount}
-                </span>
-              )}
-            </button>
-
-            {/* User Menu */}
+          <div className="flex items-center gap-1 sm:gap-3">
             {isAuthenticated ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button
                     type="button"
-                    className="p-2 rounded-lg border border-border/70 text-muted-foreground hover:text-foreground hover:bg-secondary transition-all duration-300"
-                    aria-label="Open user menu"
+                    className="hidden min-h-11 px-2 text-[15px] text-muted-foreground transition-colors hover:text-foreground sm:inline-flex sm:items-center"
                   >
-                    <UserCircle2 className="w-5 h-5" />
+                    Account
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-52">
+                <DropdownMenuContent align="end" className="w-56">
                   <DropdownMenuLabel>
-                    <p className="text-xs text-muted-foreground">Signed in as</p>
-                    <p className="truncate">{user?.email || "My account"}</p>
+                    <p className="text-xs font-normal text-muted-foreground">Signed in as</p>
+                    <p className="truncate" dir="auto">{user?.email || "My account"}</p>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
                     <Link to={isAdmin ? "/admin" : "/account"} className="cursor-pointer">
-                      <LayoutDashboard className="mr-2 h-4 w-4" />
-                      {isAdmin ? "Admin Dashboard" : "Dashboard"}
+                      {isAdmin ? "Admin dashboard" : "Dashboard"}
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
                     <Link to="/orders" className="cursor-pointer">
-                      <ClipboardList className="mr-2 h-4 w-4" />
                       Orders
                     </Link>
                   </DropdownMenuItem>
                   {isAdmin && (
                     <DropdownMenuItem asChild>
                       <Link to="/admin/orders" className="cursor-pointer">
-                        <Shield className="mr-2 h-4 w-4" />
-                        Admin
+                        Admin orders
                       </Link>
                     </DropdownMenuItem>
                   )}
@@ -168,7 +145,6 @@ const Navbar = () => {
                       navigate("/");
                     }}
                   >
-                    <LogOut className="mr-2 h-4 w-4" />
                     Sign out
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -176,104 +152,121 @@ const Navbar = () => {
             ) : (
               <Link
                 to="/login"
-                className="px-3 py-2 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:shadow-[0_0_20px_-5px_hsl(var(--neon-glow)/0.5)] transition-all"
+                className="hidden min-h-11 items-center px-2 text-[15px] text-muted-foreground transition-colors hover:text-foreground sm:inline-flex"
               >
-                Login
+                Log in
               </Link>
             )}
+
+            <button
+              type="button"
+              onClick={() => setCartPreviewOpen(true)}
+              className="inline-flex min-h-11 items-center px-2 text-[15px] font-semibold text-foreground"
+              aria-label={`Cart, ${productCount} ${productCount === 1 ? "item" : "items"}`}
+            >
+              Cart
+              <span
+                className={`ml-1.5 inline-flex h-6 min-w-6 items-center justify-center px-1.5 text-[13px] ${
+                  productCount > 0 ? "bg-ink text-ink-foreground" : "bg-secondary text-muted-foreground"
+                }`}
+              >
+                {productCount}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setMenuOpen(true)}
+              className="inline-flex min-h-11 items-center pl-2 text-[15px] font-semibold text-foreground md:hidden"
+              aria-expanded={menuOpen}
+              aria-controls="site-menu"
+            >
+              Menu
+            </button>
           </div>
         </div>
-      </nav>
+      </header>
 
-      {/* Sidebar Overlay */}
+      {/* Phone menu: a full sheet, links set large like a track list */}
       <AnimatePresence>
-        {sidebarOpen && (
+        {menuOpen && (
           <motion.div
+            id="site-menu"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Site menu"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={() => setSidebarOpen(false)}
-            className="fixed inset-0 z-30 bg-black/50 backdrop-blur-sm"
-          />
-        )}
-      </AnimatePresence>
-
-      {/* Sidebar */}
-      <AnimatePresence>
-        {sidebarOpen && (
-          <motion.div
-            initial={{ x: -300, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            exit={{ x: -300, opacity: 0 }}
-            transition={{ type: "spring", damping: 25, stiffness: 200 }}
-            className="fixed top-0 left-0 z-40 h-screen w-72 bg-background/95 backdrop-blur-xl border-r border-border/50 overflow-y-auto flex flex-col"
+            transition={{ duration: 0.18 }}
+            className="fixed inset-0 z-50 flex flex-col bg-background"
           >
-            {/* Sidebar Header */}
-            <div className="flex items-center justify-between p-6 border-b border-border/50">
-              <span className="font-heading font-bold text-xl text-foreground">
-                Menu
-              </span>
+            <div className="frame flex h-14 items-center justify-between border-b border-border">
+              <span className="text-[19px] font-extrabold tracking-[-0.03em]">3D Print It</span>
               <button
-                onClick={() => setSidebarOpen(false)}
-                className="p-1 rounded-lg hover:bg-secondary transition-colors"
-                aria-label="Close sidebar"
+                type="button"
+                onClick={() => setMenuOpen(false)}
+                className="inline-flex min-h-11 items-center gap-1.5 text-[15px] font-semibold"
               >
-                <X className="w-5 h-5" />
+                Close <X className="h-4 w-4" aria-hidden="true" />
               </button>
             </div>
-
-            {/* Navigation Links */}
-            <nav className="flex-1 overflow-y-auto p-4 space-y-2">
-              {navLinks.map((link) => {
-                const IconComponent = link.icon;
-                const isActive = location.pathname === link.to;
-                
-                return (
-                  <Link
-                    key={link.to}
-                    to={link.to}
-                    className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${
-                      link.highlight
-                        ? "bg-primary text-primary-foreground hover:shadow-[0_0_20px_-5px_hsl(var(--neon-glow)/0.5)]"
-                        : isActive
-                          ? "text-primary bg-primary/10"
-                          : "text-muted-foreground hover:text-foreground hover:bg-secondary"
-                    }`}
-                  >
-                    <IconComponent className="w-4 h-4" />
-                    {link.label}
-                  </Link>
-                );
-              })}
+            <nav aria-label="Main" className="frame ruled flex-1 overflow-y-auto pt-2">
+              {[{ to: "/", label: "Home" }, ...navLinks, { to: "/quote", label: "Get a price for your file" }].map((link) => (
+                <NavLink
+                  key={link.to}
+                  to={link.to}
+                  end={link.to === "/"}
+                  className={({ isActive }) =>
+                    `flex min-h-[60px] items-center text-[26px] font-bold tracking-[-0.02em] ${
+                      isActive ? "text-foreground" : "text-muted-foreground"
+                    }`
+                  }
+                >
+                  {link.label}
+                </NavLink>
+              ))}
             </nav>
+            <div className="frame flex gap-6 border-t border-border py-5 text-[15px]">
+              {isAuthenticated ? (
+                <>
+                  <Link to={isAdmin ? "/admin" : "/account"} className="link-quiet">Account</Link>
+                  <Link to="/orders" className="link-quiet">Orders</Link>
+                </>
+              ) : (
+                <Link to="/login" className="link-quiet">Log in</Link>
+              )}
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Cart Preview Dialog */}
+      {/* Cart preview */}
       <Dialog open={cartPreviewOpen} onOpenChange={setCartPreviewOpen}>
-        <DialogContent className="max-w-xl border-slate-800 bg-slate-950 text-slate-100">
-          <DialogHeader>
-            <DialogTitle className="font-heading text-2xl">Cart Preview</DialogTitle>
-            <DialogDescription className="text-slate-400">
-              Quickly review your items while you shop.
+        <DialogContent className="max-w-xl gap-0 p-0">
+          <DialogHeader className="border-b border-border p-5 text-left">
+            <DialogTitle className="text-2xl font-bold">Your cart</DialogTitle>
+            <DialogDescription>
+              {productCart.length === 0 ? "Nothing in here yet." : `${productCount} ${productCount === 1 ? "item" : "items"}, printed to order.`}
             </DialogDescription>
           </DialogHeader>
 
           {productCart.length === 0 ? (
-            <div className="rounded-xl border border-slate-800 bg-slate-900/40 p-6 text-center">
-              <p className="text-sm text-slate-300">Your cart is empty.</p>
+            <div className="p-5">
               <button
                 type="button"
-                onClick={() => setCartPreviewOpen(false)}
-                className="mt-4 rounded-lg border border-slate-700 px-4 py-2 text-sm font-semibold text-slate-200 hover:bg-slate-800/60 transition-colors"
+                onClick={() => {
+                  setCartPreviewOpen(false);
+                  navigate("/products");
+                }}
+                className="btn-secondary w-full"
               >
-                Continue shopping
+                Browse the shop
               </button>
             </div>
           ) : (
-            <div className="space-y-4">
-              <div className="max-h-[50vh] space-y-3 overflow-y-auto pr-1">
+            <div>
+              <div className="ruled max-h-[50vh] overflow-y-auto px-5">
                 {productCart.map((item) => {
                   const product = resolveProduct(item.brand, item.productId);
                   const itemName = product?.name || item.productName || (isCatalogLoading ? "Loading product..." : "Product unavailable");
@@ -283,85 +276,70 @@ const Navbar = () => {
                     ? product?.secondaryColors.find((c) => c.id === item.secondaryColorId)?.name || (isCatalogLoading ? "Loading..." : "N/A")
                     : null;
                   return (
-                    <div key={item.id} className="rounded-xl border border-slate-800 bg-slate-900/40 p-4">
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <div className="flex flex-wrap items-center gap-2">
-                            <p className="text-sm font-semibold text-slate-100">{itemName}</p>
-                            {item.isBundle ? (
-                              <span className="rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-primary">
-                                Bundle
-                              </span>
-                            ) : null}
-                          </div>
-                          <p className="mt-1 text-xs text-slate-400">Qty: {Math.max(1, item.qty)}</p>
-                          <p className="mt-1 text-xs text-slate-400">
-                            Primary: {primary}
-                            {hasSecondaryColors ? ` • Secondary: ${secondary}` : ""}
+                    <div key={item.id} className="flex items-start justify-between gap-4 py-4">
+                      <div className="min-w-0">
+                        <p className="font-semibold">
+                          {itemName}
+                          {item.isBundle ? <span className="ml-2 text-sm font-normal text-ink">Bundle</span> : null}
+                        </p>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                          {primary}
+                          {hasSecondaryColors ? ` / ${secondary}` : ""}
+                        </p>
+                        {item.isBundle && item.bundleItems?.length ? (
+                          <p className="mt-1 text-sm text-muted-foreground">
+                            Includes {item.bundleItems.map((bundleItem) => `${bundleItem.name}${bundleItem.qty > 1 ? ` x${bundleItem.qty}` : ""}`).join(", ")}
                           </p>
-                          {item.isBundle && item.bundleItems?.length ? (
-                            <p className="mt-1 text-xs text-slate-400">
-                              Includes: {item.bundleItems.map((bundleItem) => `${bundleItem.name}${bundleItem.qty > 1 ? ` x${bundleItem.qty}` : ""}`).join(", ")}
-                            </p>
-                          ) : null}
-                          <div className="mt-3 inline-flex items-center rounded-lg border border-slate-700 bg-slate-900/70">
-                            <button
-                              type="button"
-                              onClick={() => updateProductQty(item.id, Math.max(1, item.qty - 1))}
-                              className="px-2.5 py-1.5 text-slate-300 hover:text-white"
-                              aria-label="Decrease quantity"
-                            >
-                              <Minus className="h-3.5 w-3.5" />
-                            </button>
-                            <span className="min-w-8 text-center text-xs font-semibold text-slate-200">
-                              {Math.max(1, item.qty)}
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => updateProductQty(item.id, item.qty + 1)}
-                              className="px-2.5 py-1.5 text-slate-300 hover:text-white"
-                              aria-label="Increase quantity"
-                            >
-                              <Plus className="h-3.5 w-3.5" />
-                            </button>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-sm font-semibold text-primary">
-                            EGP{(item.unitPrice * Math.max(1, item.qty)).toFixed(0)}
-                          </p>
+                        ) : null}
+                        <div className="mt-3 inline-flex items-center border border-rule">
                           <button
                             type="button"
-                            onClick={() => removeProductFromCart(item.id)}
-                            className="mt-2 inline-flex items-center gap-1 text-xs text-slate-400 hover:text-rose-300"
+                            onClick={() => updateProductQty(item.id, Math.max(1, item.qty - 1))}
+                            className="inline-flex h-10 w-10 items-center justify-center text-muted-foreground hover:text-foreground"
+                            aria-label={`Decrease quantity of ${itemName}`}
                           >
-                            <Trash2 className="h-3.5 w-3.5" />
-                            Remove
+                            <Minus className="h-4 w-4" />
+                          </button>
+                          <span className="min-w-8 text-center text-sm font-semibold">{Math.max(1, item.qty)}</span>
+                          <button
+                            type="button"
+                            onClick={() => updateProductQty(item.id, item.qty + 1)}
+                            className="inline-flex h-10 w-10 items-center justify-center text-muted-foreground hover:text-foreground"
+                            aria-label={`Increase quantity of ${itemName}`}
+                          >
+                            <Plus className="h-4 w-4" />
                           </button>
                         </div>
+                      </div>
+                      <div className="shrink-0 text-right">
+                        <p className="font-semibold">{formatEGP(item.unitPrice * Math.max(1, item.qty))}</p>
+                        <button
+                          type="button"
+                          onClick={() => removeProductFromCart(item.id)}
+                          className="mt-2 min-h-10 text-sm text-muted-foreground underline decoration-rule underline-offset-4 hover:text-destructive"
+                        >
+                          Remove
+                        </button>
                       </div>
                     </div>
                   );
                 })}
               </div>
 
-              <div className="rounded-xl border border-slate-800 bg-slate-900/40 p-4 space-y-3">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-slate-400">Items</span>
-                  <span className="text-slate-100">{productCount}</span>
+              <div className="space-y-4 border-t border-border p-5">
+                <div className="flex items-baseline justify-between">
+                  <span className="text-muted-foreground">Subtotal</span>
+                  <span className="text-xl font-bold">{formatEGP(subtotal)}</span>
                 </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-slate-400">Subtotal</span>
-                  <span className="text-slate-100">EGP{subtotal.toFixed(0)}</span>
-                </div>
-                <div className="flex items-center gap-2 pt-1">
+                <p className="text-sm text-muted-foreground">Delivery is confirmed after you order. Pay cash on delivery or by InstaPay.</p>
+                <div className="flex gap-2">
                   <button
                     type="button"
                     onClick={() => {
                       setCartPreviewOpen(false);
                       navigate("/product-cart");
                     }}
-                    className="flex-1 rounded-lg border border-slate-700 px-4 py-2.5 text-sm font-semibold text-slate-100 hover:bg-slate-800/70 transition-colors"
+                    className="btn-secondary flex-1 px-3"
                   >
                     View cart
                   </button>
@@ -372,7 +350,7 @@ const Navbar = () => {
                       sessionStorage.setItem("productCartCheckout", "true");
                       navigate("/product-checkout");
                     }}
-                    className="flex-1 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:opacity-95 transition-opacity"
+                    className="btn-primary flex-1 px-3"
                   >
                     Checkout
                   </button>

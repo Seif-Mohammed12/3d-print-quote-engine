@@ -1,173 +1,228 @@
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { motion } from "framer-motion";
-import { ArrowRight, Zap, Shield, Clock, Layers, Box, Cpu } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
 import Layout from "@/components/Layout";
-import SectionHeading from "@/components/SectionHeading";
-import { useIsMobile } from "@/hooks/use-mobile";
+import QuickAddProductDialog from "@/components/QuickAddProductDialog";
+import Sleeve from "@/components/catalog/Sleeve";
+import PhotoPending from "@/components/catalog/PhotoPending";
+import CatalogueRow from "@/components/catalog/CatalogueRow";
+import { useProducts } from "@/hooks/use-brand-products";
+import type { Product } from "@/lib/brand-catalog";
+import {
+  catalogueNo,
+  categoryLabel,
+  categoryOrder,
+  effectivePrice,
+  firstColorHex,
+  formatEGP,
+  hasDiscount,
+  productHref,
+} from "@/lib/catalog-format";
 
-const features = [
-  { icon: Zap, title: "Lightning Fast", desc: "48-hour turnaround on most orders" },
-  { icon: Shield, title: "Premium Quality", desc: "Layer resolution down to 0.05mm" },
-  { icon: Clock, title: "Instant Quotes", desc: "Upload a file, get a price in seconds" },
-  { icon: Layers, title: "Multi-Material", desc: "PLA, ABS, PETG, Resin & more" },
-  { icon: Box, title: "Any Scale", desc: "From prototypes to production runs" },
-  { icon: Cpu, title: "Smart Slicer", desc: "AI-powered cost estimation" },
+const commissions = [
+  { to: "/quote", title: "Have an STL?", body: "Upload it and get a price in about a minute." },
+  { to: "/quote-request", title: "Only have an idea?", body: "Send a sketch or a photo. We model it, then print it." },
+  { to: "/contact", title: "Need 20 or more?", body: "Ask about volume runs for events, shops and teams." },
 ];
 
-const galleryItems = [
-  { title: "Mechanical Parts", color: "from-primary/20 to-accent/20" },
-  { title: "Architectural Models", color: "from-accent/20 to-primary/20" },
-  { title: "Custom Figurines", color: "from-primary/20 to-neon-purple/20" },
-  { title: "Product Prototypes", color: "from-neon-purple/20 to-primary/20" },
+const terms = [
+  { label: "Printed in", value: "About 48 hours" },
+  { label: "Material", value: "PLA or PETG" },
+  { label: "Pay", value: "Cash on delivery or InstaPay" },
+  { label: "Get it", value: "Aramex or free pickup, New Cairo" },
 ];
 
 const Home = () => {
-  const isMobile = useIsMobile();
+  const { data: products, isPending, isError } = useProducts();
+  const [quickAdd, setQuickAdd] = useState<Product | null>(null);
+
+  const featured = useMemo(() => (products ?? []).find((p) => p.images.length > 0) ?? products?.[0], [products]);
+
+  const grouped = useMemo(
+    () =>
+      categoryOrder
+        .map((id) => ({ id, label: categoryLabel[id], items: (products ?? []).filter((p) => p.brand === id && p.id !== featured?.id) }))
+        .filter((group) => group.items.length > 0),
+    [products, featured]
+  );
 
   return (
     <Layout>
-      <section className="section-padding relative flex min-h-[90vh] items-center justify-center overflow-hidden grid-background">
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-background via-background/90 to-background" />
-        <div className="absolute left-1/2 top-1/4 h-[600px] w-[600px] -translate-x-1/2 rounded-full bg-primary/5 blur-[120px]" />
-
-        <div className="relative z-10 mx-auto max-w-4xl text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-          >
-            <span className="mb-6 inline-block rounded-full border border-primary/20 bg-primary/10 px-4 py-1.5 text-xs font-medium text-primary">
-              Next-Gen 3D Printing
-            </span>
-            <h1 className="mb-6 font-heading text-4xl font-bold leading-tight text-foreground md:text-6xl lg:text-7xl">
-              Turn Your Ideas
-              <br />
-              <span className="gradient-text">Into Reality</span>
-            </h1>
-            <p className="mx-auto mb-10 max-w-2xl text-lg text-muted-foreground md:text-xl">
-              Professional 3D printing services with instant quoting. Upload your design, pick your material, and we&apos;ll bring it to life.
-            </p>
-            <div className="flex flex-col justify-center gap-4 sm:flex-row">
-              <Link
-                to="/quote"
-                className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-8 py-3.5 font-semibold text-primary-foreground transition-all duration-300 hover:shadow-[0_0_30px_-5px_hsl(var(--neon-glow)/0.5)]"
-              >
-                Upload Your File <ArrowRight className="h-4 w-4" />
-              </Link>
-              <Link
-                to="/products"
-                className="inline-flex items-center justify-center gap-2 rounded-lg border border-border px-8 py-3.5 font-semibold text-foreground transition-all duration-300 hover:bg-secondary"
-              >
-                Browse Products
-              </Link>
-            </div>
-          </motion.div>
-        </div>
-      </section>
-
-      <section className="section-padding">
-        <div className="container mx-auto">
-          <motion.div
-            initial={isMobile ? false : { opacity: 0, y: 20 }}
-            animate={isMobile ? { opacity: 1, y: 0 } : undefined}
-            whileInView={isMobile ? undefined : { opacity: 1, y: 0 }}
-            viewport={isMobile ? undefined : { once: true }}
-            transition={{ duration: 0.5 }}
-            className="relative overflow-hidden rounded-2xl border border-blue-400/30 bg-gradient-to-br from-slate-950/90 via-slate-950 to-slate-900 p-6 shadow-[0_0_30px_-12px_rgba(59,130,246,0.7)] md:p-8"
-          >
-            <div className="pointer-events-none absolute -top-10 right-0 h-40 w-40 rounded-full bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.5),_transparent)] blur-2xl" />
-            <div className="pointer-events-none absolute bottom-0 left-0 h-40 w-40 rounded-full bg-[radial-gradient(circle_at_bottom,_rgba(34,197,94,0.22),_transparent)] blur-2xl" />
-            <div className="relative space-y-3">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-200">Shop Products</p>
-              <h3 className="font-heading text-xl font-semibold text-foreground">Browse our ready-made catalog</h3>
-              <p className="text-sm text-muted-foreground">
-                One storefront for all current products, from setup accessories to decor pieces and bundle offers.
-              </p>
-              <Link to="/products" className="inline-flex items-center gap-1 text-sm font-semibold text-blue-200 hover:text-blue-100">
-                Explore products <ArrowRight className="h-3 w-3" />
-              </Link>
-            </div>
-          </motion.div>
-        </div>
-      </section>
-
-      <section className="section-padding">
-        <div className="container mx-auto">
-          <SectionHeading title="Why Choose Us" subtitle="Speed, quality, and affordability - we deliver on all three." />
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {features.map((feature, index) => (
-              <motion.div
-                key={feature.title}
-                initial={isMobile ? false : { opacity: 0, y: 20 }}
-                animate={isMobile ? { opacity: 1, y: 0 } : undefined}
-                whileInView={isMobile ? undefined : { opacity: 1, y: 0 }}
-                viewport={isMobile ? undefined : { once: true }}
-                transition={{ delay: index * 0.1, duration: 0.5 }}
-                className="glass-card-hover p-6"
-              >
-                <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-                  <feature.icon className="h-5 w-5 text-primary" />
-                </div>
-                <h3 className="mb-2 font-heading font-semibold text-foreground">{feature.title}</h3>
-                <p className="text-sm text-muted-foreground">{feature.desc}</p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="section-padding bg-card/20">
-        <div className="container mx-auto">
-          <SectionHeading title="Our Work" subtitle="A glimpse of what we've printed for our clients." />
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {galleryItems.map((item, index) => (
-              <motion.div
-                key={item.title}
-                initial={isMobile ? false : { opacity: 0, scale: 0.95 }}
-                animate={isMobile ? { opacity: 1, scale: 1 } : undefined}
-                whileInView={isMobile ? undefined : { opacity: 1, scale: 1 }}
-                viewport={isMobile ? undefined : { once: true }}
-                transition={{ delay: index * 0.1, duration: 0.5 }}
-                className="glass-card-hover relative aspect-square overflow-hidden p-5"
-              >
-                <div className={`absolute inset-0 bg-gradient-to-br ${item.color}`} />
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <Box className="h-16 w-16 text-primary/20" />
-                </div>
-                <span className="relative z-10 font-heading text-sm font-semibold text-foreground">{item.title}</span>
-              </motion.div>
-            ))}
-          </div>
-          <div className="mt-8 text-center">
-            <Link to="/gallery" className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline">
-              View Full Gallery <ArrowRight className="h-3 w-3" />
+      {/* Featured release: the object, its name, its price and a working Add to cart, inside the first phone screen */}
+      <section className="frame grid gap-5 pt-4 md:grid-cols-12 md:items-end md:gap-10 md:pt-10">
+        <div className="md:col-span-7">
+          {featured ? (
+            <Link to={productHref(featured)} aria-label={`${featured.name}, view details`} className="block">
+              <Sleeve
+                src={featured.images[0]}
+                alt={`${featured.name}, 3D printed`}
+                catalogueNo={catalogueNo(products, featured.id)}
+                spineHex={firstColorHex(featured)}
+                loading="eager"
+              />
             </Link>
-          </div>
+          ) : (
+            <div className="aspect-square w-full animate-pulse bg-card" aria-hidden="true" />
+          )}
+        </div>
+
+        <div className="md:col-span-5 md:pb-2">
+          {featured ? (
+            <>
+              <h1 className="text-[44px] font-bold leading-[0.95] tracking-[-0.035em] md:text-[64px]">{featured.name}</h1>
+              <p className="mt-3 max-w-md text-muted-foreground">{featured.short}</p>
+
+              <dl className="mt-5 grid grid-cols-3 border-y border-border text-sm">
+                <div className="py-3 pr-3">
+                  <dt className="text-muted-foreground">No.</dt>
+                  <dd className="mt-0.5 font-medium">{catalogueNo(products, featured.id)}</dd>
+                </div>
+                <div className="border-l border-border px-3 py-3">
+                  <dt className="text-muted-foreground">Colours</dt>
+                  <dd className="mt-0.5 font-medium">{featured.primaryColors.length || 1}</dd>
+                </div>
+                <div className="border-l border-border py-3 pl-3">
+                  <dt className="text-muted-foreground">Printed in</dt>
+                  <dd className="mt-0.5 font-medium">~48 h</dd>
+                </div>
+              </dl>
+
+              <div className="mt-5 flex items-center gap-4">
+                <p className="shrink-0">
+                  <span className="block text-2xl font-bold tracking-[-0.02em]">{formatEGP(effectivePrice(featured))}</span>
+                  {hasDiscount(featured) ? (
+                    <span className="block text-sm text-muted-foreground line-through">{formatEGP(featured.basePrice)}</span>
+                  ) : null}
+                </p>
+                <button type="button" onClick={() => setQuickAdd(featured)} className="btn-primary flex-1">
+                  Choose colour & add
+                </button>
+              </div>
+            </>
+          ) : isPending ? (
+            <div className="space-y-3" aria-hidden="true">
+              <div className="h-11 w-3/4 animate-pulse bg-card" />
+              <div className="h-5 w-1/2 animate-pulse bg-card" />
+              <div className="mt-6 h-12 w-full animate-pulse bg-card" />
+            </div>
+          ) : (
+            <p className="text-muted-foreground">
+              The catalogue didn't load. <Link to="/products" className="link-quiet text-foreground">Try the shop</Link> or message us on WhatsApp.
+            </p>
+          )}
         </div>
       </section>
 
-      <section className="section-padding">
-        <div className="container mx-auto">
-          <motion.div
-            initial={isMobile ? false : { opacity: 0, y: 20 }}
-            animate={isMobile ? { opacity: 1, y: 0 } : undefined}
-            whileInView={isMobile ? undefined : { opacity: 1, y: 0 }}
-            viewport={isMobile ? undefined : { once: true }}
-            className="glass-card neon-border p-10 text-center md:p-16"
-          >
-            <h2 className="mb-4 font-heading text-3xl font-bold text-foreground md:text-4xl">Ready to Start Printing?</h2>
-            <p className="mx-auto mb-8 max-w-lg text-muted-foreground">
-              Upload your 3D model and get an instant quote. No waiting, no hassle.
-            </p>
-            <Link
-              to="/quote"
-              className="inline-flex items-center gap-2 rounded-lg bg-primary px-8 py-3.5 font-semibold text-primary-foreground transition-all duration-300 hover:shadow-[0_0_30px_-5px_hsl(var(--neon-glow)/0.5)]"
+      {/* The catalogue: every other release as a ruled list, grouped by shelf */}
+      <section className="frame mt-16 md:mt-28" aria-labelledby="catalogue-title">
+        <div className="flex items-end justify-between gap-4 border-b border-foreground pb-3">
+          <h2 id="catalogue-title" className="text-[28px] font-bold leading-none tracking-[-0.03em] md:text-4xl">
+            The catalogue
+          </h2>
+          <Link to="/products" className="link-quiet shrink-0 text-[15px] text-muted-foreground hover:text-foreground">
+            Shop all
+          </Link>
+        </div>
+
+        {isError ? (
+          <p className="py-8 text-muted-foreground">Couldn't load the catalogue. Check your connection and refresh.</p>
+        ) : isPending ? (
+          <div className="ruled" aria-hidden="true">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="flex items-center gap-4 py-4">
+                <div className="h-[72px] w-[72px] animate-pulse bg-card" />
+                <div className="h-5 flex-1 animate-pulse bg-card" />
+              </div>
+            ))}
+          </div>
+        ) : (
+          grouped.map((group) => (
+            <div key={group.id} className="mt-8 first:mt-6">
+              <h3 className="text-sm font-semibold text-muted-foreground">{group.label}</h3>
+              <div className="ruled mt-1 border-b border-border">
+                {group.items.map((product) => (
+                  <CatalogueRow key={product.id} product={product} catalogueNo={catalogueNo(products, product.id)} />
+                ))}
+              </div>
+            </div>
+          ))
+        )}
+      </section>
+
+      {/* Commissions: custom work, set denser and quieter than the shop */}
+      <section className="mt-16 bg-card md:mt-24" aria-labelledby="custom-title">
+        <div className="frame grid gap-8 py-12 md:grid-cols-12 md:py-16">
+          <div className="md:col-span-4">
+            <h2 id="custom-title" className="text-[28px] font-bold leading-[1.05] tracking-[-0.03em] md:text-4xl">
+              Print your own thing.
+            </h2>
+            <p className="mt-3 max-w-sm text-muted-foreground">Same printers, same 48 hours, your design.</p>
+          </div>
+          <ul className="ruled border-y border-border md:col-span-8">
+            {commissions.map((item) => (
+              <li key={item.to}>
+                <Link to={item.to} className="group flex items-center justify-between gap-6 py-5">
+                  <span>
+                    <span className="block text-lg font-semibold tracking-[-0.01em]">{item.title}</span>
+                    <span className="mt-0.5 block text-muted-foreground">{item.body}</span>
+                  </span>
+                  <ArrowUpRight
+                    className="h-5 w-5 shrink-0 text-muted-foreground transition-colors group-hover:text-ink"
+                    strokeWidth={1.75}
+                    aria-hidden="true"
+                  />
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+
+      {/* Terms of sale: one ruled table, no cards */}
+      <section className="frame mt-12 md:mt-16" aria-label="How buying works">
+        <dl className="grid grid-cols-2 border-y border-border md:grid-cols-4">
+          {terms.map((term, i) => (
+            <div
+              key={term.label}
+              className={`py-4 pr-4 ${i % 2 === 1 ? "border-l border-border pl-4" : ""} ${i >= 2 ? "border-t border-border md:border-t-0" : ""} ${
+                i >= 1 ? "md:border-l md:pl-4" : ""
+              }`}
             >
-              Get Your Quote <ArrowRight className="h-4 w-4" />
-            </Link>
-          </motion.div>
+              <dt className="text-sm text-muted-foreground">{term.label}</dt>
+              <dd className="mt-1 font-medium leading-snug">{term.value}</dd>
+            </div>
+          ))}
+        </dl>
+      </section>
+
+      {/* The maker: the widest gap on the page sits above this */}
+      <section className="frame mb-20 mt-28 grid gap-8 md:mb-28 md:mt-40 md:grid-cols-12 md:gap-10" aria-labelledby="maker-title">
+        <div className="aspect-[4/3] md:col-span-6">
+          {/* PHOTO PLACEHOLDER: shot list #1 */}
+          <PhotoPending shot="Shot 1: the founder at the printers in New Cairo, a print coming off the bed. Natural light, no staging." />
+        </div>
+        <div className="md:col-span-5 md:col-start-8 md:self-end">
+          <h2 id="maker-title" className="text-[32px] font-bold leading-[1.02] tracking-[-0.03em] md:text-5xl">
+            A small studio that designs what it prints.
+          </h2>
+          <p className="mt-5 max-w-md text-muted-foreground">
+            3D Print It is run by <span className="text-foreground">[Founder name]</span> in New Cairo. We started in 2021 printing other
+            people's files and now design our own desk gear and decor. Layer lines are part of the look, not a flaw we hide.
+          </p>
+          <Link to="/about" className="link-quiet mt-6 inline-flex min-h-11 items-center text-[15px]">
+            More about the studio
+          </Link>
         </div>
       </section>
+
+      <QuickAddProductDialog
+        brand={quickAdd?.brand || "pforge"}
+        product={quickAdd}
+        open={Boolean(quickAdd)}
+        onOpenChange={(open) => {
+          if (!open) setQuickAdd(null);
+        }}
+      />
     </Layout>
   );
 };

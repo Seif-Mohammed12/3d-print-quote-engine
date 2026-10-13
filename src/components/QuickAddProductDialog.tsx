@@ -1,7 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { getUnitPrice } from "@/lib/product-order";
 import { useCart } from "@/lib/cart-context";
+import { formatEGP, hasDiscount } from "@/lib/catalog-format";
+import ColorPicker from "@/components/catalog/ColorPicker";
+import PhotoPending from "@/components/catalog/PhotoPending";
 import type { BrandId, Product } from "@/lib/brand-catalog";
 
 type QuickAddProductDialogProps = {
@@ -9,17 +14,13 @@ type QuickAddProductDialogProps = {
   product: Product | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Kept for older call sites; the dialog no longer takes an accent. */
   accentClassName?: string;
 };
 
-export default function QuickAddProductDialog({
-  brand,
-  product,
-  open,
-  onOpenChange,
-  accentClassName,
-}: QuickAddProductDialogProps) {
+export default function QuickAddProductDialog({ brand, product, open, onOpenChange }: QuickAddProductDialogProps) {
   const { addProductToCart } = useCart();
+  const navigate = useNavigate();
   const [primaryColorId, setPrimaryColorId] = useState("");
   const [secondaryColorId, setSecondaryColorId] = useState("");
 
@@ -45,103 +46,47 @@ export default function QuickAddProductDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-xl border-slate-800 bg-slate-950 text-slate-100">
+      <DialogContent className="max-h-[92vh] max-w-xl gap-0 overflow-y-auto p-0">
         {product ? (
           <>
-            <DialogHeader>
-              <DialogTitle className="font-heading text-2xl">{product.name}</DialogTitle>
-              <DialogDescription className="text-slate-400">
-                {product.isBundle ? "Choose colors for the bundle and add it to your cart." : "Choose colors and add this item to your cart."}
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="space-y-5">
-              <div className="rounded-xl border border-slate-800 bg-slate-900/40 p-4">
-                {product.isBundle ? (
-                  <p className="text-xs uppercase tracking-[0.2em] text-amber-300">Bundle</p>
-                ) : null}
-                <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Price</p>
-                <div className="mt-2 flex items-center gap-3">
-                  <p className={["text-2xl font-heading font-bold", accentClassName || "text-primary"].join(" ")}>
-                    EGP{unitPrice}
-                  </p>
-                  {product.discount?.enabled && product.discount.price > 0 ? (
-                    <p className="text-sm text-slate-500 line-through">EGP{product.basePrice}</p>
+            <div className="flex gap-4 border-b border-border p-5 pr-12">
+              <div className="h-20 w-20 shrink-0 bg-black">
+                {product.images[0] ? (
+                  <img src={product.images[0]} alt="" className="h-full w-full object-cover" />
+                ) : (
+                  <PhotoPending compact />
+                )}
+              </div>
+              <DialogHeader className="min-w-0 space-y-1 text-left">
+                <DialogTitle className="text-2xl font-bold leading-tight">{product.name}</DialogTitle>
+                <DialogDescription className="text-base text-foreground">
+                  {formatEGP(unitPrice)}
+                  {hasDiscount(product) ? (
+                    <span className="ml-2 text-sm text-muted-foreground line-through">{formatEGP(product.basePrice)}</span>
                   ) : null}
-                </div>
+                </DialogDescription>
                 {product.isBundle && product.bundleItems?.length ? (
-                  <div className="mt-4 space-y-2">
-                    <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Includes</p>
-                    <ul className="space-y-1 text-sm text-slate-300">
-                      {product.bundleItems.map((item) => (
-                        <li key={`${item.productId}-${item.qty}`}>
-                          {item.name}
-                          {item.qty > 1 ? ` x${item.qty}` : ""}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ) : null}
-              </div>
-
-              <div>
-                <p className="text-sm font-semibold text-slate-200">Primary color</p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {product.primaryColors.map((color) => (
-                    <button
-                      key={color.id}
-                      type="button"
-                      onClick={() => setPrimaryColorId(color.id)}
-                      className={[
-                        "h-9 w-9 rounded-full border-2 transition-all",
-                        color.id === primaryColorId
-                          ? "border-white/70 ring-2 ring-white/25"
-                          : "border-slate-600 hover:border-slate-400",
-                      ].join(" ")}
-                      style={{ backgroundColor: color.hex }}
-                      title={color.name}
-                    >
-                      <span className="sr-only">{color.name}</span>
-                    </button>
-                  ))}
-                </div>
-                <p className="mt-2 text-xs text-slate-400">
-                  Selected:{" "}
-                  <span className={["font-semibold", accentClassName || "text-primary"].join(" ")}>
-                    {selectedPrimary?.name || "Not selected"}
-                  </span>
-                </p>
-              </div>
-
-              {hasSecondaryColors ? (
-                <div>
-                  <p className="text-sm font-semibold text-slate-200">Secondary color</p>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {product.secondaryColors.map((color) => (
-                      <button
-                        key={color.id}
-                        type="button"
-                        onClick={() => setSecondaryColorId(color.id)}
-                        className={[
-                          "h-9 w-9 rounded-full border-2 transition-all",
-                          color.id === secondaryColorId
-                            ? "border-white/70 ring-2 ring-white/25"
-                            : "border-slate-600 hover:border-slate-400",
-                        ].join(" ")}
-                        style={{ backgroundColor: color.hex }}
-                        title={color.name}
-                      >
-                        <span className="sr-only">{color.name}</span>
-                      </button>
-                    ))}
-                  </div>
-                  <p className="mt-2 text-xs text-slate-400">
-                    Selected:{" "}
-                    <span className={["font-semibold", accentClassName || "text-primary"].join(" ")}>
-                      {selectedSecondary?.name || "Not selected"}
-                    </span>
+                  <p className="text-sm text-muted-foreground">
+                    Bundle: {product.bundleItems.map((item) => `${item.name}${item.qty > 1 ? ` x${item.qty}` : ""}`).join(", ")}
                   </p>
-                </div>
+                ) : null}
+              </DialogHeader>
+            </div>
+
+            <div className="space-y-6 p-5">
+              <ColorPicker
+                legend={hasSecondaryColors ? "Main colour" : "Colour"}
+                colors={product.primaryColors}
+                value={primaryColorId}
+                onChange={setPrimaryColorId}
+              />
+              {hasSecondaryColors ? (
+                <ColorPicker
+                  legend="Accent colour"
+                  colors={product.secondaryColors}
+                  value={secondaryColorId}
+                  onChange={setSecondaryColorId}
+                />
               ) : null}
 
               <button
@@ -162,11 +107,16 @@ export default function QuickAddProductDialog({
                     unitPrice,
                   });
                   onOpenChange(false);
+                  toast.success(`Added ${product.name}`, {
+                    description: [selectedPrimary?.name, selectedSecondary?.name].filter(Boolean).join(" / "),
+                    action: { label: "View cart", onClick: () => navigate("/product-cart") },
+                  });
                 }}
-                className="w-full rounded-lg bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground hover:opacity-95 transition-opacity"
+                className="btn-primary w-full"
               >
-                Add to cart
+                Add to cart · {formatEGP(unitPrice)}
               </button>
+              <p className="text-sm text-muted-foreground">Printed to order in about 48 hours. Cash on delivery or InstaPay.</p>
             </div>
           </>
         ) : null}

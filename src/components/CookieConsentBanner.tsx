@@ -23,29 +23,28 @@ export default function CookieConsentBanner() {
   if (!visible) return null;
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-[70] p-3 sm:p-4">
-      <div className="mx-auto max-w-5xl rounded-xl border border-border bg-background/95 backdrop-blur shadow-xl">
-        <div className="p-4 sm:p-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <div className="fixed inset-x-0 bottom-0 z-[70] sm:p-4">
+      <div className="mx-auto max-w-5xl border-t border-rule bg-card sm:border">
+        <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
           <div className="space-y-1.5">
-            <p className="text-sm font-semibold text-foreground">This site uses cookies</p>
+            <p className="text-sm font-semibold text-foreground">Cookies</p>
             <p className="text-xs sm:text-sm text-muted-foreground">
-              We use essential cookies for core functionality and optional analytics cookies to improve your experience.
-              Read our <Link to="/privacy-policy" className="text-primary hover:underline">Privacy Policy</Link>.
+              Essential cookies keep your cart and login working. Optional ones help us see what people use. See the <Link to="/privacy-policy" className="link-quiet text-foreground">privacy policy</Link>.
             </p>
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center">
             <button
               type="button"
               onClick={() => saveChoice("necessary_only")}
-              className="rounded-lg border border-border px-3 py-2 text-sm font-semibold text-foreground hover:bg-secondary"
+              className="btn-secondary min-h-11 px-4 text-sm"
             >
               Necessary only
             </button>
             <button
               type="button"
               onClick={() => saveChoice("accept_all")}
-              className="rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground"
+              className="btn-primary min-h-11 px-4 text-sm"
             >
               Accept all
             </button>
