@@ -60,7 +60,7 @@ export default function Sleeve({
           className="spine-wipe absolute inset-0 flex items-end justify-center pb-3"
           style={{ background: spineHex, color: readableOn(spineHex) }}
         >
-          <span className="whitespace-nowrap text-[11px] font-semibold tracking-[0.08em] [writing-mode:vertical-rl] rotate-180 md:text-xs">
+          <span className="whitespace-nowrap text-xs font-semibold tracking-[0.06em] [writing-mode:vertical-rl] rotate-180 md:text-xs">
             {catalogueNo}
             {spineLabel ? ` · ${spineLabel}` : ""}
           </span>

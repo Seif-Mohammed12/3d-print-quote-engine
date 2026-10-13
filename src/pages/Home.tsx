@@ -119,7 +119,7 @@ const Home = () => {
           <h2 id="catalogue-title" className="text-[28px] font-bold leading-none tracking-[-0.03em] md:text-4xl">
             The catalogue
           </h2>
-          <Link to="/products" className="link-quiet shrink-0 text-[15px] text-muted-foreground hover:text-foreground">
+          <Link to="/products" className="link-quiet inline-flex min-h-11 shrink-0 items-center text-[15px] text-muted-foreground hover:text-foreground">
             Shop all
           </Link>
         </div>

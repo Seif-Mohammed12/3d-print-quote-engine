@@ -92,7 +92,7 @@ const Navbar = () => {
     <>
       <header className="fixed inset-x-0 top-0 z-40 border-b border-border bg-background">
         <div className="frame flex h-14 items-center justify-between gap-6">
-          <Link to="/" className="text-[19px] font-extrabold tracking-[-0.03em] text-foreground">
+          <Link to="/" className="inline-flex min-h-11 items-center text-[19px] font-extrabold tracking-[-0.03em] text-foreground">
             3D Print It
           </Link>
 

@@ -28,14 +28,14 @@ const Printique = () => {
               <img
                 src="/printique-logo.png"
                 alt="Printique logo"
-                className="relative h-32 w-32 md:h-44 md:w-44 object-contain drop-shadow-[0_0_24px_rgba(37,99,235,0.45)]"
+                className="relative h-32 w-32 md:h-44 md:w-44 object-contain drop-"
               />
             </div>
             <div className="space-y-4 md:space-y-5">
               <p className="text-sm md:text-base font-semibold tracking-[0.34em] uppercase text-blue-200/85">
                 PRINTIQUE
               </p>
-              <h1 className="font-heading text-5xl md:text-7xl font-bold leading-[0.95] bg-gradient-to-r from-blue-200 via-slate-100 to-amber-200 text-transparent bg-clip-text">
+              <h1 className="font-heading text-5xl md:text-7xl font-bold leading-[0.95] text-foreground">
                 Dark Elegance. Everyday Space.
               </h1>
             </div>
@@ -69,7 +69,7 @@ const Printique = () => {
 
           <motion.div
             id="printique-products"
-            initial={{ opacity: 0, y: 20 }}
+            initial={false}
             animate={{ opacity: 1, y: 0 }}
             className="grid gap-7 md:grid-cols-3 pt-2 md:pt-4"
           >
@@ -86,12 +86,12 @@ const Printique = () => {
                 whileInView={isMobile ? undefined : { opacity: 1, y: 0 }}
                 viewport={isMobile ? undefined : { once: true }}
                 transition={{ delay: idx * 0.08 }}
-                className="group relative h-full overflow-hidden rounded-2xl border border-slate-800/80 bg-slate-950/70 p-5 shadow-[0_14px_30px_-22px_rgba(2,6,23,1)] hover:-translate-y-0.5 hover:border-blue-300/35 transition-all duration-300 flex flex-col"
+                className="group relative h-full overflow-hidden border border-slate-800/80 bg-slate-950/70 p-5 shadow-[0_14px_30px_-22px_rgba(2,6,23,1)] hover:-translate-y-0.5 hover:border-blue-300/35 transition-all duration-300 flex flex-col"
               >
-                <div className="pointer-events-none absolute inset-px rounded-2xl bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.14),_transparent)] opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+                <div className="pointer-events-none absolute inset-px bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.14),_transparent)] opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
 
                 <Link to={`/printique/${product.id}`} className="block">
-                  <div className="relative mb-4 h-44 rounded-xl border border-slate-800/70 bg-gradient-to-b from-slate-900/35 to-slate-950/70 overflow-hidden">
+                  <div className="relative mb-4 h-44 border border-slate-800/70 bg-gradient-to-b from-slate-900/35 to-slate-950/70 overflow-hidden">
                     {product.isBundle ? (
                       <span className="absolute left-3 top-3 z-10 rounded-full border border-amber-200/30 bg-black/55 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-amber-200">
                         Bundle
@@ -152,7 +152,7 @@ const Printique = () => {
                   <button
                     type="button"
                     onClick={() => setQuickAddProduct(product)}
-                    className="inline-flex flex-1 items-center justify-center rounded-lg bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground hover:shadow-[0_0_18px_-5px_hsl(var(--neon-glow)/0.8)] transition-transform duration-200 group-hover:translate-y-0.5"
+                    className="inline-flex flex-1 items-center justify-center rounded-lg bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition-transform duration-200 group-hover:translate-y-0.5"
                   >
                     Add to cart
                   </button>

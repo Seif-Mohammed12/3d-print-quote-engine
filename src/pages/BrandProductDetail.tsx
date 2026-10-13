@@ -172,8 +172,8 @@ export default function BrandProductDetail({ brand }: { brand: BrandId }) {
                 className={[
                   "group inline-flex h-10 w-10 items-center justify-center rounded-full border transition-all",
                   brand === "pforge"
-                    ? "border-cyan-300/35 bg-slate-900/70 text-cyan-100 hover:border-cyan-200/70 hover:shadow-[0_0_22px_-10px_rgba(56,189,248,0.7)]"
-                    : "border-blue-300/35 bg-slate-900/70 text-blue-100 hover:border-amber-200/60 hover:shadow-[0_0_22px_-10px_rgba(59,130,246,0.7)]",
+                    ? "border-cyan-300/35 bg-slate-900/70 text-cyan-100 hover:border-cyan-200/70"
+                    : "border-blue-300/35 bg-slate-900/70 text-blue-100 hover:border-amber-200/60",
                 ].join(" ")}
               >
                 <ChevronLeft className="h-5 w-5 transition-transform duration-200 group-hover:-translate-x-0.5" />
@@ -184,7 +184,7 @@ export default function BrandProductDetail({ brand }: { brand: BrandId }) {
             </div>
 
             <motion.div
-              initial={{ opacity: 0, y: 18 }}
+              initial={false}
               animate={{ opacity: 1, y: 0 }}
               className="space-y-2 text-center md:text-left"
             >
@@ -204,7 +204,7 @@ export default function BrandProductDetail({ brand }: { brand: BrandId }) {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               <div className="space-y-4">
-                <div className="glass-card p-4 overflow-hidden">
+                <div className="panel p-4 overflow-hidden">
                   {currentImage ? (
                     <div className="relative h-[420px]">
                       <AnimatePresence initial={false}>
@@ -214,7 +214,7 @@ export default function BrandProductDetail({ brand }: { brand: BrandId }) {
                           variants={imageSlideVariants}
                           src={currentImage}
                           alt={product.name}
-                          className="absolute inset-0 m-auto h-full w-full object-contain rounded-xl"
+                          className="absolute inset-0 m-auto h-full w-full object-contain"
                           initial="enter"
                           animate="center"
                           exit="exit"
@@ -269,12 +269,12 @@ export default function BrandProductDetail({ brand }: { brand: BrandId }) {
               </div>
 
               <div className="space-y-4">
-                <div className="glass-card p-6">
+                <div className="panel p-6">
                   <div className="flex items-center justify-between gap-4">
                     <div className="space-y-1">
                       <div className="text-sm text-muted-foreground">Price</div>
                       <div className="flex items-end gap-3">
-                        <div className="text-3xl font-heading font-bold neon-text">EGP{totalPrice}</div>
+                        <div className="text-3xl font-heading font-bold">EGP{totalPrice}</div>
                         {product.discount?.enabled && product.discount.price > 0 && (
                           <div className="text-sm text-muted-foreground line-through mb-1">
                             EGP{product.basePrice}
@@ -376,7 +376,7 @@ export default function BrandProductDetail({ brand }: { brand: BrandId }) {
                       };
                       sessionStorage.setItem("productOrderDraft", JSON.stringify(draft));
                     }}
-                    className="w-full mt-6 py-3 rounded-lg bg-primary text-primary-foreground font-semibold hover:shadow-[0_0_20px_-5px_hsl(var(--neon-glow)/0.5)] transition-all duration-300"
+                    className="w-full mt-6 py-3 rounded-lg bg-primary text-primary-foreground font-semibold transition-all duration-300"
                   >
                     Add to cart
                   </button>
@@ -405,7 +405,7 @@ export default function BrandProductDetail({ brand }: { brand: BrandId }) {
                 </div>
 
                 {product.isBundle && product.bundleItems?.length ? (
-                  <div className="glass-card p-6">
+                  <div className="panel p-6">
                     <h3 className="font-heading font-semibold text-foreground">Bundle contents</h3>
                     <div className="mt-4 space-y-3">
                       {product.bundleItems.map((item) => (
@@ -430,15 +430,15 @@ export default function BrandProductDetail({ brand }: { brand: BrandId }) {
 
             {product.description?.trim() ? (
               <motion.div
-                initial={{ opacity: 0, y: 16 }}
+                initial={false}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: "-40px" }}
                 transition={{ duration: 0.35 }}
                 className={[
-                  "glass-card p-6 md:p-8 border max-w-4xl mx-auto mt-2",
+                  "panel p-6 md:p-8 border max-w-4xl mx-auto mt-2",
                   brand === "pforge"
-                    ? "border-cyan-400/25 shadow-[0_0_40px_-20px_rgba(56,189,248,0.35)]"
-                    : "border-blue-400/20 shadow-[0_0_40px_-20px_rgba(59,130,246,0.35)]",
+                    ? "border-cyan-400/25"
+                    : "border-blue-400/20",
                 ].join(" ")}
               >
                 <h2

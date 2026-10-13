@@ -134,7 +134,7 @@ export default function Products() {
                   <div className="mt-4 flex items-start justify-between gap-4">
                     <div className="min-w-0">
                       <h2 className="text-xl font-semibold leading-tight tracking-[-0.015em]">
-                        <Link to={productHref(product)} className="hover:underline hover:decoration-ink hover:decoration-2 hover:underline-offset-4">
+                        <Link to={productHref(product)} className="inline-block py-1.5 hover:underline hover:decoration-ink hover:decoration-2 hover:underline-offset-4">
                           {product.name}
                         </Link>
                       </h2>

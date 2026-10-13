@@ -32,20 +32,20 @@ const Footer = () => (
     <div className="frame py-12 md:py-16">
       <div className="grid gap-10 md:grid-cols-12">
         <div className="md:col-span-5">
-          <Link to="/" className="text-2xl font-extrabold tracking-[-0.03em]">
+          <Link to="/" className="inline-flex min-h-11 items-center text-2xl font-extrabold tracking-[-0.03em]">
             3D Print It
           </Link>
           <p className="mt-3 max-w-sm text-muted-foreground">
             Desk gear and decor, designed and printed in New Cairo since 2021. PLA and PETG, printed in about 48 hours.
           </p>
-          <div className="mt-6 flex flex-col gap-1 text-[15px]">
-            <a href="https://wa.me/201099228486" className="link-quiet w-fit py-1" rel="noopener">
+          <div className="mt-4 flex flex-col text-[15px]">
+            <a href="https://wa.me/201099228486" className="link-quiet inline-flex min-h-11 w-fit items-center" rel="noopener">
               WhatsApp +20 109 922 8486
             </a>
-            <a href="tel:+201099228486" className="link-quiet w-fit py-1">
+            <a href="tel:+201099228486" className="link-quiet inline-flex min-h-11 w-fit items-center">
               Call +20 109 922 8486
             </a>
-            <a href="mailto:3d.print.ittt@gmail.com" className="link-quiet w-fit py-1">
+            <a href="mailto:3d.print.ittt@gmail.com" className="link-quiet inline-flex min-h-11 w-fit items-center">
               3d.print.ittt@gmail.com
             </a>
           </div>
@@ -72,9 +72,9 @@ const Footer = () => (
       <div className="mt-12 flex flex-col gap-3 border-t border-border pt-6 text-sm text-muted-foreground md:flex-row md:items-center md:justify-between">
         <p>© 2021–{new Date().getFullYear()} 3D Print It, New Cairo, Egypt</p>
         <div className="flex flex-wrap gap-x-5 gap-y-1">
-          <Link to="/privacy-policy" className="hover:text-foreground">Privacy</Link>
-          <Link to="/terms-of-service" className="hover:text-foreground">Terms</Link>
-          <Link to="/refund-policy" className="hover:text-foreground">Refunds</Link>
+          <Link to="/privacy-policy" className="inline-flex min-h-11 items-center hover:text-foreground">Privacy</Link>
+          <Link to="/terms-of-service" className="inline-flex min-h-11 items-center hover:text-foreground">Terms</Link>
+          <Link to="/refund-policy" className="inline-flex min-h-11 items-center hover:text-foreground">Refunds</Link>
         </div>
       </div>
     </div>
