@@ -1,35 +1,23 @@
 import Layout from "@/components/Layout";
+import Sleeve from "@/components/catalog/Sleeve";
+import ColorPicker from "@/components/catalog/ColorPicker";
+import CatalogueRow from "@/components/catalog/CatalogueRow";
 import { useProducts } from "@/hooks/use-brand-products";
 import { useCart } from "@/lib/cart-context";
 import { getUnitPrice, type ProductOrderDraft } from "@/lib/product-order";
 import { cacheProducts } from "@/lib/runtime-product-cache";
-import { AnimatePresence, motion } from "framer-motion";
-import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import {
+  catalogueNo,
+  categoryLabel,
+  effectivePrice,
+  formatEGP,
+  hasDiscount,
+  shotFor,
+} from "@/lib/catalog-format";
+import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-
-const imageSlideVariants = {
-  enter: (direction: number) => ({
-    x: direction > 0 ? 22 : -22,
-    opacity: 0,
-    scale: 0.985,
-  }),
-  center: {
-    x: 0,
-    opacity: 1,
-    scale: 1,
-  },
-  exit: (direction: number) => ({
-    x: direction > 0 ? -22 : 22,
-    opacity: 0,
-    scale: 0.985,
-  }),
-};
-
-const brandLabel: Record<string, string> = {
-  pforge: "Gaming & Setup",
-  printique: "Home & Decor",
-};
+import { toast } from "sonner";
 
 export default function ProductDetail() {
   const navigate = useNavigate();
@@ -50,7 +38,8 @@ export default function ProductDetail() {
   const [selectedPrimaryId, setSelectedPrimaryId] = useState("");
   const [selectedSecondaryId, setSelectedSecondaryId] = useState("");
   const [activeImageIdx, setActiveImageIdx] = useState(0);
-  const [slideDirection, setSlideDirection] = useState<1 | -1>(1);
+  const [justAdded, setJustAdded] = useState(false);
+  const touchStartX = useRef<number | null>(null);
 
   useEffect(() => {
     if (!product) return;
@@ -66,13 +55,22 @@ export default function ProductDetail() {
     setActiveImageIdx(0);
   }, [productId]);
 
+  useEffect(() => {
+    if (product) document.title = `${product.name} · 3D Print It`;
+    return () => {
+      document.title = "3D Print It";
+    };
+  }, [product]);
+
   if (isPending && !product) {
     return (
       <Layout>
-        <div className="section-padding">
-          <div className="container mx-auto max-w-3xl">
-            <h1 className="font-heading text-2xl font-bold text-foreground">Loading product...</h1>
-            <p className="mt-2 text-sm text-muted-foreground">Fetching product details.</p>
+        <div className="frame grid gap-6 pt-4 md:grid-cols-12 md:gap-10 md:pt-10" aria-busy="true" aria-label="Loading product">
+          <div className="aspect-square animate-pulse bg-card md:col-span-7" />
+          <div className="space-y-3 md:col-span-5">
+            <div className="h-11 w-3/4 animate-pulse bg-card" />
+            <div className="h-5 w-1/2 animate-pulse bg-card" />
+            <div className="mt-8 h-12 w-full animate-pulse bg-card" />
           </div>
         </div>
       </Layout>
@@ -80,29 +78,44 @@ export default function ProductDetail() {
   }
 
   if (!product) {
+    const suggestions = (products || []).filter((p) => p.images.length > 0).slice(0, 3);
     return (
       <Layout>
-        <div className="section-padding">
-          <div className="container mx-auto max-w-3xl">
-            <h1 className="font-heading text-2xl font-bold text-foreground">Product not found</h1>
-            <p className="mt-2 text-sm text-muted-foreground">Try going back to the main products page.</p>
-            <Link to="/products" className="text-primary underline hover:text-primary/90">
-              Back to products
-            </Link>
-          </div>
-        </div>
+        <section className="frame pb-20 pt-10 md:pb-28 md:pt-16">
+          <h1 className="text-[36px] font-bold leading-none tracking-[-0.03em] md:text-5xl">That one isn't on the shelf.</h1>
+          <p className="mt-4 max-w-lg text-muted-foreground">
+            The link may be old or the piece was retired. Here's what's printing now, or{" "}
+            <a href="https://wa.me/201099228486" className="link-quiet text-foreground" rel="noopener">
+              ask us on WhatsApp
+            </a>{" "}
+            and we'll find it.
+          </p>
+          {suggestions.length ? (
+            <div className="ruled mt-10 border-y border-border">
+              {suggestions.map((p) => (
+                <CatalogueRow key={p.id} product={p} catalogueNo={catalogueNo(products, p.id)} />
+              ))}
+            </div>
+          ) : null}
+          <Link to="/products" className="btn-secondary mt-8">
+            Back to the shop
+          </Link>
+        </section>
       </Layout>
     );
   }
 
   const images = product.images || [];
   const currentImage = images[activeImageIdx] || images[0];
-  const effectiveBasePrice =
-    product.discount?.enabled && product.discount.price > 0 ? product.discount.price : product.basePrice;
+  const price = getUnitPrice(product, false);
   const selectedPrimary = product.primaryColors.find((color) => color.id === selectedPrimaryId);
   const selectedSecondary = product.secondaryColors.find((color) => color.id === selectedSecondaryId);
   const hasSecondaryColors = product.secondaryColors.length > 0;
   const hasMultipleImages = images.length > 1;
+  const no = catalogueNo(products, product.id);
+  const colourSummary = [selectedPrimary?.name, hasSecondaryColors ? selectedSecondary?.name : null].filter(Boolean).join(" / ");
+
+  const step = (dir: 1 | -1) => setActiveImageIdx((prev) => (prev + dir + images.length) % images.length);
 
   const persistDraft = () => {
     const draft: ProductOrderDraft = {
@@ -119,258 +132,244 @@ export default function ProductDetail() {
     sessionStorage.setItem("productOrderDraft", JSON.stringify(draft));
   };
 
+  const addToCart = () => {
+    if (justAdded) return;
+    addProductToCart({
+      brand: product.brand || "pforge",
+      productId: product.id,
+      productName: product.name,
+      isBundle: product.isBundle,
+      bundleItems: product.bundleItems,
+      qty: 1,
+      primaryColorId: selectedPrimaryId,
+      secondaryColorId: selectedSecondaryId,
+      primaryColorName: selectedPrimary?.name,
+      secondaryColorName: selectedSecondary?.name,
+      ledsEnabled: false,
+      unitPrice: price,
+    });
+    persistDraft();
+    setJustAdded(true);
+    window.setTimeout(() => setJustAdded(false), 1200);
+    toast.success(`Added ${product.name}`, {
+      description: colourSummary,
+      action: { label: "View cart", onClick: () => navigate("/product-cart") },
+    });
+  };
+
+  const buyNow = () => {
+    persistDraft();
+    navigate("/product-checkout");
+  };
+
+  const description = product.description?.trim()
+    ? product.description
+        .split(/\n\n+/)
+        .map((block) => block.trim())
+        .filter(Boolean)
+    : [];
+
   return (
     <Layout>
-      <div className="relative">
-        <div className="pointer-events-none absolute inset-x-0 top-16 -z-10 h-80 bg-[radial-gradient(circle_at_center,_rgba(37,99,235,0.25),_transparent_65%)]" />
-        <section className="section-padding">
-          <div className="container mx-auto max-w-6xl space-y-8">
-            <div className="flex items-center justify-between gap-4">
-              <button
-                type="button"
-                onClick={() => navigate(-1)}
-                aria-label="Go back"
-                className="group inline-flex h-10 w-10 items-center justify-center rounded-full border border-blue-300/35 bg-slate-900/70 text-blue-100 transition-all hover:border-blue-200/70 hover:shadow-[0_0_22px_-10px_rgba(59,130,246,0.7)]"
-              >
-                <ChevronLeft className="h-5 w-5 transition-transform duration-200 group-hover:-translate-x-0.5" />
-              </button>
-              <div className="hidden text-xs text-muted-foreground md:block">
-                {brandLabel[product.brand || ""] || "Product"}
-              </div>
-            </div>
+      <div className="frame flex h-12 items-center justify-between text-[15px]">
+        <button
+          type="button"
+          onClick={() => (window.history.length > 1 ? navigate(-1) : navigate("/products"))}
+          className="inline-flex min-h-11 items-center gap-1.5 text-muted-foreground hover:text-foreground"
+        >
+          <ArrowLeft className="h-4 w-4" aria-hidden="true" /> Back
+        </button>
+        <span className="text-muted-foreground">
+          {categoryLabel[product.brand || ""] || "Product"} · {no}
+        </span>
+      </div>
 
-            <motion.div
-              initial={{ opacity: 0, y: 18 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="space-y-2 text-center md:text-left"
+      <section className="frame grid gap-6 pb-28 md:grid-cols-12 md:gap-10 md:pb-24">
+        {/* Gallery */}
+        <div className="md:col-span-7">
+          <div
+            onTouchStart={(e) => {
+              touchStartX.current = e.touches[0].clientX;
+            }}
+            onTouchEnd={(e) => {
+              if (touchStartX.current === null || !hasMultipleImages) return;
+              const dx = e.changedTouches[0].clientX - touchStartX.current;
+              if (Math.abs(dx) > 40) step(dx < 0 ? 1 : -1);
+              touchStartX.current = null;
+            }}
+          >
+            <Sleeve
+              src={currentImage}
+              alt={`${product.name}, photo ${activeImageIdx + 1} of ${Math.max(images.length, 1)}`}
+              catalogueNo={no}
+              spineHex={selectedPrimary?.hex || "#2A2A2D"}
+              spineLabel={selectedPrimary?.name}
+              shot={shotFor(product)}
+              loading="eager"
             >
-              <div className="flex flex-wrap items-center justify-center gap-3 text-xs font-semibold uppercase md:justify-start">
-                <div className="tracking-[0.35em] text-primary/90">
-                  {brandLabel[product.brand || ""] || "Products"}
-                </div>
-                {product.isBundle ? (
-                  <span className="rounded-full border border-primary/30 bg-primary/10 px-3 py-1 tracking-[0.2em] text-primary">
-                    Bundle
+              {hasMultipleImages ? (
+                <div className="absolute bottom-3 right-3 flex items-center bg-background/90 text-sm">
+                  <button
+                    type="button"
+                    onClick={() => step(-1)}
+                    className="inline-flex h-11 w-11 items-center justify-center hover:text-ink"
+                    aria-label="Previous photo"
+                  >
+                    <ChevronLeft className="h-5 w-5" />
+                  </button>
+                  <span className="min-w-10 text-center" aria-live="polite">
+                    {activeImageIdx + 1} / {images.length}
                   </span>
-                ) : null}
-              </div>
-              <h1 className="font-heading text-4xl font-bold text-foreground md:text-5xl">{product.name}</h1>
-              <p className="max-w-2xl text-sm text-muted-foreground">{product.short}</p>
-            </motion.div>
-
-            <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
-              <div className="space-y-4">
-                <div className="glass-card overflow-hidden p-4">
-                  {currentImage ? (
-                    <div className="relative h-[420px]">
-                      <AnimatePresence initial={false}>
-                        <motion.img
-                          key={`${activeImageIdx}-${currentImage}`}
-                          custom={slideDirection}
-                          variants={imageSlideVariants}
-                          src={currentImage}
-                          alt={product.name}
-                          className="absolute inset-0 m-auto h-full w-full rounded-xl object-contain"
-                          initial="enter"
-                          animate="center"
-                          exit="exit"
-                          transition={{ duration: 0.24, ease: "easeOut" }}
-                        />
-                      </AnimatePresence>
-                      {hasMultipleImages ? (
-                        <>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setSlideDirection(-1);
-                              setActiveImageIdx((prev) => (prev - 1 + images.length) % images.length);
-                            }}
-                            className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-black/55 p-2 text-white transition-colors hover:bg-black/70"
-                            aria-label="Previous image"
-                          >
-                            <ChevronLeft className="h-4 w-4" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setSlideDirection(1);
-                              setActiveImageIdx((prev) => (prev + 1) % images.length);
-                            }}
-                            className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-black/55 p-2 text-white transition-colors hover:bg-black/70"
-                            aria-label="Next image"
-                          >
-                            <ChevronRight className="h-4 w-4" />
-                          </button>
-                        </>
-                      ) : null}
-                    </div>
-                  ) : (
-                    <div className="flex h-[420px] items-center justify-center text-sm text-muted-foreground">
-                      Add photos for this product to show them here.
-                    </div>
-                  )}
-                </div>
-
-                {hasMultipleImages ? (
-                  <div className="flex gap-3 overflow-x-auto pb-1">
-                    {images.map((src, idx) => (
-                      <button
-                        key={src}
-                        type="button"
-                        onClick={() => setActiveImageIdx(idx)}
-                        className={`h-16 w-16 flex-none rounded-lg border bg-secondary/30 ${
-                          idx === activeImageIdx ? "border-primary/60 ring-2 ring-primary/30" : "border-border/60 hover:border-primary/40"
-                        }`}
-                      >
-                        <img src={src} alt={`${product.name} ${idx + 1}`} className="h-full w-full object-contain p-1" />
-                      </button>
-                    ))}
-                  </div>
-                ) : null}
-              </div>
-
-              <div className="space-y-4">
-                <div className="glass-card p-6">
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="space-y-1">
-                      <div className="text-sm text-muted-foreground">Price</div>
-                      <div className="flex items-end gap-3">
-                        <div className="font-heading text-3xl font-bold neon-text">EGP{effectiveBasePrice}</div>
-                        {product.discount?.enabled && product.discount.price > 0 ? (
-                          <div className="mb-1 text-sm text-muted-foreground line-through">EGP{product.basePrice}</div>
-                        ) : null}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="mt-6 space-y-3">
-                    <h3 className="font-heading font-semibold text-foreground">Choose primary color</h3>
-                    <div className="flex flex-wrap gap-3">
-                      {product.primaryColors.map((color) => (
-                        <button
-                          key={color.id}
-                          type="button"
-                          onClick={() => setSelectedPrimaryId(color.id)}
-                          className={`h-8 w-8 rounded-full border-2 transition-all ${
-                            color.id === selectedPrimaryId ? "border-primary/60 bg-primary/10" : "border-border/60 hover:border-primary/40"
-                          }`}
-                          style={{ backgroundColor: color.hex }}
-                          title={color.name}
-                        >
-                          <span className="sr-only">{color.name}</span>
-                        </button>
-                      ))}
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Primary selected: <span className="font-semibold text-foreground">{selectedPrimary?.name || "Not selected"}</span>
-                    </p>
-                  </div>
-
-                  {hasSecondaryColors ? (
-                    <div className="mt-6 space-y-3">
-                      <h3 className="font-heading font-semibold text-foreground">Choose secondary color</h3>
-                      <div className="flex flex-wrap gap-3">
-                        {product.secondaryColors.map((color) => (
-                          <button
-                            key={color.id}
-                            type="button"
-                            onClick={() => setSelectedSecondaryId(color.id)}
-                            className={`h-8 w-8 rounded-full border-2 transition-all ${
-                              color.id === selectedSecondaryId ? "border-primary/60 bg-primary/10" : "border-border/60 hover:border-primary/40"
-                            }`}
-                            style={{ backgroundColor: color.hex }}
-                            title={color.name}
-                          >
-                            <span className="sr-only">{color.name}</span>
-                          </button>
-                        ))}
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        Secondary selected: <span className="font-semibold text-foreground">{selectedSecondary?.name || "Not selected"}</span>
-                      </p>
-                    </div>
-                  ) : null}
-
                   <button
                     type="button"
-                    onClick={() => {
-                      addProductToCart({
-                        brand: product.brand || "pforge",
-                        productId: product.id,
-                        productName: product.name,
-                        isBundle: product.isBundle,
-                        bundleItems: product.bundleItems,
-                        qty: 1,
-                        primaryColorId: selectedPrimaryId,
-                        secondaryColorId: selectedSecondaryId,
-                        ledsEnabled: false,
-                        unitPrice: getUnitPrice(product, false),
-                      });
-                      persistDraft();
-                    }}
-                    className="mt-6 w-full rounded-lg bg-primary py-3 font-semibold text-primary-foreground transition-all duration-300 hover:shadow-[0_0_20px_-5px_hsl(var(--neon-glow)/0.5)]"
+                    onClick={() => step(1)}
+                    className="inline-flex h-11 w-11 items-center justify-center hover:text-ink"
+                    aria-label="Next photo"
                   >
-                    Add to cart
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      persistDraft();
-                      navigate("/product-checkout");
-                    }}
-                    className="mt-3 w-full rounded-lg border border-border py-3 font-semibold text-foreground transition-all duration-300 hover:bg-secondary"
-                  >
-                    Buy now
+                    <ChevronRight className="h-5 w-5" />
                   </button>
                 </div>
+              ) : null}
+            </Sleeve>
+          </div>
 
-                {product.isBundle && product.bundleItems?.length ? (
-                  <div className="glass-card p-6">
-                    <h3 className="font-heading font-semibold text-foreground">Bundle contents</h3>
-                    <div className="mt-4 space-y-3">
-                      {product.bundleItems.map((item) => (
-                        <div
-                          key={`${item.productId}-${item.qty}`}
-                          className="flex items-center justify-between gap-4 rounded-lg border border-border/60 bg-secondary/20 px-4 py-3"
-                        >
-                          <div className="min-w-0">
-                            <p className="font-medium text-foreground">{item.name}</p>
-                            <p className="text-xs text-muted-foreground">Included in this bundle</p>
-                          </div>
-                          <p className="shrink-0 text-sm font-semibold text-primary">x{item.qty}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ) : null}
-              </div>
+          {hasMultipleImages ? (
+            <div className="mt-3 flex gap-2 overflow-x-auto p-1">
+              {images.map((src, idx) => (
+                <button
+                  key={src}
+                  type="button"
+                  onClick={() => setActiveImageIdx(idx)}
+                  aria-label={`Show photo ${idx + 1}`}
+                  aria-current={idx === activeImageIdx}
+                  className={`h-16 w-16 flex-none overflow-hidden bg-black md:h-20 md:w-20 ${
+                    idx === activeImageIdx ? "outline outline-2 outline-offset-2 outline-foreground" : "opacity-60 hover:opacity-100"
+                  }`}
+                >
+                  <img src={src} alt="" className="h-full w-full object-cover" />
+                </button>
+              ))}
+            </div>
+          ) : null}
+        </div>
+
+        {/* Release notes and buy box */}
+        <div className="md:col-span-5">
+          <div className="md:sticky md:top-20">
+            <h1 className="text-[40px] font-bold leading-[0.95] tracking-[-0.035em] md:text-[56px]">
+              {product.name}
+              {product.isBundle ? <span className="ml-3 align-middle text-base font-semibold tracking-normal text-ink">Bundle</span> : null}
+            </h1>
+            {product.short ? <p className="mt-3 text-muted-foreground">{product.short}</p> : null}
+
+            <p className="mt-5">
+              <span className="text-[28px] font-bold tracking-[-0.02em]">{formatEGP(price)}</span>
+              {hasDiscount(product) ? (
+                <span className="ml-3 text-muted-foreground line-through">{formatEGP(product.basePrice)}</span>
+              ) : null}
+            </p>
+
+            <div className="mt-6 space-y-6">
+              {product.primaryColors.length ? (
+                <ColorPicker
+                  legend={hasSecondaryColors ? "Main colour" : "Colour"}
+                  colors={product.primaryColors}
+                  value={selectedPrimaryId}
+                  onChange={setSelectedPrimaryId}
+                />
+              ) : null}
+              {hasSecondaryColors ? (
+                <ColorPicker
+                  legend="Accent colour"
+                  colors={product.secondaryColors}
+                  value={selectedSecondaryId}
+                  onChange={setSelectedSecondaryId}
+                />
+              ) : null}
             </div>
 
-            {product.description?.trim() ? (
-              <motion.div
-                initial={{ opacity: 0, y: 16 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-40px" }}
-                transition={{ duration: 0.35 }}
-                className="mx-auto mt-2 max-w-4xl border border-blue-400/20 p-6 shadow-[0_0_40px_-20px_rgba(59,130,246,0.35)] glass-card md:p-8"
-              >
-                <h2 className="mb-4 font-heading text-xl font-semibold text-slate-50 md:text-2xl">About this product</h2>
-                <div className="space-y-4 text-sm leading-relaxed text-muted-foreground md:text-base [&_strong]:text-amber-100/90">
-                  {product.description
-                    .split(/\n\n+/)
-                    .map((block) => block.trim())
-                    .filter(Boolean)
-                    .map((block, index) => (
-                      <p key={index} className="whitespace-pre-line">
-                        {block}
-                      </p>
-                    ))}
+            <div className="mt-6 hidden gap-2 md:grid md:grid-cols-[1fr_auto]">
+              <button type="button" onClick={addToCart} className="btn-primary">
+                {justAdded ? "Added" : `Add to cart · ${formatEGP(price)}`}
+              </button>
+              <button type="button" onClick={buyNow} className="btn-secondary">
+                Buy now
+              </button>
+            </div>
+            <button type="button" onClick={buyNow} className="btn-secondary mt-4 w-full md:hidden">
+              Buy now
+            </button>
+
+            {/* Terms of sale, right where the decision happens */}
+            <dl className="ruled mt-8 border-y border-border text-[15px]">
+              <div className="grid grid-cols-[100px_1fr] gap-4 py-3">
+                <dt className="text-muted-foreground">Printed</dt>
+                <dd>To order in PLA or PETG, in about 48 hours</dd>
+              </div>
+              <div className="grid grid-cols-[100px_1fr] gap-4 py-3">
+                <dt className="text-muted-foreground">Pay</dt>
+                <dd>Cash on delivery or InstaPay</dd>
+              </div>
+              <div className="grid grid-cols-[100px_1fr] gap-4 py-3">
+                <dt className="text-muted-foreground">Delivery</dt>
+                <dd>Aramex, cost confirmed after you order, or free pickup in New Cairo</dd>
+              </div>
+              <div className="grid grid-cols-[100px_1fr] gap-4 py-3">
+                <dt className="text-muted-foreground">Questions</dt>
+                <dd>
+                  <a href="https://wa.me/201099228486" className="link-quiet" rel="noopener">
+                    WhatsApp us
+                  </a>{" "}
+                  about sizes, colours or a custom version
+                </dd>
+              </div>
+            </dl>
+          </div>
+        </div>
+
+        {/* Liner notes */}
+        {description.length || (product.isBundle && product.bundleItems?.length) ? (
+          <div className="grid gap-10 border-t border-border pt-10 md:col-span-12 md:mt-10 md:grid-cols-12 md:pt-14">
+            {description.length ? (
+              <div className="md:col-span-7">
+                <h2 className="text-2xl font-bold tracking-[-0.02em]">About this piece</h2>
+                <div className="mt-4 max-w-[65ch] space-y-4 text-[17px] leading-relaxed text-muted-foreground">
+                  {description.map((block, index) => (
+                    <p key={index} className="whitespace-pre-line">
+                      {block}
+                    </p>
+                  ))}
                 </div>
-              </motion.div>
+              </div>
+            ) : null}
+            {product.isBundle && product.bundleItems?.length ? (
+              <div className="md:col-span-5">
+                <h2 className="text-2xl font-bold tracking-[-0.02em]">In the bundle</h2>
+                <ul className="ruled mt-4 border-y border-border">
+                  {product.bundleItems.map((item) => (
+                    <li key={`${item.productId}-${item.qty}`} className="flex items-center justify-between py-3">
+                      <span>{item.name}</span>
+                      <span className="text-muted-foreground">x{item.qty}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             ) : null}
           </div>
-        </section>
+        ) : null}
+      </section>
+
+      {/* Phone buy bar: price, chosen colour and Add to cart in thumb reach */}
+      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background pb-[env(safe-area-inset-bottom)] md:hidden">
+        <div className="frame flex h-[72px] items-center gap-4">
+          <div className="min-w-0">
+            <p className="text-lg font-bold leading-tight">{formatEGP(effectivePrice(product))}</p>
+            <p className="truncate text-sm text-muted-foreground">{colourSummary || "Pick a colour"}</p>
+          </div>
+          <button type="button" onClick={addToCart} className="btn-primary min-h-12 flex-1">
+            {justAdded ? "Added" : "Add to cart"}
+          </button>
+        </div>
       </div>
     </Layout>
   );
