@@ -178,6 +178,12 @@
   }
 }
 
+@media (max-width: 767px) {
+  .has-buy-bar body {
+    padding-bottom: calc(72px + env(safe-area-inset-bottom));
+  }
+}
+
 /* The one authored motion: a new plastic colour wipes down the sleeve spine */
 @keyframes spine-wipe {
   from {

@@ -7,11 +7,43 @@ type ColorPickerProps = {
   value: string;
   onChange: (id: string) => void;
   className?: string;
+  /** One row of square chips; the chosen name stays visible in the legend. */
+  compact?: boolean;
 };
 
 /** Colour choice as named swatches. The name is always visible; nothing hides behind a tooltip. */
-export default function ColorPicker({ legend, colors, value, onChange, className }: ColorPickerProps) {
+export default function ColorPicker({ legend, colors, value, onChange, className, compact = false }: ColorPickerProps) {
   const selected = colors.find((c) => c.id === value);
+  if (compact) {
+    return (
+      <fieldset className={cn("min-w-0", className)}>
+        <legend className="flex w-full items-baseline justify-between gap-3 text-[15px]">
+          <span className="font-semibold">{legend}</span>
+          <span className="text-muted-foreground">{selected?.name || "Pick one"}</span>
+        </legend>
+        <div className="mt-2 flex flex-wrap gap-2">
+          {colors.map((color) => {
+            const active = color.id === value;
+            return (
+              <button
+                key={color.id}
+                type="button"
+                onClick={() => onChange(color.id)}
+                aria-pressed={active}
+                aria-label={color.name}
+                title={color.name}
+                className={cn(
+                  "h-11 w-11 border transition-colors",
+                  active ? "border-foreground outline outline-2 outline-offset-2 outline-foreground" : "border-white/15 hover:border-muted-foreground",
+                )}
+                style={{ backgroundColor: color.hex }}
+              />
+            );
+          })}
+        </div>
+      </fieldset>
+    );
+  }
   return (
     <fieldset className={cn("min-w-0", className)}>
       <legend className="flex w-full items-baseline justify-between gap-3 text-[15px]">

@@ -55,6 +55,12 @@ export default function ProductDetail() {
     setActiveImageIdx(0);
   }, [productId]);
 
+  // Room for the fixed phone buy bar at the end of the page
+  useEffect(() => {
+    document.documentElement.classList.add("has-buy-bar");
+    return () => document.documentElement.classList.remove("has-buy-bar");
+  }, []);
+
   useEffect(() => {
     if (product) document.title = `${product.name} · 3D Print It`;
     return () => {
@@ -180,7 +186,7 @@ export default function ProductDetail() {
           <ArrowLeft className="h-4 w-4" aria-hidden="true" /> Back
         </button>
         <span className="text-muted-foreground">
-          {categoryLabel[product.brand || ""] || "Product"} · {no}
+          {categoryLabel[product.brand || ""] || "Product"} · <span className="text-ink">{no}</span>
         </span>
       </div>
 
@@ -234,7 +240,7 @@ export default function ProductDetail() {
           </div>
 
           {hasMultipleImages ? (
-            <div className="mt-3 flex gap-2 overflow-x-auto p-1">
+            <div className="mt-3 hidden gap-2 overflow-x-auto p-1 md:flex">
               {images.map((src, idx) => (
                 <button
                   key={src}

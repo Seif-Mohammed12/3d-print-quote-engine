@@ -127,6 +127,7 @@ export default function Products() {
                       alt=""
                       catalogueNo={no}
                       spineHex={firstColorHex(product)}
+                      spineColors={product.primaryColors.map((c) => c.hex)}
                       shot={shotFor(product)}
                       loading={idx < 2 ? "eager" : "lazy"}
                     />

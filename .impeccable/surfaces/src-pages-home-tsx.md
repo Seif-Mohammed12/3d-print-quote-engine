@@ -21,6 +21,6 @@ STORY: The visitor sees the actual object first, understands price, material, co
 
 FIRST VIEWPORT: Phone: slim bar (wordmark left, Cart (n) right). Newest release as a full-width square sleeve with its spine on the left edge. Below: product name at ~44px, a ruled three-cell spec row (catalogue no. / material / printed in), price and a full-width paper-white Add to cart, all inside 844px. Desktop: sleeve left 7 columns, release text and action right 5 columns.
 
-FORM: Grounded candidate 3 of 7 ("record-label catalogue"), assigned by the roll; raises: ruled tables as composition, colour previews before commit (spine), one object per viewport on phones, signed maker line with last-printed date, every control labelled in words. Signature interaction: choosing a colour wipes the spine to that colour. seed: none (unavailable)
+FORM: Grounded candidate 3 of 7 ("record-label catalogue"), assigned by the roll; raises: ruled tables as composition, colour previews before commit (spine), one object per viewport on phones, signed maker line with last-printed date, every control labelled in words. Signature interaction: choosing a colour wipes the spine to that colour. seed: none (unavailable; the roll printed no SEED REFERENCE line)
 
 FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance

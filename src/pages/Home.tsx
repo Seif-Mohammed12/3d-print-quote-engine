@@ -1,13 +1,15 @@
-import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 import { ArrowUpRight } from "lucide-react";
 import Layout from "@/components/Layout";
-import QuickAddProductDialog from "@/components/QuickAddProductDialog";
+import ColorPicker from "@/components/catalog/ColorPicker";
+import { useCart } from "@/lib/cart-context";
+import { getUnitPrice } from "@/lib/product-order";
 import Sleeve from "@/components/catalog/Sleeve";
 import PhotoPending from "@/components/catalog/PhotoPending";
 import CatalogueRow from "@/components/catalog/CatalogueRow";
 import { useProducts } from "@/hooks/use-brand-products";
-import type { Product } from "@/lib/brand-catalog";
 import {
   catalogueNo,
   categoryLabel,
@@ -34,9 +36,15 @@ const terms = [
 
 const Home = () => {
   const { data: products, isPending, isError } = useProducts();
-  const [quickAdd, setQuickAdd] = useState<Product | null>(null);
+  const { addProductToCart } = useCart();
+  const navigate = useNavigate();
+  const [colorId, setColorId] = useState("");
 
   const featured = useMemo(() => (products ?? []).find((p) => p.images.length > 0) ?? products?.[0], [products]);
+
+  useEffect(() => {
+    if (featured) setColorId((prev) => (featured.primaryColors.some((c) => c.id === prev) ? prev : featured.primaryColors[0]?.id || ""));
+  }, [featured]);
 
   const grouped = useMemo(
     () =>
@@ -45,6 +53,31 @@ const Home = () => {
         .filter((group) => group.items.length > 0),
     [products, featured]
   );
+
+  const chosen = featured?.primaryColors.find((c) => c.id === colorId);
+
+  const addFeatured = () => {
+    if (!featured) return;
+    const accent = featured.secondaryColors[0];
+    addProductToCart({
+      brand: featured.brand || "pforge",
+      productId: featured.id,
+      productName: featured.name,
+      isBundle: featured.isBundle,
+      bundleItems: featured.bundleItems,
+      qty: 1,
+      primaryColorId: colorId,
+      secondaryColorId: accent?.id || "",
+      primaryColorName: chosen?.name,
+      secondaryColorName: accent?.name,
+      ledsEnabled: false,
+      unitPrice: getUnitPrice(featured, false),
+    });
+    toast.success(`Added ${featured.name}`, {
+      description: [chosen?.name, accent?.name].filter(Boolean).join(" / "),
+      action: { label: "View cart", onClick: () => navigate("/product-cart") },
+    });
+  };
 
   return (
     <Layout>
@@ -57,7 +90,8 @@ const Home = () => {
                 src={featured.images[0]}
                 alt={`${featured.name}, 3D printed`}
                 catalogueNo={catalogueNo(products, featured.id)}
-                spineHex={firstColorHex(featured)}
+                spineHex={chosen?.hex || firstColorHex(featured)}
+                spineLabel={chosen?.name}
                 loading="eager"
               />
             </Link>
@@ -69,17 +103,17 @@ const Home = () => {
         <div className="md:col-span-5 md:pb-2">
           {featured ? (
             <>
-              <h1 className="text-[44px] font-bold leading-[0.95] tracking-[-0.035em] md:text-[64px]">{featured.name}</h1>
+              <h1 className="text-[44px] font-bold leading-[0.92] tracking-[-0.04em] md:text-[88px]">{featured.name}</h1>
               <p className="mt-3 max-w-md text-muted-foreground">{featured.short}</p>
 
               <dl className="mt-5 grid grid-cols-3 border-y border-border text-sm">
                 <div className="py-3 pr-3">
                   <dt className="text-muted-foreground">No.</dt>
-                  <dd className="mt-0.5 font-medium">{catalogueNo(products, featured.id)}</dd>
+                  <dd className="mt-0.5 font-medium text-ink">{catalogueNo(products, featured.id)}</dd>
                 </div>
                 <div className="border-l border-border px-3 py-3">
-                  <dt className="text-muted-foreground">Colours</dt>
-                  <dd className="mt-0.5 font-medium">{featured.primaryColors.length || 1}</dd>
+                  <dt className="text-muted-foreground">Material</dt>
+                  <dd className="mt-0.5 font-medium">PLA or PETG</dd>
                 </div>
                 <div className="border-l border-border py-3 pl-3">
                   <dt className="text-muted-foreground">Printed in</dt>
@@ -87,17 +121,23 @@ const Home = () => {
                 </div>
               </dl>
 
-              <div className="mt-5 flex items-center gap-4">
-                <p className="shrink-0">
-                  <span className="block text-2xl font-bold tracking-[-0.02em]">{formatEGP(effectivePrice(featured))}</span>
-                  {hasDiscount(featured) ? (
-                    <span className="block text-sm text-muted-foreground line-through">{formatEGP(featured.basePrice)}</span>
-                  ) : null}
-                </p>
-                <button type="button" onClick={() => setQuickAdd(featured)} className="btn-primary flex-1">
-                  Choose colour & add
-                </button>
-              </div>
+              {featured.primaryColors.length ? (
+                <ColorPicker
+                  compact
+                  legend="Colour"
+                  colors={featured.primaryColors}
+                  value={colorId}
+                  onChange={setColorId}
+                  className="mt-4"
+                />
+              ) : null}
+
+              <button type="button" onClick={addFeatured} className="btn-primary mt-4 w-full">
+                Add to cart · {formatEGP(effectivePrice(featured))}
+                {hasDiscount(featured) ? (
+                  <span className="text-sm font-normal text-primary-foreground/60 line-through">{formatEGP(featured.basePrice)}</span>
+                ) : null}
+              </button>
             </>
           ) : isPending ? (
             <div className="space-y-3" aria-hidden="true">
@@ -209,20 +249,15 @@ const Home = () => {
             3D Print It is run by <span className="text-foreground">[Founder name]</span> in New Cairo. We started in 2021 printing other
             people's files and now design our own desk gear and decor. Layer lines are part of the look, not a flaw we hide.
           </p>
-          <Link to="/about" className="link-quiet mt-6 inline-flex min-h-11 items-center text-[15px]">
+          <p className="mt-5 text-[15px] text-muted-foreground">
+            — <span className="text-foreground">[Founder name]</span>, founder
+          </p>
+          <Link to="/about" className="link-quiet mt-4 inline-flex min-h-11 items-center text-[15px]">
             More about the studio
           </Link>
         </div>
       </section>
 
-      <QuickAddProductDialog
-        brand={quickAdd?.brand || "pforge"}
-        product={quickAdd}
-        open={Boolean(quickAdd)}
-        onOpenChange={(open) => {
-          if (!open) setQuickAdd(null);
-        }}
-      />
     </Layout>
   );
 };

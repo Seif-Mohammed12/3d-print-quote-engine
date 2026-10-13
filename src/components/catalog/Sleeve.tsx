@@ -9,6 +9,8 @@ type SleeveProps = {
   /** Plastic colour shown on the spine. Changing it wipes the spine to the new colour. */
   spineHex: string;
   spineLabel?: string;
+  /** Listing mode: the spine shows every colour the product comes in as stacked bands. */
+  spineColors?: string[];
   shot?: string;
   className?: string;
   loading?: "eager" | "lazy";
@@ -37,6 +39,7 @@ export default function Sleeve({
   catalogueNo,
   spineHex,
   spineLabel,
+  spineColors,
   shot,
   className,
   loading = "lazy",
@@ -55,6 +58,21 @@ export default function Sleeve({
   return (
     <div className={cn("relative flex aspect-square w-full overflow-hidden bg-black", className)}>
       <div className="relative w-7 shrink-0 border-r border-white/10 md:w-9" style={{ background: under }} aria-hidden="true">
+        {spineColors && spineColors.length > 1 ? (
+          <div className="absolute inset-0 flex flex-col">
+            {spineColors.map((hex, i) => (
+              <span key={`${hex}-${i}`} className="flex-1 border-b border-black/20 last:border-b-0" style={{ background: hex }} />
+            ))}
+            <span
+              className="absolute inset-x-0 bottom-0 flex justify-center pb-3"
+              style={{ color: readableOn(spineColors[spineColors.length - 1]) }}
+            >
+              <span className="whitespace-nowrap text-xs font-semibold tracking-[0.06em] [writing-mode:vertical-rl] rotate-180">
+                {catalogueNo}
+              </span>
+            </span>
+          </div>
+        ) : (
         <div
           key={spineHex}
           className="spine-wipe absolute inset-0 flex items-end justify-center pb-3"
@@ -65,6 +83,7 @@ export default function Sleeve({
             {spineLabel ? ` · ${spineLabel}` : ""}
           </span>
         </div>
+        )}
       </div>
       <div className="relative min-w-0 flex-1">
         {src ? (
