@@ -82,8 +82,8 @@ const Home = () => {
   return (
     <Layout>
       {/* Featured release: the object, its name, its price and a working Add to cart, inside the first phone screen */}
-      <section className="frame grid gap-5 pt-4 md:grid-cols-12 md:items-end md:gap-10 md:pt-10">
-        <div className="md:col-span-7">
+      <section className="frame grid grid-cols-1 gap-5 pt-4 md:grid-cols-12 md:items-end md:gap-10 md:pt-10">
+        <div className="min-w-0 md:col-span-7">
           {featured ? (
             <Link to={productHref(featured)} aria-label={`${featured.name}, view details`} className="block">
               <Sleeve
@@ -100,7 +100,7 @@ const Home = () => {
           )}
         </div>
 
-        <div className="md:col-span-5 md:pb-2">
+        <div className="min-w-0 md:col-span-5 md:pb-2">
           {featured ? (
             <>
               <h1 className="text-[44px] font-bold leading-[0.92] tracking-[-0.04em] md:text-[88px]">{featured.name}</h1>
@@ -246,11 +246,11 @@ const Home = () => {
             A small studio that designs what it prints.
           </h2>
           <p className="mt-5 max-w-md text-muted-foreground">
-            3D Print It is run by <span className="text-foreground">[Founder name]</span> in New Cairo. We started in 2021 printing other
+            3D Print It is a small studio in New Cairo. We started in 2021 printing other
             people's files and now design our own desk gear and decor. Layer lines are part of the look, not a flaw we hide.
           </p>
           <p className="mt-5 text-[15px] text-muted-foreground">
-            — <span className="text-foreground">[Founder name]</span>, founder
+            — <span className="text-foreground">[Founder name]</span> · last print off the bed: <span className="text-foreground">[date]</span>
           </p>
           <Link to="/about" className="link-quiet mt-4 inline-flex min-h-11 items-center text-[15px]">
             More about the studio

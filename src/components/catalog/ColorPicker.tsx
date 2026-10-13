@@ -21,7 +21,7 @@ export default function ColorPicker({ legend, colors, value, onChange, className
           <span className="font-semibold">{legend}</span>
           <span className="text-muted-foreground">{selected?.name || "Pick one"}</span>
         </legend>
-        <div className="mt-2 flex flex-wrap gap-2">
+        <div className="-mx-1 mt-2 flex snap-x gap-2 overflow-x-auto px-1 py-1 md:flex-wrap md:overflow-visible">
           {colors.map((color) => {
             const active = color.id === value;
             return (
@@ -30,14 +30,14 @@ export default function ColorPicker({ legend, colors, value, onChange, className
                 type="button"
                 onClick={() => onChange(color.id)}
                 aria-pressed={active}
-                aria-label={color.name}
-                title={color.name}
                 className={cn(
-                  "h-11 w-11 border transition-colors",
-                  active ? "border-foreground outline outline-2 outline-offset-2 outline-foreground" : "border-white/15 hover:border-muted-foreground",
+                  "flex min-h-11 flex-none snap-start items-center gap-2 border px-2.5 text-sm transition-colors",
+                  active ? "border-foreground bg-secondary text-foreground" : "border-rule text-muted-foreground hover:border-muted-foreground hover:text-foreground",
                 )}
-                style={{ backgroundColor: color.hex }}
-              />
+              >
+                <span className="h-5 w-5 shrink-0 border border-white/15" style={{ backgroundColor: color.hex }} aria-hidden="true" />
+                <span className="whitespace-nowrap">{color.name}</span>
+              </button>
             );
           })}
         </div>
