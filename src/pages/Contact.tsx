@@ -7,6 +7,8 @@ const fieldClass =
 
 const Contact = () => {
   const [form, setForm] = useState({ name: "", email: "", message: "" });
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const prefill = sessionStorage.getItem("contactMessage");
@@ -15,11 +17,35 @@ const Contact = () => {
     }
   }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast.success("Message sent! We'll get back to you soon.");
-    setForm({ name: "", email: "", message: "" });
-    sessionStorage.removeItem("contactMessage");
+    if (sending) return;
+    setSending(true);
+    setError(null);
+
+    try {
+      const res = await fetch("/api/contact-message", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      const data = (res.headers.get("content-type") || "").includes("application/json")
+        ? await res.json().catch(() => null)
+        : null;
+
+      if (!res.ok) {
+        setError(data?.error || `The server answered ${res.status}.`);
+        return;
+      }
+
+      toast.success("Message sent. We'll get back to you soon.");
+      setForm({ name: "", email: "", message: "" });
+      sessionStorage.removeItem("contactMessage");
+    } catch {
+      setError("We couldn't reach the server. Check your connection.");
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
@@ -105,8 +131,17 @@ const Contact = () => {
               maxLength={2000}
             />
           </div>
-          <button type="submit" className="btn-primary w-full sm:w-auto">
-            Send message
+          {error && (
+            <p role="alert" className="border-l-2 border-destructive pl-3 text-[15px]">
+              Your message wasn't sent. {error}{" "}
+              <a href="https://wa.me/201099228486" className="font-semibold underline underline-offset-2" rel="noopener">
+                Send it on WhatsApp instead
+              </a>
+              .
+            </p>
+          )}
+          <button type="submit" className="btn-primary w-full sm:w-auto" disabled={sending} aria-busy={sending}>
+            {sending ? "Sending…" : "Send message"}
           </button>
         </form>
       </section>

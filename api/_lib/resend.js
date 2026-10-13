@@ -23,7 +23,7 @@ function isLikelyUnverifiablePersonalDomain(domain) {
   return ["gmail.com", "yahoo.com", "outlook.com", "hotmail.com", "icloud.com"].includes(domain);
 }
 
-export async function sendResendEmail({ to, from, subject, html, attachments }) {
+export async function sendResendEmail({ to, from, subject, html, attachments, reply_to }) {
   const apiKey = getResendApiKey();
   if (!apiKey) {
     const err = new Error("Server misconfigured: RESEND_API_KEY is not set");
@@ -54,6 +54,8 @@ export async function sendResendEmail({ to, from, subject, html, attachments }) 
     subject,
     html,
   };
+
+  if (reply_to) payload.reply_to = reply_to;
 
   if (Array.isArray(attachments) && attachments.length > 0) {
     payload.attachments = attachments.map((file) => ({
