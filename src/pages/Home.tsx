@@ -23,8 +23,8 @@ import {
 
 const commissions = [
   { to: "/quote", title: "Have an STL?", body: "Upload it and get a price in about a minute." },
-  { to: "/quote-request", title: "Only have an idea?", body: "Send a sketch or a photo. We model it, then print it." },
-  { to: "/contact", title: "Need 20 or more?", body: "Ask about volume runs for events, shops and teams." },
+  { to: "/contact", title: "Only have an idea?", body: "Send a sketch or a photo. We model it, then print it." },
+  { to: "/contact?topic=volume", title: "Need 20 or more?", body: "Ask about volume runs for events, shops and teams." },
 ];
 
 const terms = [

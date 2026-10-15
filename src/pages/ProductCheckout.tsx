@@ -147,7 +147,7 @@ export default function ProductCheckout() {
     };
   }, [user?.id, user?.email, user?.user_metadata?.full_name]);
 
-  const { data: liveProduct } = useQuery({
+  const { data: liveProduct, isPending: liveProductPending } = useQuery({
     queryKey: ["checkout-product", draft?.brand, draft?.productId],
     enabled: checkoutMode === "single" && Boolean(draft?.brand && draft?.productId),
     queryFn: async () => {
@@ -250,11 +250,12 @@ export default function ProductCheckout() {
 
   useEffect(() => {
     if (checkoutMode !== "single" || !draft) return;
-    if (!product) {
+    // Wait for the live lookup before deciding the product is gone (a fresh page has no cache).
+    if (!product && !liveProductPending) {
       toast.error("Product not found");
       navigate("/products", { replace: true });
     }
-  }, [checkoutMode, draft, product, navigate]);
+  }, [checkoutMode, draft, product, liveProductPending, navigate]);
 
   useEffect(() => {
     if (!cartReady) return;
@@ -265,7 +266,7 @@ export default function ProductCheckout() {
     }
   }, [cartReady, cartLines, navigate]);
 
-  if (checkoutMode === "loading" || (checkoutMode === "cart" && cartPending)) {
+  if (checkoutMode === "loading" || (checkoutMode === "cart" && cartPending) || (checkoutMode === "single" && !product && liveProductPending)) {
     return (
       <Layout>
         <section className="section-padding">

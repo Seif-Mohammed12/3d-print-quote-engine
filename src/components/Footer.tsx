@@ -13,7 +13,7 @@ const columns = [
     title: "Custom prints",
     links: [
       { to: "/quote", label: "Price your STL" },
-      { to: "/quote-request", label: "Design help" },
+      { to: "/contact", label: "Design help" },
       { to: "/services", label: "Materials & bulk" },
     ],
   },

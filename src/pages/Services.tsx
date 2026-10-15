@@ -11,7 +11,7 @@ const routes = [
     action: "Price my file",
   },
   {
-    to: "/quote-request",
+    to: "/contact",
     title: "You have an idea, not a file",
     body: "Send a sketch, a photo or measurements. We model it with you, then print it.",
     action: "Ask for design help",
