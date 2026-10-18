@@ -30,32 +30,52 @@ const Home = () => {
 
   return (
     <Layout>
-      {/* Introduction: who we are and what we make, before anything is for sale */}
-      <section className="frame pt-10 md:pt-20">
-        <div className="grid gap-6 md:grid-cols-12 md:items-end md:gap-10">
-          <h1 className="text-[44px] font-bold leading-[0.95] tracking-[-0.04em] md:col-span-8 md:text-[88px]">
-            One layer
-            <br />
-            at a time.
-          </h1>
-          <div className="md:col-span-4 md:pb-3">
-            <p className="max-w-sm text-muted-foreground md:text-lg">
+      {/* Opening: one atmospheric image, a short line, one clear action. Nothing priced, nothing to add. */}
+      <section className="relative md:min-h-[min(86vh,820px)]" aria-labelledby="home-title">
+        {/* PHOTO: Lumo Stand close-up, its ribs read as print layers. Swap for shot list #0 (layer close-up) when shot. */}
+        <img
+          src="/images/hero-lumo-1080.webp"
+          srcSet="/images/hero-lumo-1080.webp 1080w, /images/hero-lumo-1920.webp 1920w"
+          sizes="100vw"
+          alt="The Lumo Stand's ribbed, layer-printed surface in burnt orange, with headphones resting on it"
+          width={1920}
+          height={1440}
+          fetchPriority="high"
+          decoding="async"
+          className="aspect-[4/3] w-full bg-black object-cover object-[30%_50%] md:absolute md:inset-0 md:aspect-auto md:h-full md:object-[30%_38%]"
+        />
+        {/* Neutral shade behind the text side so the copy stays readable over the photo */}
+        <div className="pointer-events-none absolute inset-0 hidden bg-[linear-gradient(to_left,hsl(var(--background)/0.88)_0%,hsl(var(--background)/0.6)_38%,transparent_62%)] md:block" aria-hidden="true" />
+        <div className="frame relative md:flex md:min-h-[min(86vh,820px)] md:items-end md:pb-16">
+          <div className="pt-8 md:ml-auto md:w-[56%] md:pt-0 lg:w-[44%]">
+            <h1 id="home-title" className="text-[48px] font-bold leading-[0.95] tracking-[-0.04em] md:text-[72px] lg:text-[88px]">
+              One layer
+              <br />
+              at a time.
+            </h1>
+            <p className="mt-5 max-w-md text-muted-foreground md:text-lg md:text-foreground/75">
               We bring ideas to life on our printers in New Cairo: our own designs, or the one you send us.
             </p>
-            <div className="mt-5 flex flex-wrap gap-x-6">
-              <Link to="/products" className="group inline-flex min-h-11 items-center gap-1.5 font-semibold">
-                Browse the shop <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
+            <div className="mt-7 flex flex-wrap items-center gap-x-6 gap-y-3">
+              <Link to="/products" className="btn-primary">
+                Browse the shop
               </Link>
-              <Link to="/quote" className="group inline-flex min-h-11 items-center gap-1.5 text-muted-foreground hover:text-foreground">
+              <Link to="/quote" className="group inline-flex min-h-11 items-center gap-1.5 font-semibold text-foreground/80 hover:text-foreground">
                 Print your own file <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
               </Link>
             </div>
           </div>
         </div>
+        <Link
+          to="/products/lumo-stand"
+          className="absolute left-4 top-[calc(75vw-2.75rem)] inline-flex min-h-11 items-center text-sm text-foreground/70 hover:text-foreground md:bottom-8 md:left-8 md:top-auto"
+        >
+          Pictured: Lumo Stand →
+        </Link>
       </section>
 
       {/* The shelf: a few pieces to look at, no buttons. Buying happens on each product's page. */}
-      <section className="mt-10 md:mt-16" aria-labelledby="shelf-title">
+      <section className="mt-14 md:mt-20" aria-labelledby="shelf-title">
         <div className="frame">
           <div className="flex items-center justify-between gap-4 border-b border-border">
           <h2 id="shelf-title" className="text-sm font-semibold text-muted-foreground">On the shelf</h2>

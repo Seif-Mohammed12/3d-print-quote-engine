@@ -20,6 +20,7 @@ For each product, shoot three frames:
 
 | # | Where it's used | What to shoot |
 |---|---|---|
+| 0 | Home opening, full width (landscape 3:2 or wider, 2400 px+) | A dramatic close-up of layer lines on a real print, lit from one side, subject on the left third and dark empty space on the right for the headline. Currently a crop of the Lumo Stand render (`public/images/hero-lumo-*.webp`). |
 | 1 | Home, "A small studio…" (4:3) | The founder at the printers in New Cairo, a print coming off the bed. Natural light, no staging. |
 | 2 | Onami Stand | A, B (with headphones), C (the flowing ribs) |
 | 3 | ArcEase Stand | A, B, C |
