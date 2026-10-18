@@ -36,7 +36,7 @@ const Footer = () => (
             3D Print It
           </Link>
           <p className="mt-3 max-w-sm text-muted-foreground">
-            Desk gear and decor, designed and printed in New Cairo since 2021. PLA and PETG, printed in about 48 hours.
+            A 3D printing studio in New Cairo since 2021. Our own designs and your files, in PLA or PETG, printed in about 48 hours.
           </p>
           <div className="mt-4 flex flex-col text-[15px]">
             <a href="https://wa.me/201099228486" className="link-quiet inline-flex min-h-11 w-fit items-center" rel="noopener">

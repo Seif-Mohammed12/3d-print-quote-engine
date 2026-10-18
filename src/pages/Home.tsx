@@ -34,11 +34,11 @@ const Home = () => {
       <section className="frame pt-10 md:pt-20">
         <div className="grid gap-6 md:grid-cols-12 md:items-end md:gap-10">
           <h1 className="text-[44px] font-bold leading-[0.95] tracking-[-0.04em] md:col-span-8 md:text-[88px]">
-            Desk gear and decor, printed in New Cairo.
+            One layer at a time.
           </h1>
           <div className="md:col-span-4 md:pb-3">
             <p className="max-w-sm text-muted-foreground md:text-lg">
-              We design and 3D print stands, docks, vases and wall pieces in the colours you pick. Or send us your own file.
+              We bring ideas to life on our printers in New Cairo: our own designs, or the one you send us.
             </p>
             <div className="mt-5 flex flex-wrap gap-x-6">
               <Link to="/products" className="group inline-flex min-h-11 items-center gap-1.5 font-semibold">
