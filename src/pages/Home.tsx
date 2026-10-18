@@ -34,7 +34,9 @@ const Home = () => {
       <section className="frame pt-10 md:pt-20">
         <div className="grid gap-6 md:grid-cols-12 md:items-end md:gap-10">
           <h1 className="text-[44px] font-bold leading-[0.95] tracking-[-0.04em] md:col-span-8 md:text-[88px]">
-            One layer at a time.
+            One layer
+            <br />
+            at a time.
           </h1>
           <div className="md:col-span-4 md:pb-3">
             <p className="max-w-sm text-muted-foreground md:text-lg">
