@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import BrandLogo from "@/components/BrandLogo";
 
 const columns = [
   {
@@ -32,8 +33,8 @@ const Footer = () => (
     <div className="frame py-12 md:py-16">
       <div className="grid gap-10 md:grid-cols-12">
         <div className="md:col-span-5">
-          <Link to="/" className="inline-flex min-h-11 items-center text-2xl font-extrabold tracking-[-0.03em]">
-            3D Print It
+          <Link to="/" className="inline-flex min-h-11 items-center" aria-label="3D Print It, home">
+            <BrandLogo size={40} />
           </Link>
           <p className="mt-3 max-w-sm text-muted-foreground">
             A 3D printing studio in New Cairo since 2021. Our own designs and your files, in PLA or PETG, printed in about 48 hours.

@@ -11,6 +11,7 @@ import { useQueries } from "@tanstack/react-query";
 import { fetchPublicProducts, mapDbProductToLegacyProduct } from "@/lib/products-api";
 import { cacheProducts } from "@/lib/runtime-product-cache";
 import { formatEGP } from "@/lib/catalog-format";
+import BrandLogo from "@/components/BrandLogo";
 import type { BrandId, Product } from "@/lib/brand-catalog";
 
 const navLinks = [
@@ -92,8 +93,8 @@ const Navbar = () => {
     <>
       <header className="fixed inset-x-0 top-0 z-40 border-b border-border bg-background">
         <div className="frame flex h-14 items-center justify-between gap-6">
-          <Link to="/" className="inline-flex min-h-11 items-center text-[19px] font-extrabold tracking-[-0.03em] text-foreground">
-            3D Print It
+          <Link to="/" className="inline-flex min-h-11 items-center text-foreground" aria-label="3D Print It, home">
+            <BrandLogo size={28} />
           </Link>
 
           <nav aria-label="Main" className="hidden items-center gap-7 md:flex">
@@ -202,7 +203,7 @@ const Navbar = () => {
             className="fixed inset-0 z-50 flex flex-col bg-background"
           >
             <div className="frame flex h-14 items-center justify-between border-b border-border">
-              <span className="text-[19px] font-extrabold tracking-[-0.03em]">3D Print It</span>
+              <BrandLogo size={28} />
               <button
                 type="button"
                 onClick={() => setMenuOpen(false)}
