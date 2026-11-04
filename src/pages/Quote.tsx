@@ -1,151 +1,54 @@
-import { useState, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
-import { Send } from "lucide-react";
+import { createElement, useEffect, useState } from "react";
 import Layout from "@/components/Layout";
 import SectionHeading from "@/components/SectionHeading";
-import { calculateQuote, MATERIALS, type Quality } from "@/lib/quote-calculator";
-import StlUploadCard from "@/components/stl/StlUploadCard";
-import type { CompletedStlUpload } from "@/lib/stl-upload";
+
+const QUOTER_SCRIPT = "https://3d-print-os.vercel.app/embed.js";
+const QUOTER_KEY = "pk_wlskm_-zPY_eeE4IyTO1-TNi";
 
 const Quote = () => {
-  const navigate = useNavigate();
-  const [uploadedModel, setUploadedModel] = useState<CompletedStlUpload | null>(null);
-  const [materialIdx, setMaterialIdx] = useState(0);
-  const [quality, setQuality] = useState<Quality>("standard");
-  const [infill, setInfill] = useState(20);
-  const handleUploadReady = useCallback((asset: CompletedStlUpload) => {
-    setUploadedModel(asset);
+  const [failed, setFailed] = useState(false);
+
+  // The quoter's script is only needed on this page, so it loads here rather than site-wide.
+  useEffect(() => {
+    const existing = document.querySelector<HTMLScriptElement>(`script[src="${QUOTER_SCRIPT}"]`);
+    if (existing) return;
+    const script = document.createElement("script");
+    script.src = QUOTER_SCRIPT;
+    script.async = true;
+    script.onerror = () => {
+      script.remove();
+      setFailed(true);
+    };
+    document.head.appendChild(script);
   }, []);
-
-  const handleGetQuote = () => {
-    if (!uploadedModel) return;
-    const result = calculateQuote(uploadedModel.stlResult.volume, MATERIALS[materialIdx], quality, infill);
-    navigate("/quote-request", {
-      state: {
-        fileName: uploadedModel.fileName,
-        fileType: uploadedModel.fileType,
-        fileBuffer: uploadedModel.fileBuffer,
-        upload: {
-          jobId: uploadedModel.jobId,
-          storagePath: uploadedModel.storagePath,
-          checksum: uploadedModel.checksum,
-          uploadedAt: uploadedModel.uploadedAt,
-          fileSize: uploadedModel.fileSize,
-        },
-        settings: {
-          material: MATERIALS[materialIdx].name,
-          quality,
-          infill,
-        },
-        // Kept internal for your admin email, but not shown on website.
-        estimate: {
-          totalPrice: result.totalPrice,
-          weightGrams: result.weightGrams,
-          estimatedTime: result.estimatedTime,
-        },
-      },
-    });
-  };
-
-  const handleReset = () => {
-    setUploadedModel(null);
-  };
 
   return (
     <Layout>
       <section className="section-padding">
-        <div className="container mx-auto max-w-6xl">
-          <SectionHeading
-            title="Price your file"
-            subtitle="Upload an STL, pick material, quality and infill, and see the price before you send it."
-          />
+        <div className="frame">
+          <SectionHeading title="Price your file" subtitle="Upload your 3D model, choose your options, and see the price." />
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Left: Upload & Preview */}
-            <div className="space-y-6">
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                <StlUploadCard onReady={handleUploadReady} onReset={handleReset} />
-              </motion.div>
+          {failed ? (
+            <div className="border border-border p-6">
+              <p className="font-semibold">The price calculator didn't load.</p>
+              <p className="mt-1 text-muted-foreground">Check your connection and refresh, or send us your file on WhatsApp and we'll price it for you.</p>
+              <a href="https://wa.me/201099228486" className="btn-secondary mt-5" rel="noopener">
+                WhatsApp us
+              </a>
             </div>
-
-            {/* Right: Configuration */}
-            <div className="space-y-6">
-              <div className="panel p-6 space-y-6">
-                <h3 className="font-heading font-semibold text-foreground">Configure Your Print</h3>
-
-                {/* Material */}
-                <div>
-                  <label className="text-sm font-medium text-foreground mb-2 block">Material</label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {MATERIALS.map((m, i) => (
-                      <button
-                        key={m.name}
-                        onClick={() => { setMaterialIdx(i); }}
-                        className={`p-3 rounded-lg text-center text-sm transition-all ${
-                          materialIdx === i
-                            ? "bg-primary/15 border border-primary/50 text-foreground"
-                            : "bg-secondary border border-border text-muted-foreground hover:text-foreground"
-                        }`}
-                      >
-                        <span className={`font-semibold ${m.color}`}>{m.name}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Quality */}
-                <div>
-                  <label className="text-sm font-medium text-foreground mb-2 block">Quality</label>
-                  <div className="grid grid-cols-3 gap-2">
-                    {(["draft", "standard", "high"] as Quality[]).map((q) => (
-                      <button
-                        key={q}
-                        onClick={() => { setQuality(q); }}
-                        className={`p-3 rounded-lg text-sm capitalize transition-all ${
-                          quality === q
-                            ? "bg-primary/15 border border-primary/50 text-foreground"
-                            : "bg-secondary border border-border text-muted-foreground hover:text-foreground"
-                        }`}
-                      >
-                        {q}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Infill */}
-                <div>
-                  <label className="text-sm font-medium text-foreground mb-2 flex justify-between">
-                    Infill <span className="text-primary">{infill}%</span>
-                  </label>
-                  <input
-                    type="range"
-                    min={5}
-                    max={100}
-                    step={5}
-                    value={infill}
-                    onChange={(e) => { setInfill(Number(e.target.value)); }}
-                    className="w-full accent-primary"
-                  />
-                  <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                    <span>5%</span><span>50%</span><span>100%</span>
-                  </div>
-                </div>
-
-                <button
-                  onClick={handleGetQuote}
-                  disabled={!uploadedModel}
-                  className="w-full py-3 rounded-lg bg-primary text-primary-foreground font-semibold transition-all duration-300 disabled:opacity-40 disabled:cursor-not-allowed"
-                >
-                  <span className="inline-flex items-center gap-2">
-                    <Send className="w-4 h-4" />
-                    Get Quote
-                  </span>
-                </button>
-              </div>
-            </div>
-          </div>
+          ) : (
+            createElement("print-quoter", {
+              "data-key": QUOTER_KEY,
+              "data-title": "Price your 3D print",
+              "data-mode": "dark",
+              "data-accent": "#FF5B1F",
+              "data-background": "#0E0E0F",
+              "data-foreground": "#EDEAE4",
+              "data-radius": "2",
+              "data-font": "Host Grotesk",
+              "data-font-url": "https://fonts.googleapis.com/css2?family=Host+Grotesk:wght@400..800&display=swap",
+            })
+          )}
         </div>
       </section>
     </Layout>
