@@ -32,6 +32,8 @@ export type Product = {
   // Lucide icon component for list cards (optional).
   icon?: LucideIcon;
   images: string[];
+  /** Colour shown in each photo, parallel to `images`; null for general shots. */
+  imageColorIds?: Array<string | null>;
   primaryColors: ProductColor[];
   secondaryColors: ProductColor[];
   supportsLeds: boolean;

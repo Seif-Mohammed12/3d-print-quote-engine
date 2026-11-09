@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { getUnitPrice } from "@/lib/product-order";
 import { useCart } from "@/lib/cart-context";
-import { formatEGP, hasDiscount } from "@/lib/catalog-format";
+import { formatEGP, hasDiscount, imagesForColor } from "@/lib/catalog-format";
 import ColorPicker from "@/components/catalog/ColorPicker";
 import PhotoPending from "@/components/catalog/PhotoPending";
 import type { BrandId, Product } from "@/lib/brand-catalog";
@@ -51,8 +51,8 @@ export default function QuickAddProductDialog({ brand, product, open, onOpenChan
           <>
             <div className="flex gap-4 border-b border-border p-5 pr-12">
               <div className="h-20 w-20 shrink-0 bg-black">
-                {product.images[0] ? (
-                  <img src={product.images[0]} alt="" className="h-full w-full object-cover" />
+                {imagesForColor(product, primaryColorId)[0] ? (
+                  <img src={imagesForColor(product, primaryColorId)[0]} alt="" className="h-full w-full object-cover" />
                 ) : (
                   <PhotoPending compact />
                 )}

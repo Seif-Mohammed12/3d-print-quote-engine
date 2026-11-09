@@ -46,6 +46,21 @@ export function shotFor(product: Pick<Product, "id" | "slug" | "name">) {
   return pendingShots[product.slug || product.id] || `Real photo of the ${product.name} on a desk, printed in its default colour.`;
 }
 
+/**
+ * The photos to show for a chosen colour. Only single-colour products switch: their photos can be
+ * tagged with the colour they show. The chosen colour's photos come first, then general (untagged)
+ * shots. A colour with no photos of its own shows the general shots, or everything if there are none.
+ */
+export function imagesForColor(product: Pick<Product, "images" | "imageColorIds" | "secondaryColors">, colorId: string | undefined) {
+  const images = product.images || [];
+  const tags = product.imageColorIds;
+  if (!colorId || !tags || tags.length !== images.length || product.secondaryColors.length > 0) return images;
+  const own = images.filter((_, i) => tags[i] === colorId);
+  const general = images.filter((_, i) => !tags[i]);
+  if (own.length) return [...own, ...general];
+  return general.length ? general : images;
+}
+
 export function firstColorHex(product: Pick<Product, "primaryColors">) {
   return product.primaryColors[0]?.hex || "hsl(var(--rule))";
 }

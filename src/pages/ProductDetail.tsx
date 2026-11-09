@@ -12,6 +12,7 @@ import {
   effectivePrice,
   formatEGP,
   hasDiscount,
+  imagesForColor,
   shotFor,
 } from "@/lib/catalog-format";
 import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
@@ -51,9 +52,10 @@ export default function ProductDetail() {
     );
   }, [product]);
 
+  // A new product or a new colour starts the gallery at its first photo.
   useEffect(() => {
     setActiveImageIdx(0);
-  }, [productId]);
+  }, [productId, selectedPrimaryId]);
 
   // Room for the fixed phone buy bar at the end of the page
   useEffect(() => {
@@ -111,7 +113,7 @@ export default function ProductDetail() {
     );
   }
 
-  const images = product.images || [];
+  const images = imagesForColor(product, selectedPrimaryId);
   const currentImage = images[activeImageIdx] || images[0];
   const price = getUnitPrice(product, false);
   const selectedPrimary = product.primaryColors.find((color) => color.id === selectedPrimaryId);

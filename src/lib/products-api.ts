@@ -11,6 +11,8 @@ export type DbProduct = {
   basePrice: number;
   discount: { enabled: boolean; price: number };
   images: string[];
+  /** Colour shown in each photo, parallel to `images`; null for general shots. */
+  imageColorIds?: Array<string | null>;
   primaryColors: ProductColor[];
   secondaryColors: ProductColor[];
   stockQty?: number;
@@ -68,6 +70,7 @@ export type AdminCatalogPayload = {
     product_id: string;
     image_url: string;
     sort_order: number;
+    color_id?: string | null;
   }>;
   colors: Array<{
     id: string;
@@ -206,6 +209,14 @@ export async function adminUploadImages(productId: string, files: File[]) {
   return out;
 }
 
+export async function adminSetImageColor(id: string, colorId: string | null) {
+  return adminRequest<{ success?: boolean }>("/api/admin-product-images-set-color", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id, colorId }),
+  });
+}
+
 export async function adminDeleteImage(id: string) {
   return adminRequest<{ ok?: boolean }>("/api/admin-product-images-delete", {
     method: "POST",
@@ -276,6 +287,7 @@ export function mapDbProductToLegacyProduct(p: DbProduct): Product {
     basePrice: p.basePrice,
     discount: p.discount,
     images: p.images || [],
+    imageColorIds: p.imageColorIds,
     primaryColors: p.primaryColors || [],
     secondaryColors: p.secondaryColors || [],
     supportsLeds: false,

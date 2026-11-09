@@ -22,6 +22,8 @@ function mapProduct(row, imagesByProduct, colorsByProduct) {
     isBundle: Boolean(row.is_bundle),
     bundleItems: row.bundle_items || [],
     images: (imagesByProduct[row.id] || []).map((img) => img.image_url),
+    // Colour shown in each photo, parallel to `images`; null for general shots.
+    imageColorIds: (imagesByProduct[row.id] || []).map((img) => img.color_id ?? null),
     primaryColors: colors
       .filter((c) => c.role === "primary")
       .map((c) => ({ id: c.color_id, name: c.name, hex: c.hex })),

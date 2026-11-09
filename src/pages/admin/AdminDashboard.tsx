@@ -11,6 +11,7 @@ import {
   adminReorderColors,
   adminReorderImages,
   adminReorderProducts,
+  adminSetImageColor,
   adminUploadImages,
   adminUpsertColor,
   adminUpsertProduct,
@@ -35,7 +36,7 @@ type ProductRow = {
   sort_order: number;
   is_bundle?: boolean;
 };
-type ImageRow = { id: string; product_id: string; image_url: string; sort_order: number };
+type ImageRow = { id: string; product_id: string; image_url: string; sort_order: number; color_id?: string | null };
 type ColorRow = {
   id: string;
   product_id: string;
@@ -544,13 +545,44 @@ export default function AdminDashboard() {
                   />
                 </label>
                 <p className="text-xs text-muted-foreground">
-                  You can select several files at once; they are appended in the order chosen. Use Up/Down to reorder after upload.
+                  You can select several files at once; they are appended in the order chosen. Use Up/Down to reorder after upload. For single-colour products, tag each photo with the colour it shows so the product page switches photos when a customer picks a colour; leave general shots on Any colour.
                 </p>
                 <div className="space-y-2">
                   {selectedImages.map((img, idx) => (
                     <div key={img.id} className="flex items-center gap-2 rounded-lg border border-border p-2">
                       <img src={img.image_url} alt="Product" className="h-12 w-12 object-cover rounded" />
                       <div className="flex-1 text-xs truncate">{img.image_url}</div>
+                      <select
+                        aria-label="Colour shown in this photo"
+                        className="h-8 max-w-[9rem] rounded border border-border bg-background px-1 text-xs"
+                        disabled={mediaBusy}
+                        value={img.color_id ?? ""}
+                        onChange={async (e) => {
+                          const colorId = e.target.value || null;
+                          setProductImages(
+                            selectedProductId,
+                            selectedImages.map((row) => (row.id === img.id ? { ...row, color_id: colorId } : row))
+                          );
+                          setMediaBusy(true);
+                          try {
+                            await adminSetImageColor(img.id, colorId);
+                          } catch (err: unknown) {
+                            setError(err instanceof Error ? err.message : "Failed to set photo colour");
+                            await load();
+                          } finally {
+                            setMediaBusy(false);
+                          }
+                        }}
+                      >
+                        <option value="">Any colour</option>
+                        {selectedColors
+                          .filter((c) => c.role === "primary")
+                          .map((c) => (
+                            <option key={c.id} value={c.color_id}>
+                              {c.name}
+                            </option>
+                          ))}
+                      </select>
                       <button className="text-xs px-2 py-1 rounded border"
                         disabled={mediaBusy}
                         onClick={async () => {
