@@ -1,7 +1,6 @@
 import { Link } from "react-router-dom";
 import type { Product } from "@/lib/brand-catalog";
 import { effectivePrice, firstColorHex, formatEGP, hasDiscount, productHref } from "@/lib/catalog-format";
-import PhotoPending from "./PhotoPending";
 
 type CatalogueRowProps = {
   product: Product;
@@ -26,7 +25,7 @@ export default function CatalogueRow({ product, catalogueNo }: CatalogueRowProps
         {product.images[0] ? (
           <img src={product.images[0]} alt="" loading="lazy" decoding="async" className="h-full min-w-0 flex-1 object-cover" />
         ) : (
-          <PhotoPending compact className="border-0" />
+          <span className="h-full min-w-0 flex-1 bg-card" aria-hidden="true" />
         )}
       </span>
       <span className="min-w-0">
@@ -39,7 +38,6 @@ export default function CatalogueRow({ product, catalogueNo }: CatalogueRowProps
       </span>
       <span className="hidden text-sm text-muted-foreground md:block">
         {product.primaryColors.length} {product.primaryColors.length === 1 ? "colour" : "colours"}
-        {product.images.length === 0 ? <span className="block text-xs">Photo coming</span> : null}
       </span>
       <span className="text-right">
         <span className="block font-semibold">{formatEGP(price)}</span>

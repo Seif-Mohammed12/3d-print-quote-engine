@@ -3,7 +3,6 @@ import { Link } from "react-router-dom";
 import { ArrowRight, ArrowUpRight } from "lucide-react";
 import Layout from "@/components/Layout";
 import Sleeve from "@/components/catalog/Sleeve";
-import PhotoPending from "@/components/catalog/PhotoPending";
 import CatalogueRow from "@/components/catalog/CatalogueRow";
 import { useProducts } from "@/hooks/use-brand-products";
 import { catalogueNo, categoryLabel, effectivePrice, firstColorHex, formatEGP, productHref } from "@/lib/catalog-format";
@@ -185,11 +184,7 @@ const Home = () => {
 
       {/* The maker: the widest gap on the page sits above this */}
       <section className="frame mb-20 mt-28 grid gap-8 md:mb-28 md:mt-40 md:grid-cols-12 md:gap-10" aria-labelledby="maker-title">
-        <div className="aspect-[4/3] md:col-span-6">
-          {/* PHOTO PLACEHOLDER: shot list #1 */}
-          <PhotoPending shot="Shot 1: the founder at the printers in New Cairo, a print coming off the bed. Natural light, no staging." />
-        </div>
-        <div className="md:col-span-5 md:col-start-8 md:self-end">
+        <div className="md:col-span-7">
           <h2 id="maker-title" className="text-[32px] font-bold leading-[1.02] tracking-[-0.03em] md:text-5xl">
             A small studio that designs what it prints.
           </h2>

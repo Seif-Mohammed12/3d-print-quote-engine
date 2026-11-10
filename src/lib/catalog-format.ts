@@ -35,17 +35,6 @@ export function productHref(product: Pick<Product, "id" | "slug">) {
   return `/products/${product.slug || product.id}`;
 }
 
-/** PHOTO PLACEHOLDER copy: which shot-list photo each product is waiting for. */
-const pendingShots: Record<string, string> = {
-  "printique-vase": "Shot 8: the vase on a desk with dried stems, soft side light so the layer lines show.",
-  "printique-panel": "Shot 9: three panels mounted on a plain wall, light raking from one side to show depth.",
-  "printique-tray": "Shot 10: the tray from above holding keys, a watch and earbuds.",
-};
-
-export function shotFor(product: Pick<Product, "id" | "slug" | "name">) {
-  return pendingShots[product.slug || product.id] || `Real photo of the ${product.name} on a desk, printed in its default colour.`;
-}
-
 /**
  * The photos to show for a chosen colour. Only single-colour products switch: their photos can be
  * tagged with the colour they show. The chosen colour's photos come first, then general (untagged)

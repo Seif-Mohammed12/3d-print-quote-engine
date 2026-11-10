@@ -13,7 +13,6 @@ import {
   formatEGP,
   hasDiscount,
   imagesForColor,
-  shotFor,
 } from "@/lib/catalog-format";
 import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -212,7 +211,6 @@ export default function ProductDetail() {
               catalogueNo={no}
               spineHex={selectedPrimary?.hex || "#2A2A2D"}
               spineLabel={selectedPrimary?.name}
-              shot={shotFor(product)}
               loading="eager"
             >
               {hasMultipleImages ? (

@@ -1,7 +1,6 @@
 import { Link } from "react-router-dom";
 import { ArrowUpRight } from "lucide-react";
 import Layout from "@/components/Layout";
-import PhotoPending from "@/components/catalog/PhotoPending";
 
 const routes = [
   {
@@ -106,11 +105,7 @@ const Services = () => (
     </section>
 
     <section className="frame mb-20 mt-20 grid gap-8 md:mb-28 md:mt-28 md:grid-cols-12 md:gap-10">
-      <div className="aspect-[4/3] md:col-span-6">
-        {/* PHOTO PLACEHOLDER: shot list #11 */}
-        <PhotoPending shot="Shot 11: a customer's custom print next to their sketch or the STL on a laptop screen." />
-      </div>
-      <div className="md:col-span-5 md:col-start-8 md:self-center">
+      <div className="md:col-span-7">
         <h2 className="text-[28px] font-bold leading-[1.05] tracking-[-0.03em] md:text-4xl">Not sure it can be printed?</h2>
         <p className="mt-4 max-w-md text-muted-foreground">
           Send it anyway. If a part needs changing to print well, we'll tell you why and suggest a fix.

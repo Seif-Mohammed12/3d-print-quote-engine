@@ -1,16 +1,8 @@
 import { useMemo } from "react";
 import { Link } from "react-router-dom";
 import Layout from "@/components/Layout";
-import PhotoPending from "@/components/catalog/PhotoPending";
 import { useProducts } from "@/hooks/use-brand-products";
 import { catalogueNo, productHref } from "@/lib/catalog-format";
-
-/* PHOTO PLACEHOLDERS: custom work the studio should photograph (shot list #13–#15) */
-const customShots = [
-  "Shot 13: a batch of the same custom part laid out in rows on the print bed.",
-  "Shot 14: close-up of layer lines on a curved print, raking light.",
-  "Shot 15: a custom gift print being packed for delivery.",
-];
 
 const Gallery = () => {
   const { data: products, isPending } = useProducts();
@@ -30,7 +22,7 @@ const Gallery = () => {
         <div className="grid gap-3 md:grid-cols-12 md:items-end">
           <h1 className="text-[40px] font-bold leading-none tracking-[-0.035em] md:col-span-6 md:text-[72px]">Gallery</h1>
           <p className="max-w-md text-muted-foreground md:col-span-6 md:justify-self-end md:text-right">
-            Every shot of every piece on the shelf, plus custom work as we photograph it. Tap a frame to open the product.
+            Every shot of every piece on the shelf. Tap a frame to open the product.
           </p>
         </div>
       </section>
@@ -55,13 +47,6 @@ const Gallery = () => {
                   </Link>
                 </li>
               ))}
-          {!isPending
-            ? customShots.map((shot) => (
-                <li key={shot} className="aspect-square">
-                  <PhotoPending shot={shot} />
-                </li>
-              ))
-            : null}
         </ul>
       </section>
     </Layout>

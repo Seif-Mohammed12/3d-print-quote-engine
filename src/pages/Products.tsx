@@ -14,7 +14,6 @@ import {
   formatEGP,
   hasDiscount,
   productHref,
-  shotFor,
 } from "@/lib/catalog-format";
 
 type Filter = "all" | (typeof categoryOrder)[number];
@@ -128,7 +127,6 @@ export default function Products() {
                       catalogueNo={no}
                       spineHex={firstColorHex(product)}
                       spineColors={product.primaryColors.map((c) => c.hex)}
-                      shot={shotFor(product)}
                       loading={idx < 2 ? "eager" : "lazy"}
                     />
                   </Link>

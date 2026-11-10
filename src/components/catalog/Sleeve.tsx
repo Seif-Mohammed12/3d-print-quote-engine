@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
-import PhotoPending from "./PhotoPending";
 
 type SleeveProps = {
   src?: string;
@@ -11,7 +10,6 @@ type SleeveProps = {
   spineLabel?: string;
   /** Listing mode: the spine shows every colour the product comes in as stacked bands. */
   spineColors?: string[];
-  shot?: string;
   className?: string;
   loading?: "eager" | "lazy";
   children?: ReactNode;
@@ -40,7 +38,6 @@ export default function Sleeve({
   spineHex,
   spineLabel,
   spineColors,
-  shot,
   className,
   loading = "lazy",
   children,
@@ -89,7 +86,7 @@ export default function Sleeve({
         {src ? (
           <img src={src} alt={alt} loading={loading} decoding="async" className="h-full w-full object-cover" />
         ) : (
-          <PhotoPending shot={shot} />
+          <div className="h-full w-full bg-card" aria-hidden="true" />
         )}
         {children}
       </div>

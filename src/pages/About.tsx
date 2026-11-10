@@ -1,6 +1,5 @@
 import { Link } from "react-router-dom";
 import Layout from "@/components/Layout";
-import PhotoPending from "@/components/catalog/PhotoPending";
 
 const timeline = [
   { year: "2021", text: "Started in New Cairo printing other people's files: parts, gifts, school projects." },
@@ -22,11 +21,7 @@ const About = () => (
     </section>
 
     <section className="frame mt-10 grid gap-8 md:mt-16 md:grid-cols-12 md:gap-10">
-      <div className="aspect-[4/5] md:col-span-5">
-        {/* PHOTO PLACEHOLDER: shot list #12 */}
-        <PhotoPending shot="Shot 12: portrait of the founder at the desk with a part in hand, printers soft in the background." />
-      </div>
-      <div className="md:col-span-6 md:col-start-7">
+      <div className="md:col-span-8">
         <div className="max-w-[60ch] space-y-5 text-[17px] leading-relaxed text-muted-foreground">
           <p>
             <span className="text-foreground">3D Print It</span> is run by <span className="text-foreground">[Founder name]</span>. It began in
