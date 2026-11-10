@@ -186,15 +186,12 @@ const Home = () => {
       <section className="frame mb-20 mt-28 grid gap-8 md:mb-28 md:mt-40 md:grid-cols-12 md:gap-10" aria-labelledby="maker-title">
         <div className="md:col-span-7">
           <h2 id="maker-title" className="text-[32px] font-bold leading-[1.02] tracking-[-0.03em] md:text-5xl">
-            A small studio that designs what it prints.
+            Bringing ideas to life, one layer at a time.
           </h2>
           <p className="mt-5 max-w-md text-muted-foreground">
-            We started in 2021 printing other
-            people's files and now design our own desk gear and decor. Layer lines are part of the look, not a flaw we hide.
+            3D Print It is a small 3D printing studio in New Cairo, founded in 2021. We print custom work, from files, sketches or ideas, and design our own desk gear and decor.
           </p>
-          <p className="mt-5 text-[15px] text-muted-foreground">
-            — <span className="text-foreground">[Founder name]</span> · last print off the bed: <span className="text-foreground">[date]</span>
-          </p>
+          <p className="mt-5 font-bold">Your idea. Our printers. Made real.</p>
           <Link to="/about" className="link-quiet mt-4 inline-flex min-h-11 items-center text-[15px]">
             More about the studio
           </Link>

@@ -7,9 +7,9 @@
   targetPort = 8080
 
 [env.production]
-  SENDGRID_API_KEY = "@sendgrid_api_key"
+  RESEND_API_KEY = "@resend_api_key"
+  RESEND_FROM_EMAIL = "@resend_from_email"
   ADMIN_EMAIL = "@admin_email"
-  SENDGRID_FROM_EMAIL = "@sendgrid_from_email"
 
 [[redirects]]
   from = "/api/*"

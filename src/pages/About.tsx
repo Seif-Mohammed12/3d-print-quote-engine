@@ -16,7 +16,7 @@ const About = () => (
   <Layout>
     <section className="frame pt-8 md:pt-14">
       <h1 className="max-w-4xl text-[40px] font-bold leading-[0.95] tracking-[-0.035em] md:text-[72px]">
-        A small studio in New Cairo that designs what it prints.
+            Bringing ideas to life, one layer at a time.
       </h1>
     </section>
 
@@ -24,14 +24,17 @@ const About = () => (
       <div className="md:col-span-8">
         <div className="max-w-[60ch] space-y-5 text-[17px] leading-relaxed text-muted-foreground">
           <p>
-            <span className="text-foreground">3D Print It</span> is run by <span className="text-foreground">[Founder name]</span>. It began in
-            2021 as a print-on-demand service: people sent files, we printed them.
+            <span className="text-foreground">3D Print It</span> is a small 3D printing studio in New Cairo, founded in 2021.
+             We started by printing other people’s files, and we still do: parts, prototypes, gifts and one-off projects,
+              printed to order in the colours you choose.
           </p>
           <p>
-            Somewhere along the way we started designing our own pieces, mostly for the desk we sit at all day: headphone stands, controller
-            docks, phone mounts, then vases and wall panels for the rest of the room.
+            Along the way we started designing our own pieces too: desk gear, home decor and gaming accessories,
+            made to be used every day.
           </p>
-          <p>Custom printing never stopped. Send a file or an idea and it goes on the same printers.</p>
+          <p>Whether you have a model ready to print, or just a sketch or an idea,
+            we’ll help you take the next step and tell you honestly what will and won’t print well.</p>
+          <p className="font-bold">Your idea. Our printers. Made real.</p>
         </div>
 
         <dl className="ruled mt-10 border-y border-border">
