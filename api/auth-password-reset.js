@@ -1,10 +1,9 @@
 import { json } from "./_lib/http.js";
 import { getSupabaseAdmin } from "./_lib/supabase-admin.js";
 import { getResendFromEmail, isResendConfigured, sendResendEmail } from "./_lib/resend.js";
-
-function isValidEmail(email) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || "").trim());
-}
+import { escapeHtml } from "./_lib/order-email.js";
+import { isValidEmail } from "./_lib/order-pricing.js";
+import { resolveResetRedirect } from "./_lib/redirects.js";
 
 function buildCustomerResetEmailHtml({ email, resetLink }) {
   return `
@@ -12,7 +11,7 @@ function buildCustomerResetEmailHtml({ email, resetLink }) {
     <div style="max-width: 620px; margin: 0 auto; background: #ffffff; border-radius: 14px; overflow: hidden; border: 1px solid #e5e7eb;">
       <div style="background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color: white; padding: 24px 28px;">
         <h2 style="margin: 0; font-size: 24px;">Reset your password</h2>
-        <p style="margin: 8px 0 0; opacity: 0.95;">We received a password reset request for ${email}.</p>
+        <p style="margin: 8px 0 0; opacity: 0.95;">We received a password reset request for ${escapeHtml(email)}.</p>
       </div>
 
       <div style="padding: 24px 28px;">
@@ -21,7 +20,7 @@ function buildCustomerResetEmailHtml({ email, resetLink }) {
         </p>
 
         <a
-          href="${resetLink}"
+          href="${escapeHtml(resetLink)}"
           style="display: inline-block; background: #2563eb; color: #ffffff; text-decoration: none; font-weight: 600; padding: 12px 18px; border-radius: 8px;"
         >
           Reset password
@@ -29,7 +28,7 @@ function buildCustomerResetEmailHtml({ email, resetLink }) {
 
         <p style="margin: 18px 0 0; font-size: 13px; color: #6b7280; word-break: break-word;">
           If the button doesn't work, copy and paste this URL into your browser:<br/>
-          <a href="${resetLink}" style="color: #2563eb;">${resetLink}</a>
+          <a href="${escapeHtml(resetLink)}" style="color: #2563eb;">${escapeHtml(resetLink)}</a>
         </p>
 
         <p style="margin: 18px 0 0; font-size: 13px; color: #6b7280;">
@@ -57,15 +56,14 @@ export const handler = async (event) => {
 
     const body = JSON.parse(event.body || "{}");
     const email = String(body?.email || "").trim().toLowerCase();
-    const redirectTo = String(body?.redirectTo || "").trim();
 
     if (!isValidEmail(email)) {
       return json(400, { error: "Valid email is required" });
     }
 
-    if (!redirectTo) {
-      return json(400, { error: "redirectTo is required" });
-    }
+    // The link in the email carries a one-time recovery token. Only ever send people to this
+    // site: a caller-chosen redirect would hand that token to whoever requested the reset.
+    const redirectTo = resolveResetRedirect(body?.redirectTo, event);
 
     const { data, error } = await supabaseAdmin.auth.admin.generateLink({
       type: "recovery",
@@ -82,7 +80,8 @@ export const handler = async (event) => {
           message: "If an account exists for this email, a reset link has been sent.",
         });
       }
-      return json(500, { error: error.message || "Failed to generate reset link" });
+      console.error("auth-password-reset: generateLink failed:", error.message);
+      return json(500, { error: "Failed to send reset email" });
     }
 
     const resetLink =
@@ -113,6 +112,6 @@ export const handler = async (event) => {
       errors: err?.details,
     };
     console.error("❌ auth-password-reset error:", JSON.stringify(details, null, 2));
-    return json(500, { error: err?.message || "Failed to send reset email", details });
+    return json(500, { error: "Failed to send reset email" });
   }
 };

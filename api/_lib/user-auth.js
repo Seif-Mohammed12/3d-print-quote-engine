@@ -31,6 +31,5 @@ export async function requireUser(event) {
     return { ok: false, response: json(401, { error: "Invalid or expired token" }) };
   }
 
-  logDebug('Token validation succeeded', { userId: data.user.id, email: data.user.email });
   return { ok: true, user: data.user, token };
 }

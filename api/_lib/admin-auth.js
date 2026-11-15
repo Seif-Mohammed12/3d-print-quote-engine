@@ -9,18 +9,26 @@ function parseAllowedAdminEmails() {
     .filter(Boolean);
 }
 
-async function isAdminInDb(authClient, userId) {
+const ROLE_RANK = { viewer: 1, manager: 2, admin: 3 };
+
+async function getDbAdminRole(authClient, userId) {
   const { data, error } = await authClient
     .from("admin_users")
-    .select("id")
+    .select("id, role")
     .eq("id", userId)
     .maybeSingle();
 
-  if (error) return false;
-  return Boolean(data?.id);
+  if (error || !data?.id) return null;
+  return ROLE_RANK[data.role] ? data.role : null;
 }
 
-export async function requireAdmin(event) {
+/**
+ * Verifies the caller's Supabase token and their admin role.
+ *
+ * `minRole` defaults by HTTP method: reads (GET) need at least "viewer", anything that changes
+ * data needs at least "manager". Pass { minRole: "admin" } for destructive actions.
+ */
+export async function requireAdmin(event, { minRole } = {}) {
   const authHeader = event?.headers?.authorization || event?.headers?.Authorization || "";
   const token = authHeader.startsWith("Bearer ") ? authHeader.slice("Bearer ".length) : "";
 
@@ -43,16 +51,25 @@ export async function requireAdmin(event) {
     return { ok: false, response: json(500, { error: "Server misconfigured: Supabase env vars are missing" }) };
   }
 
-  const dbAdmin = await isAdminInDb(supabase, data.user.id);
-  if (!dbAdmin) {
+  let role = await getDbAdminRole(supabase, data.user.id);
+  if (!role) {
     // Temporary compatibility fallback while teams migrate current admins to public.admin_users.
+    // Only a confirmed email counts: otherwise anyone could sign up with an allowlisted
+    // address that has no account yet and become an admin without ever proving they own it.
     const userEmail = data.user.email.toLowerCase();
     const allowed = parseAllowedAdminEmails();
-    if (!allowed.includes(userEmail)) {
+    const emailConfirmed = Boolean(data.user.email_confirmed_at || data.user.confirmed_at);
+    if (!emailConfirmed || !allowed.includes(userEmail)) {
       return { ok: false, response: json(403, { error: "Not authorized for admin actions" }) };
     }
+    role = "admin";
   }
 
-  return { ok: true, user: data.user, supabase };
+  const required = minRole || (event?.httpMethod === "GET" ? "viewer" : "manager");
+  if (ROLE_RANK[role] < (ROLE_RANK[required] || ROLE_RANK.admin)) {
+    return { ok: false, response: json(403, { error: `Your admin role (${role}) can't do this.` }) };
+  }
+
+  return { ok: true, user: data.user, supabase, role };
 }
 

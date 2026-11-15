@@ -1,5 +1,19 @@
 import { getResendFromEmail, isResendConfigured, sendResendEmail } from './_lib/resend.js';
 import busboy from 'busboy';
+import { legacyFlowDisabledResponse } from './_lib/legacy-flow.js';
+import { escapeHtml } from './_lib/order-email.js';
+import { isValidEmail } from './_lib/order-pricing.js';
+
+// Everything in orderDetails is typed by the visitor and goes straight into HTML email, so
+// escape every string before the templates see it.
+function escapeDeep(value) {
+  if (typeof value === 'string') return escapeHtml(value);
+  if (Array.isArray(value)) return value.map(escapeDeep);
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, escapeDeep(v)]));
+  }
+  return value;
+}
 import { Readable } from 'node:stream';
 
 const corsHeaders = {
@@ -49,6 +63,9 @@ export const handler = async (event) => {
     return json(405, { error: 'Method not allowed' });
   }
 
+  const retired = legacyFlowDisabledResponse();
+  if (retired) return retired;
+
   try {
     if (!isResendConfigured()) {
       console.error('❌ Resend config missing (RESEND_API_KEY and/or RESEND_FROM_EMAIL)');
@@ -82,7 +99,7 @@ export const handler = async (event) => {
         if (fieldname === 'orderDetails') {
           try {
             orderDetails = JSON.parse(val);
-            console.log('📦 Parsed order:', orderDetails?.customer, 'Items:', orderDetails?.items?.length);
+            console.log('📦 Parsed order. Items:', orderDetails?.items?.length);
           } catch (e) {
             parseError = 'Invalid JSON in orderDetails';
           }
@@ -163,6 +180,14 @@ export const handler = async (event) => {
           return;
         }
 
+        const recipient = String(orderDetails.email || '').trim();
+        if (!isValidEmail(recipient) || !Array.isArray(orderDetails.items) || orderDetails.items.length > 30) {
+          resolve(json(400, { error: 'Invalid order details' }));
+          return;
+        }
+        const subjectName = String(orderDetails.customer || '').replace(/[\r\n]+/g, ' ').slice(0, 100);
+        orderDetails = escapeDeep(orderDetails);
+
         try {
           console.log('📎 Files ready for sending:', files.length, 'File names:', files.map(f => f.filename).join(', '));
           console.log('📎 File sizes:', files.map(f => `${f.filename}: ${(f.content.length / 1024).toFixed(2)}KB`).join(', '));
@@ -172,7 +197,7 @@ export const handler = async (event) => {
           const adminEmail = {
             to: process.env.ADMIN_EMAIL || '3d.print.ittt@gmail.com',
             from: getResendFromEmail(),
-            subject: `🎉 New Order - ${orderDetails.customer} (${orderDetails.items.length} files)`,
+            subject: `🎉 New Order - ${subjectName} (${orderDetails.items.length} files)`,
             html: adminEmailHTML,
             attachments: files,
           };
@@ -181,14 +206,13 @@ export const handler = async (event) => {
           // Email to customer (without files, just confirmation)
           const customerEmailHTML = createCustomerEmailHTML(orderDetails);
           const customerEmail = {
-            to: orderDetails.email,
+            to: recipient,
             from: getResendFromEmail(),
             subject: `✓ Order Confirmed - 3D Print It (${orderDetails.items.length} files)`,
             html: customerEmailHTML,
           };
 
           // Send both emails
-          console.log('📤 Sending emails to admin:', adminEmail.to, 'and customer:', customerEmail.to);
           console.log('📤 RESEND_API_KEY present:', Boolean(process.env.RESEND_API_KEY));
 
           try {

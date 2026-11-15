@@ -166,7 +166,9 @@ function getOrCreateGuestToken() {
   const key = "guest_order_token";
   const existing = localStorage.getItem(key);
   if (existing) return existing;
-  const token = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+  // Whoever holds this token can claim the guest's orders, so it must be unguessable.
+  const bytes = crypto.getRandomValues(new Uint8Array(24));
+  const token = Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
   localStorage.setItem(key, token);
   return token;
 }

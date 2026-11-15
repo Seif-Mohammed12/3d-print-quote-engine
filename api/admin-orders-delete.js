@@ -6,7 +6,8 @@ export const handler = async (event) => {
   if (event.httpMethod === "OPTIONS") return json(200, { ok: true });
   if (event.httpMethod !== "DELETE") return json(405, { error: "Method not allowed" });
 
-  const admin = await requireAdmin(event);
+  // Deleting orders is irreversible, so it needs the full admin role.
+  const admin = await requireAdmin(event, { minRole: "admin" });
   if (!admin.ok) return admin.response;
 
   const supabase = getSupabaseAdmin();

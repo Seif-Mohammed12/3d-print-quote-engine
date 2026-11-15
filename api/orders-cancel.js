@@ -17,7 +17,7 @@ export const handler = async (event) => {
   try {
     const body = JSON.parse(event.body || "{}");
     const orderId = String(body?.orderId || "").trim();
-    const reason = String(body?.reason || "").trim();
+    const reason = String(body?.reason || "").trim().slice(0, 500);
 
     if (!orderId) return json(400, { error: "Missing order ID" });
 
@@ -51,10 +51,14 @@ export const handler = async (event) => {
       .update({ status: "cancelled", metadata: nextMetadata })
       .eq("id", orderId)
       .eq("user_id", auth.user.id)
+      // Re-check the status in the same statement, so an order the studio moved to
+      // "processing" a moment ago can't be cancelled by a request that raced it.
+      .in("status", CANCELLABLE_STATUSES)
       .select("id, order_code, status")
-      .single();
+      .maybeSingle();
 
     if (updateError) return json(500, { error: updateError.message });
+    if (!updated) return json(409, { error: "This order can no longer be cancelled." });
 
     return json(200, { success: true, order: updated });
   } catch (error) {
