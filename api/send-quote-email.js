@@ -1,5 +1,6 @@
 import { getResendFromEmail, isResendConfigured, sendResendEmail } from "./_lib/resend.js";
 import busboy from "busboy";
+import { legacyFlowDisabledResponse } from "./_lib/legacy-flow.js";
 import { Readable } from "node:stream";
 
 const corsHeaders = {
@@ -36,6 +37,9 @@ export const handler = async (event) => {
   const method = event?.httpMethod || "GET";
   if (method === "OPTIONS") return json(200, { ok: true });
   if (method !== "POST") return json(405, { error: "Method not allowed" });
+
+  const retired = legacyFlowDisabledResponse();
+  if (retired) return retired;
 
   try {
     if (!isResendConfigured()) {

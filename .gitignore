@@ -12,6 +12,11 @@ dist
 dist-ssr
 *.local
 
+# Environment files hold secrets; only the example is tracked.
+.env
+.env.*
+!.env.example
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
@@ -25,4 +30,3 @@ dist-ssr
 
 # Local Netlify folder
 .netlify
-.env.example

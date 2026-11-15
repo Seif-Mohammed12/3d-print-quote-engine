@@ -34,35 +34,6 @@ type CartLineResolved = {
   lineSubtotal: number;
 };
 
-type ProductOrderEmailResponse = {
-  success?: boolean;
-  error?: string;
-};
-
-async function sendProductOrderEmail(payload: Record<string, unknown>) {
-  const response = await fetch("/api/send-product-order-email", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
-
-  const contentType = response.headers.get("content-type") || "";
-  let data: ProductOrderEmailResponse | null = null;
-  let text: string | null = null;
-
-  try {
-    if (contentType.includes("application/json")) {
-      data = await response.json();
-    } else {
-      text = await response.text();
-    }
-  } catch {
-    // ignore
-  }
-
-  return { ok: response.ok, status: response.status, data, text };
-}
-
 export default function ProductCheckout() {
   const navigate = useNavigate();
   const { clearProductCart, productCart } = useCart();
@@ -181,7 +152,8 @@ export default function ProductCheckout() {
       const live = cartQueries[idx]?.data;
       const legacy = live ? mapDbProductToLegacyProduct(live) : getProduct(item.brand, item.productId);
       const qty = Math.max(1, item.qty || 1);
-      const unitPrice = item.unitPrice;
+      // Charge the live catalogue price (the server enforces it), not the price saved in the cart.
+      const unitPrice = legacy ? getUnitPrice(legacy, false) : item.unitPrice;
       const lineSubtotal = unitPrice * qty;
       if (!legacy) {
         return {
@@ -448,30 +420,28 @@ export default function ProductCheckout() {
       const created = await createOrderRecord(payload);
       const persistedOrder = created?.order || null;
 
+      // The server prices the order and sends the emails; show what it actually recorded.
+      const serverItems = Array.isArray(created?.items) && created.items.length > 0 ? created.items : null;
       const payloadWithOrder = {
         ...payload,
+        ...(serverItems && checkoutMode === "cart" ? { items: serverItems } : {}),
+        ...(serverItems && checkoutMode !== "cart" ? { product: { ...serverItems[0], id: serverItems[0].productId } } : {}),
+        totals: created?.totals || payload.totals,
         orderId: persistedOrder?.id,
         orderCode: persistedOrder?.order_code,
       };
 
-      const result = await sendProductOrderEmail(payloadWithOrder);
-      if (!result.ok || !result.data?.success) {
-        const apiError =
-          result.data?.error ||
-          (result.text ? result.text.slice(0, 140) : null) ||
-          (result.status ? `Request failed (${result.status})` : "Failed to place order");
-        toast.error(apiError);
-        setIsSubmitting(false);
-        return;
-      }
-
       sessionStorage.setItem("lastProductOrder", JSON.stringify(payloadWithOrder));
       sessionStorage.removeItem("productOrderDraft");
-      toast.success("Order placed! Confirmation sent to your email.");
+      toast.success(
+        created?.emailSent === false
+          ? "Order placed! We couldn't email your confirmation, so keep your order code."
+          : "Order placed! Confirmation sent to your email."
+      );
       navigate("/product-order-confirmation", { replace: true });
       clearProductCart();
-    } catch {
-      toast.error("Failed to place order");
+    } catch (err) {
+      toast.error(err instanceof Error && err.message ? err.message : "Failed to place order");
     } finally {
       setIsSubmitting(false);
     }

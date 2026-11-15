@@ -1,6 +1,7 @@
 import { json } from "./_lib/http.js";
 import { getSupabaseAdmin } from "./_lib/supabase-admin.js";
 import { requireUser } from "./_lib/user-auth.js";
+import { isValidGuestToken } from "./_lib/order-pricing.js";
 
 export const handler = async (event) => {
   if (event.httpMethod === "OPTIONS") return json(200, { ok: true });
@@ -18,6 +19,10 @@ export const handler = async (event) => {
 
     if (!guestToken) {
       return json(400, { error: "Missing guest token" });
+    }
+    // Reject short or malformed tokens outright so the endpoint can't be used to guess them.
+    if (!isValidGuestToken(guestToken)) {
+      return json(200, { success: true, updated: 0 });
     }
 
     const { data, error } = await supabase

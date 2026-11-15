@@ -1,12 +1,14 @@
 import { json } from "./_lib/http.js";
+import { requireAdmin } from "./_lib/admin-auth.js";
 
 /**
- * TEMPORARY DIAGNOSTIC ENDPOINT - Remove before production
- * 
- * Used to diagnose environment variable configuration on Netlify Functions.
- * Only responds when ?debug=auth or ?debug=email query param is present (manual safety check).
- * 
+ * Diagnostic endpoint for environment variable configuration on Netlify Functions.
+ *
+ * Admin only: it reports which secrets are configured and the sender address, which is
+ * reconnaissance material for an attacker. It never returns secret values or admin emails.
+ *
  * Accessible via: GET /api/debug-env?debug=auth or /api/debug-env?debug=email
+ * with an admin's `Authorization: Bearer <token>` header.
  */
 export const handler = async (event) => {
   // Safety check: only respond if debug param is present
@@ -18,6 +20,9 @@ export const handler = async (event) => {
 
   if (event.httpMethod === "OPTIONS") return json(200, { ok: true });
   if (event.httpMethod !== "GET") return json(405, { error: "Method not allowed" });
+
+  const admin = await requireAdmin(event, { minRole: "admin" });
+  if (!admin.ok) return admin.response;
 
   const timestamp = new Date().toISOString();
   
@@ -56,7 +61,6 @@ export const handler = async (event) => {
     admin: {
       emailsConfigured: adminEmailsRaw.length > 0,
       emailsCount: adminEmails.length,
-      sampleEmails: adminEmails.slice(0, 3), // Only show first 3 for privacy
     },
     resend: {
       apiKeyConfigured: Boolean(process.env.RESEND_API_KEY),
@@ -81,7 +85,7 @@ export const handler = async (event) => {
     },
   };
 
-  console.log('[DEBUG-ENV] Environment diagnostic requested', { diagnostics });
+  console.log('[DEBUG-ENV] Environment diagnostic requested');
 
   return json(200, diagnostics);
 };

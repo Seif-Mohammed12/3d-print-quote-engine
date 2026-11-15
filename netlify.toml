@@ -11,6 +11,17 @@
   RESEND_FROM_EMAIL = "@resend_from_email"
   ADMIN_EMAIL = "@admin_email"
 
+# Browser security headers for every response.
+[[headers]]
+  for = "/*"
+  [headers.values]
+    # Nobody may frame the site (clickjacking on checkout, account and admin pages).
+    X-Frame-Options = "DENY"
+    Content-Security-Policy = "frame-ancestors 'none'; base-uri 'self'; object-src 'none'; form-action 'self'"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=(), payment=()"
+
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/:splat"

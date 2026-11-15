@@ -1,4 +1,5 @@
 import { json } from "./_lib/http.js";
+import { legacyFlowDisabledResponse } from "./_lib/legacy-flow.js";
 import { getSupabaseAdmin, getSupabaseForAuthVerify } from "./_lib/supabase-admin.js";
 import { analyzeStoredUpload } from "./_lib/geometry-analysis.js";
 
@@ -26,6 +27,9 @@ async function requireUser(event) {
 export const handler = async (event) => {
   if (event.httpMethod === "OPTIONS") return json(200, { ok: true });
   if (event.httpMethod !== "POST") return json(405, { error: "Method not allowed" });
+
+  const retired = legacyFlowDisabledResponse();
+  if (retired) return retired;
 
   const auth = await requireUser(event);
   if (!auth.ok) return auth.response;

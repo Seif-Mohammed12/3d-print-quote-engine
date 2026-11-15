@@ -23,7 +23,6 @@ export const handler = async (event) => {
   const auth = await requireUser(event);
   if (!auth.ok) return auth.response;
 
-  logDebug('Request received', { userId: auth.user.id, email: auth.user.email });
 
   const supabase = getSupabaseForAdminDb(auth.token);
   if (!supabase) return json(500, { error: "Server misconfigured: Supabase env vars are missing" });
@@ -36,7 +35,7 @@ export const handler = async (event) => {
 
   if (error) {
     logDebug('DB query error', { error: error.message });
-    return json(500, { error: error.message });
+    return json(500, { error: "Could not check your role." });
   }
 
   const role = data?.role || null;
@@ -44,13 +43,13 @@ export const handler = async (event) => {
 
   const allowedEmails = parseAllowedAdminEmails();
   const adminEmailsSet = Boolean(process.env.ADMIN_EMAILS || process.env.ADMIN_EMAIL);
-  logDebug('Email allowlist check', { 
-    userEmail: auth.user.email, 
-    adminEmailsConfigured: adminEmailsSet,
-    emaiCount: allowedEmails.length 
-  });
+  logDebug('Email allowlist check', { adminEmailsConfigured: adminEmailsSet });
 
-  const isFallbackAdmin = Boolean(auth.user?.email && allowedEmails.includes(auth.user.email.toLowerCase()));
+  // Mirrors requireAdmin: the allowlist only counts for a confirmed email address.
+  const emailConfirmed = Boolean(auth.user?.email_confirmed_at || auth.user?.confirmed_at);
+  const isFallbackAdmin = Boolean(
+    emailConfirmed && auth.user?.email && allowedEmails.includes(auth.user.email.toLowerCase())
+  );
   logDebug('Email fallback result', { isFallbackAdmin, isInAllowlist: isFallbackAdmin });
 
   const isAdmin = Boolean(role) || isFallbackAdmin;
