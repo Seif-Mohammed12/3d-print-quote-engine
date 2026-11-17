@@ -1,5 +1,6 @@
 import type { BrandId, Product, ProductBundleItem, ProductColor } from "@/lib/brand-catalog";
 import { getAccessToken } from "@/lib/auth-session";
+import { fetchShopifyProducts, isShopifyCatalogEnabled } from "@/lib/shopify-storefront";
 
 export type DbProduct = {
   id: string;
@@ -24,6 +25,7 @@ export type DbProduct = {
 };
 
 export async function fetchPublicProducts(brand?: BrandId): Promise<DbProduct[]> {
+  if (isShopifyCatalogEnabled) return fetchShopifyProducts(brand);
   const url = brand ? `/api/products-catalog?brand=${brand}` : "/api/products-catalog";
   const res = await fetch(url);
   const raw = await res.text();
