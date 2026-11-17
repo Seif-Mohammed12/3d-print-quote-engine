@@ -1,52 +1,50 @@
-# 3D Print It - Professional 3D Printing Quote Engine
+# 3D Print It
 
-**📌 PRIVATE PROJECT** - Internal use only
+The storefront for a 3D printing studio in New Cairo, Egypt. Customers can browse the catalogue, order printed designs, request custom work, and contact the studio.
 
-A modern, sleek web application for calculating 3D printing quotes with real-time pricing, material selection, and instant estimates. Personal 3D printing business management tool.
+## Stack
 
-## 🌟 Features
+- Vite, React 18, TypeScript, Tailwind CSS, and Radix UI
+- Supabase for authentication, database, and product image storage
+- Netlify Functions under `api/`
+- Resend for contact, quote, order, and password-reset emails
+- 3D Print OS for the embedded custom-print quoter at `/quote`
 
-### Core Functionality
+## Local development
 
-- **STL File Upload & Parsing**: Upload STL files and automatically calculate volume and weight
-- **Real-time Quote Calculation**: Instant pricing based on material, quality, and infill settings
-- **Material Selection**: Choose from available materials (PLA, PETG) with "Coming Soon" indicators for future options
-- **Quality Settings**: Draft (0.3mm), Standard (0.2mm), and High (0.12mm) layer heights
-- **Infill Control**: Adjustable infill percentage (5-100%)
-- **Egyptian Pricing**: All prices displayed in Egyptian Pounds (EGP)
+```bash
+npm install
+npm run dev
+```
 
-### Advanced Features
+`npm run dev` starts the site at `http://localhost:8080`. To run the site with Netlify Functions, copy `.env.example` to `.env.local`, fill in the required values, and run:
 
-- **Smart Weight Calculation**: Accounts for shells, walls, and top/bottom layers for accurate weight estimates
-- **Tiered Time Pricing**: Free for ≤5 hours, 100 EGP for 5-15 hours, 150 EGP for 15+ hours
-- **Optimized for 0.6mm Nozzle & Sprite Extruder**: Calibrated for high-speed printing setup
-- **Responsive Design**: Works seamlessly on desktop and mobile devices
+```bash
+npm run dev:netlify
+```
 
-### Business Pages
+This starts the full local site at `http://localhost:8888`.
 
-- **Professional Landing Page**: Hero section with call-to-action
-- **Services Page**: Detailed service offerings with material availability status
-- **About Page**: Company story and values (Established 2021)
-- **Contact Page**: Contact form with Egyptian phone number and WhatsApp integration
-- **Gallery**: Showcase of 3D printed products
+## Environment variables
 
-### Technical Features
+The browser needs `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`. Netlify Functions need the Supabase server variables, `ADMIN_EMAILS`, and Resend's `RESEND_API_KEY` and `RESEND_FROM_EMAIL`. The Resend sender must use a verified domain.
 
-- **Modern UI/UX**: Glass morphism design with neon accents
-- **Smooth Animations**: Framer Motion powered transitions
-- **Form Validation**: Robust contact form with success notifications
-- **SEO Optimized**: Proper meta tags and semantic HTML
+See `.env.example` for the complete template. Never commit `.env.local` or service-role/API keys.
 
-## 🚀 Tech Stack
+## Commands
 
-- **Frontend**: React 18 with TypeScript
-- **Build Tool**: Vite
-- **Styling**: Tailwind CSS with custom design system
-- **Animations**: Framer Motion
-- **Routing**: React Router v6
-- **Icons**: Lucide React
-- **UI Components**: Radix UI primitives
-- **Notifications**: Sonner toast notifications
-- **Form Handling**: React Hook Form with Zod validation
+```bash
+npm run build
+npm run lint
+npm run test
+```
 
-**Established 2021** - Bringing your ideas to life, one layer at a time.
+Deployments use Netlify's `npm run build` command and publish the `dist` directory. Pushes to `main` deploy to production.
+
+## Project guides
+
+- `WEBSITE.md` — current routes, architecture, and operational notes
+- `DESIGN.md` — visual system and catalogue conventions
+- `PRODUCT.md` — audience, positioning, and voice
+- `SHOT_LIST.md` — photography plan
+- `HANDOFF.md` — current ownership and deployment notes
