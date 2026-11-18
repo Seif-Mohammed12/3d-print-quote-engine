@@ -119,6 +119,11 @@ export default function ProductCart() {
                             Primary: {primary}
                             {hasSecondaryColors ? ` • Secondary: ${secondary}` : ""}
                           </p>
+                          {item.options?.length ? (
+                            <p className="mt-1 text-xs text-muted-foreground">
+                              {item.options.map((o) => `${o.groupName}: ${o.valueLabel}`).join(" • ")}
+                            </p>
+                          ) : null}
                           {item.isBundle && item.bundleItems?.length ? (
                             <p className="mt-1 text-xs text-muted-foreground">
                               Includes: {item.bundleItems.map((bundleItem) => `${bundleItem.name}${bundleItem.qty > 1 ? ` x${bundleItem.qty}` : ""}`).join(", ")}

@@ -5,7 +5,7 @@ import Layout from "@/components/Layout";
 import Sleeve from "@/components/catalog/Sleeve";
 import CatalogueRow from "@/components/catalog/CatalogueRow";
 import { useProducts } from "@/hooks/use-brand-products";
-import { catalogueNo, categoryLabel, effectivePrice, firstColorHex, formatEGP, productHref } from "@/lib/catalog-format";
+import { catalogueNo, effectivePrice, firstColorHex, formatEGP, productCategoryLabel, productHref } from "@/lib/catalog-format";
 
 const commissions = [
   { to: "/quote", title: "Have an STL?", body: "Upload it and get a price in about a minute." },
@@ -114,7 +114,7 @@ const Home = () => {
                         </span>
                         <span className="shrink-0 text-[15px] text-muted-foreground">{formatEGP(effectivePrice(product))}</span>
                       </span>
-                      <span className="mt-0.5 block text-sm text-muted-foreground">{categoryLabel[product.brand || ""] || "Product"}</span>
+                      <span className="mt-0.5 block text-sm text-muted-foreground">{productCategoryLabel(product)}</span>
                     </Link>
                   </li>
                 ))}

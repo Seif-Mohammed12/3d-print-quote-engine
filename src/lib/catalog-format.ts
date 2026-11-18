@@ -1,4 +1,4 @@
-import type { Product } from "@/lib/brand-catalog";
+import type { Product, SelectedOption } from "@/lib/brand-catalog";
 
 export const categoryLabel: Record<string, string> = {
   pforge: "Gaming & Setup",
@@ -52,4 +52,91 @@ export function imagesForColor(product: Pick<Product, "images" | "imageColorIds"
 
 export function firstColorHex(product: Pick<Product, "primaryColors">) {
   return product.primaryColors[0]?.hex || "hsl(var(--rule))";
+}
+
+/** The product's shelf name: its category, or the legacy label for products not yet moved. */
+export function productCategoryLabel(product: Pick<Product, "category" | "brand">) {
+  return product.category?.name || categoryLabel[product.brand || ""] || "Product";
+}
+
+/** Key used in shop filters and ?category= links. */
+export function productCategoryKey(product: Pick<Product, "category" | "brand">) {
+  return product.category?.slug || product.brand || "";
+}
+
+/**
+ * Filters for the shop, in the admin's category order. Only categories with products show.
+ * Falls back to the legacy shelves when no product has a category yet.
+ */
+export function storefrontCategories(products: Array<Pick<Product, "category" | "brand">>) {
+  const seen = new Map<string, { key: string; label: string; order: number }>();
+  for (const p of products) {
+    if (p.category) {
+      if (!seen.has(p.category.slug)) seen.set(p.category.slug, { key: p.category.slug, label: p.category.name, order: p.category.sortOrder });
+    } else if (p.brand && categoryLabel[p.brand] && !seen.has(p.brand)) {
+      seen.set(p.brand, { key: p.brand, label: categoryLabel[p.brand], order: 1000 + categoryOrder.indexOf(p.brand as (typeof categoryOrder)[number]) });
+    }
+  }
+  return [...seen.values()].sort((a, b) => a.order - b.order || a.label.localeCompare(b.label));
+}
+
+export function firstAvailableColorId(colors: Product["primaryColors"]) {
+  return (colors.find((c) => !c.outOfStock) || colors[0])?.id || "";
+}
+
+/** groupId → chosen valueId ("" for none). Required groups start on their first available value. */
+export type OptionSelection = Record<string, string>;
+
+export function defaultOptionSelection(product: Pick<Product, "optionGroups">): OptionSelection {
+  const sel: OptionSelection = {};
+  for (const g of product.optionGroups || []) {
+    sel[g.id] = g.isRequired ? g.values.find((v) => v.isAvailable)?.id || "" : "";
+  }
+  return sel;
+}
+
+export function selectedOptions(product: Pick<Product, "optionGroups">, selection: OptionSelection): SelectedOption[] {
+  const out: SelectedOption[] = [];
+  for (const g of product.optionGroups || []) {
+    const v = g.values.find((x) => x.id === selection[g.id]);
+    if (v) out.push({ groupId: g.id, groupName: g.name, valueId: v.id, valueLabel: v.label, priceDelta: v.priceDelta });
+  }
+  return out;
+}
+
+/** Required groups still without a choice (or with a value that's become unavailable). */
+export function missingRequiredOptions(product: Pick<Product, "optionGroups">, selection: OptionSelection) {
+  return (product.optionGroups || []).filter((g) => {
+    if (!g.isRequired) return false;
+    const v = g.values.find((x) => x.id === selection[g.id]);
+    return !v || !v.isAvailable;
+  });
+}
+
+/** Unit price with option adjustments. Mirrors api/_lib/order-pricing.js; the server decides. */
+export function priceWithOptions(product: Pick<Product, "basePrice" | "discount">, options: Array<{ priceDelta: number }>) {
+  const total = effectivePrice(product) + options.reduce((s, o) => s + Number(o.priceDelta || 0), 0);
+  return Math.max(0, Math.round(total * 100) / 100);
+}
+
+/** Photos for the current colour and option choices: photos of chosen option values first. */
+export function imagesForSelection(
+  product: Pick<Product, "images" | "imageColorIds" | "imageOptionValueIds" | "secondaryColors">,
+  colorId: string | undefined,
+  valueIds: string[]
+) {
+  const byColour = imagesForColor(product, colorId);
+  const tags = product.imageOptionValueIds;
+  if (!valueIds.length || !tags || tags.length !== product.images.length) return byColour;
+  const chosen = new Set(valueIds);
+  const own = product.images.filter((_, i) => tags[i] && chosen.has(tags[i] as string));
+  if (!own.length) return byColour;
+  return [...own, ...byColour.filter((src) => !own.includes(src))];
+}
+
+/** Re-read saved option choices against the live product so prices and labels are current. */
+export function liveOptions(product: Pick<Product, "optionGroups">, saved: SelectedOption[] | undefined): SelectedOption[] {
+  const selection: OptionSelection = {};
+  for (const o of saved || []) selection[o.groupId] = o.valueId;
+  return selectedOptions(product, selection);
 }

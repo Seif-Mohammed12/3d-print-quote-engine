@@ -1,5 +1,6 @@
 import { json } from "./_lib/http.js";
 import { requireAdmin } from "./_lib/admin-auth.js";
+import { friendlyDbError, isUuidValue } from "./_lib/product-admin.js";
 
 export const handler = async (event) => {
   if (event.httpMethod === "OPTIONS") return json(200, { ok: true });
@@ -17,18 +18,19 @@ export const handler = async (event) => {
   }
 
   const id = payload.id;
-  if (!id) return json(400, { error: "Missing id" });
+  if (!isUuidValue(id)) return json(400, { error: "Missing id" });
 
   const { data: images } = await supabase.from("product_images").select("image_path").eq("product_id", id);
+
+  // Delete the row first: if it fails (e.g. the product is part of a bundle) the photos stay.
+  const { error } = await supabase.from("products").delete().eq("id", id);
+  if (error) return json(400, { error: friendlyDbError(error) });
+
   const paths = (images || []).map((i) => i.image_path).filter(Boolean);
   if (paths.length) {
     const bucket = process.env.SUPABASE_PRODUCT_IMAGES_BUCKET || "product-images";
     await supabase.storage.from(bucket).remove(paths);
   }
 
-  const { error } = await supabase.from("products").delete().eq("id", id);
-  if (error) return json(500, { error: error.message });
-
   return json(200, { success: true });
 };
-

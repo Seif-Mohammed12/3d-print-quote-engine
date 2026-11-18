@@ -176,6 +176,44 @@
   .section-padding {
     @apply py-10 md:py-16;
   }
+
+  /*
+    Admin workspace. Same tokens as the storefront, denser rhythm: 14px body, 40px controls
+    (44px on touch screens), tabular figures everywhere, no sleeves or record styling.
+  */
+  .adm-input {
+    @apply h-10 w-full border border-input bg-background px-3 text-sm text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-60 coarse:h-11;
+  }
+  .adm-textarea {
+    @apply min-h-24 w-full border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:outline-none;
+  }
+  .adm-label {
+    @apply mb-1 block text-xs font-medium text-muted-foreground;
+  }
+  .adm-btn {
+    @apply inline-flex h-10 items-center justify-center gap-2 border border-rule px-3 text-sm font-medium text-foreground transition-colors hover:border-foreground hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50 coarse:h-11;
+  }
+  .adm-btn-primary {
+    @apply inline-flex h-10 items-center justify-center gap-2 bg-primary px-4 text-sm font-semibold text-primary-foreground transition-colors hover:bg-white disabled:cursor-not-allowed disabled:opacity-50 coarse:h-11;
+  }
+  .adm-btn-ghost {
+    @apply inline-flex h-10 items-center justify-center gap-2 px-2.5 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50 coarse:h-11;
+  }
+  .adm-btn-danger {
+    @apply inline-flex h-10 items-center justify-center gap-2 border border-destructive/50 px-3 text-sm font-medium text-destructive transition-colors hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-50 coarse:h-11;
+  }
+  .adm-icon-btn {
+    @apply inline-flex h-9 w-9 items-center justify-center text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40 coarse:h-11 coarse:w-11;
+  }
+  .adm-th {
+    @apply h-9 whitespace-nowrap px-3 text-left text-xs font-medium text-muted-foreground;
+  }
+  .adm-td {
+    @apply px-3 py-2 align-middle text-sm;
+  }
+  .num {
+    font-variant-numeric: tabular-nums;
+  }
 }
 
 @media (max-width: 767px) {

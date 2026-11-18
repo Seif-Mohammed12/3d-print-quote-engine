@@ -1,4 +1,4 @@
-import type { BrandId, Product, ProductBundleItem, ProductColor } from "@/lib/brand-catalog";
+import type { BrandId, Product, ProductBundleItem, ProductCategory, ProductColor, ProductOptionGroup } from "@/lib/brand-catalog";
 import { getAccessToken } from "@/lib/auth-session";
 import { fetchShopifyProducts, isShopifyCatalogEnabled } from "@/lib/shopify-storefront";
 
@@ -14,8 +14,11 @@ export type DbProduct = {
   images: string[];
   /** Colour shown in each photo, parallel to `images`; null for general shots. */
   imageColorIds?: Array<string | null>;
+  imageOptionValueIds?: Array<string | null>;
   primaryColors: ProductColor[];
   secondaryColors: ProductColor[];
+  category?: ProductCategory | null;
+  optionGroups?: ProductOptionGroup[];
   stockQty?: number;
   inStock?: boolean;
   isPublished?: boolean;
@@ -243,6 +246,8 @@ export async function adminUpsertColor(payload: {
   name: string;
   hex: string;
   sortOrder: number;
+  /** false keeps a one-off colour on this product only. */
+  saveToLibrary?: boolean;
 }) {
   return adminRequest<{ color: Record<string, unknown> }>("/api/admin-product-colors-upsert", {
     method: "POST",
@@ -290,8 +295,11 @@ export function mapDbProductToLegacyProduct(p: DbProduct): Product {
     discount: p.discount,
     images: p.images || [],
     imageColorIds: p.imageColorIds,
+    imageOptionValueIds: p.imageOptionValueIds,
     primaryColors: p.primaryColors || [],
     secondaryColors: p.secondaryColors || [],
+    category: p.category ?? null,
+    optionGroups: p.optionGroups || [],
     supportsLeds: false,
     ledExtraPrice: 0,
     isBundle: Boolean(p.isBundle),

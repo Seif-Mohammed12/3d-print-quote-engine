@@ -1,4 +1,5 @@
 import { json } from "./_lib/http.js";
+import { isMissingSchema } from "./_lib/schema.js";
 import { getSupabaseAdmin } from "./_lib/supabase-admin.js";
 import { requireUser } from "./_lib/user-auth.js";
 import { isLegacyQuoteFlowEnabled, LEGACY_FLOW_DISABLED_MESSAGE } from "./_lib/legacy-flow.js";
@@ -55,7 +56,38 @@ async function loadCatalogue(supabase, productIds) {
     }
   }
 
-  return { productsById, bundleItemsByProduct };
+  // Option groups and values. Until the admin workspace migration runs there are none.
+  const optionsByProduct = {};
+  const { data: groups, error: groupsError } = await supabase
+    .from("product_option_groups")
+    .select("id, product_id, name, is_required, product_option_values(id, label, price_delta, grams_delta, is_available)")
+    .in("product_id", productIds);
+  if (groupsError && !isMissingSchema(groupsError)) throw new Error("options lookup failed");
+  for (const g of groups || []) {
+    (optionsByProduct[g.product_id] ||= []).push({
+      id: g.id,
+      name: g.name,
+      is_required: Boolean(g.is_required),
+      values: g.product_option_values || [],
+    });
+  }
+
+  // Each product's colours, with the library's out-of-stock flag where it exists.
+  const { data: colours, error: coloursError } = await supabase
+    .from("product_colors")
+    .select("product_id, role, color_id, name")
+    .in("product_id", productIds);
+  if (coloursError) throw new Error("colour lookup failed");
+  const { data: library, error: libraryError } = await supabase.from("color_library").select("*");
+  if (libraryError) throw new Error("colour library lookup failed");
+  const outOfStock = new Set((library || []).filter((c) => c.out_of_stock).map((c) => c.color_id));
+  const coloursByProduct = {};
+  for (const c of colours || []) {
+    const entry = (coloursByProduct[c.product_id] ||= { primary: [], secondary: [] });
+    (c.role === "secondary" ? entry.secondary : entry.primary).push({ ...c, out_of_stock: outOfStock.has(c.color_id) });
+  }
+
+  return { productsById, bundleItemsByProduct, optionsByProduct, coloursByProduct };
 }
 
 /** Product order: everything about price comes from the database, never from the request. */
@@ -68,8 +100,8 @@ async function buildProductOrder(supabase, body) {
   if (payment.error) return { status: 400, error: payment.error };
 
   const ids = [...new Set(requested.value.map((i) => i.productId))];
-  const { productsById, bundleItemsByProduct } = await loadCatalogue(supabase, ids);
-  const priced = priceProductOrder(requested.value, productsById, bundleItemsByProduct);
+  const { productsById, bundleItemsByProduct, optionsByProduct, coloursByProduct } = await loadCatalogue(supabase, ids);
+  const priced = priceProductOrder(requested.value, productsById, bundleItemsByProduct, { optionsByProduct, coloursByProduct });
   if (priced.error) return { status: 409, error: priced.error };
 
   const { items, totals } = priced.value;
