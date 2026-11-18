@@ -101,6 +101,15 @@ export function bulkUpdateOrderStatus(orderIds: string[], status: OrderStatus) {
   );
 }
 
+/** Permanently deletes orders (admin role only). */
+export function bulkDeleteOrders(ids: string[]) {
+  return adminFetch<{ deleted: Array<{ id: string; order_code: string }>; missing: string[] }>("/api/admin-orders-delete", {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ids }),
+  });
+}
+
 export function orderTotal(order: Pick<AdminOrder, "totals">) {
   const n = Number(order.totals?.total);
   return Number.isFinite(n) ? n : 0;

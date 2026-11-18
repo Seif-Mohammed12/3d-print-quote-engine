@@ -1,8 +1,18 @@
 import { useEffect, useMemo, useState, type DragEvent } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Columns3, Download, RefreshCw, Rows3, Search, X } from "lucide-react";
+import { Columns3, Download, RefreshCw, Rows3, Search, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import AdminShell from "@/components/admin/AdminShell";
 import OrderDrawer from "@/components/admin/orders/OrderDrawer";
 import { EmptyState, ErrorState, ReadOnlyNotice, SkeletonRows, StatusBadge } from "@/components/admin/ui";
@@ -132,8 +142,8 @@ function Board({ orders, canWrite, onOpen }: { orders: AdminOrder[]; canWrite: b
 
 export default function AdminOrders() {
   const { data, isPending, error, refetch, isRefetching } = useAdminOrders();
-  const { canWrite } = useAdminPermissions();
-  const { bulkStatus } = useOrderMutations();
+  const { canWrite, isFullAdmin } = useAdminPermissions();
+  const { bulkStatus, bulkDelete } = useOrderMutations();
   const [params, setParams] = useSearchParams();
   const [search, setSearch] = useState("");
   const [view, setView] = useState<"table" | "board">(() => {
@@ -145,6 +155,7 @@ export default function AdminOrders() {
   });
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkBusy, setBulkBusy] = useState(false);
+  const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
 
   const filter = (params.get("status") as Filter) || "all";
   const openId = params.get("order");
@@ -312,10 +323,54 @@ export default function AdminOrders() {
             <button type="button" className="adm-btn h-9" onClick={() => exportRows(orders.filter((o) => selected.has(o.id)), "selected")}>
               <Download className="h-4 w-4" aria-hidden="true" /> Export selected
             </button>
+            {isFullAdmin ? (
+              <button type="button" className="adm-btn-danger h-9" disabled={bulkBusy} onClick={() => setConfirmBulkDelete(true)}>
+                <Trash2 className="h-4 w-4" aria-hidden="true" /> Delete selected…
+              </button>
+            ) : null}
             <span className="flex-1" />
             <button type="button" className="adm-btn-ghost h-9" onClick={() => setSelected(new Set())}>Clear selection</button>
           </div>
         ) : null}
+
+        <AlertDialog open={confirmBulkDelete} onOpenChange={(open) => !bulkBusy && setConfirmBulkDelete(open)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>
+                Delete {selected.size} order{selected.size === 1 ? "" : "s"}?
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                These orders, their items and their history are removed for good, including from customers' accounts. This can't be
+                undone. To stop an order, set it to Cancelled instead.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <p className="num max-h-32 overflow-y-auto text-xs text-muted-foreground">
+              {orders.filter((o) => selected.has(o.id)).map((o) => o.order_code).join(", ")}
+            </p>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={bulkBusy}>Keep them</AlertDialogCancel>
+              <AlertDialogAction
+                disabled={bulkBusy}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                onClick={async (e) => {
+                  e.preventDefault();
+                  setBulkBusy(true);
+                  try {
+                    await bulkDelete([...selected]);
+                    setSelected(new Set());
+                    setConfirmBulkDelete(false);
+                  } catch (err) {
+                    toast.error(err instanceof Error ? err.message : "Delete failed");
+                  } finally {
+                    setBulkBusy(false);
+                  }
+                }}
+              >
+                {bulkBusy ? "Deleting…" : `Delete ${selected.size} order${selected.size === 1 ? "" : "s"}`}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
         {isPending ? (
           <div className="border border-border bg-card"><SkeletonRows rows={6} /></div>

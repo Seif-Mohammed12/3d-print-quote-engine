@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import type { OrderStatus } from "@/lib/orders-api";
 import { AdminApiError, errorMessage, isSetupMissing } from "@/lib/admin/api";
 import {
+  bulkDeleteOrders,
   bulkUpdateOrderStatus,
   fetchAdminOrders,
   updateAdminOrder,
@@ -91,5 +92,13 @@ export function useOrderMutations() {
     return res;
   }
 
-  return { pending, patchOrder, changeStatus, bulkStatus };
+  async function bulkDelete(ids: string[]) {
+    const res = await bulkDeleteOrders(ids);
+    const gone = new Set([...res.deleted.map((r) => r.id), ...res.missing]);
+    qc.setQueryData<AdminOrdersPayload>(ADMIN_ORDERS_KEY, (prev) => (prev ? { ...prev, orders: prev.orders.filter((o) => !gone.has(o.id)) } : prev));
+    toast.success(`Deleted ${res.deleted.length} order${res.deleted.length === 1 ? "" : "s"}`);
+    return res;
+  }
+
+  return { pending, patchOrder, changeStatus, bulkStatus, bulkDelete };
 }
