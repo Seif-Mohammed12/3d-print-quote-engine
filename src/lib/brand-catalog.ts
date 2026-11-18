@@ -8,6 +8,41 @@ export type ProductColor = {
   id: string;
   name: string;
   hex: string;
+  /** Set when the colour is out of stock in the library: shown but can't be picked. */
+  outOfStock?: boolean;
+};
+
+export type ProductCategory = {
+  id: string;
+  slug: string;
+  name: string;
+  sortOrder: number;
+};
+
+export type ProductOptionValue = {
+  id: string;
+  label: string;
+  swatchHex: string | null;
+  /** EGP added to (or taken off) the unit price. The server applies the same rule at checkout. */
+  priceDelta: number;
+  isAvailable: boolean;
+};
+
+export type ProductOptionGroup = {
+  id: string;
+  name: string;
+  displayType: "buttons" | "swatches" | "dropdown";
+  isRequired: boolean;
+  values: ProductOptionValue[];
+};
+
+/** A customer's choice for one option group, as kept in the cart and sent to checkout. */
+export type SelectedOption = {
+  groupId: string;
+  groupName: string;
+  valueId: string;
+  valueLabel: string;
+  priceDelta: number;
 };
 
 export type ProductBundleItem = {
@@ -34,8 +69,12 @@ export type Product = {
   images: string[];
   /** Colour shown in each photo, parallel to `images`; null for general shots. */
   imageColorIds?: Array<string | null>;
+  /** Option value shown in each photo, parallel to `images`; null for general shots. */
+  imageOptionValueIds?: Array<string | null>;
   primaryColors: ProductColor[];
   secondaryColors: ProductColor[];
+  category?: ProductCategory | null;
+  optionGroups?: ProductOptionGroup[];
   supportsLeds: boolean;
   ledExtraPrice: number;
   isBundle?: boolean;

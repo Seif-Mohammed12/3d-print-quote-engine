@@ -64,6 +64,9 @@ function buildItemDetails(item: Record<string, unknown>) {
     item.time ? `Time: ${item.time}h` : null,
     item.primaryColor ? `Primary: ${item.primaryColor}` : null,
     item.secondaryColor ? `Secondary: ${item.secondaryColor}` : null,
+    Array.isArray(item.options) && item.options.length
+      ? (item.options as Array<{ group?: string; value?: string }>).map((o) => `${o.group}: ${o.value}`).join(", ")
+      : null,
     formatBundleItems(item.bundleItems) ? `Includes: ${formatBundleItems(item.bundleItems)}` : null,
   ]) || "-";
 }

@@ -14,6 +14,8 @@ export const LIMITS = {
   addressLine: 200,
   city: 80,
   color: 60,
+  colorId: 100,
+  options: 10,
   guestTokenMin: 16,
   guestTokenMax: 128,
 };
@@ -99,14 +101,72 @@ export function normalizeRequestedItems(body) {
     if (!Number.isInteger(qty) || qty < 1 || qty > LIMITS.qty) {
       return { error: `Quantity must be a whole number between 1 and ${LIMITS.qty}.` };
     }
+    const rawOptions = raw?.options == null ? [] : raw.options;
+    if (!Array.isArray(rawOptions) || rawOptions.length > LIMITS.options) {
+      return { error: "One of the items in your order has invalid options." };
+    }
+    const options = [];
+    for (const o of rawOptions) {
+      if (!isUuid(o?.groupId) || !isUuid(o?.valueId)) return { error: "One of the items in your order has invalid options." };
+      if (options.some((x) => x.groupId === o.groupId.toLowerCase())) return { error: "One of the items in your order has invalid options." };
+      options.push({ groupId: o.groupId.toLowerCase(), valueId: o.valueId.toLowerCase() });
+    }
     items.push({
       productId: productId.toLowerCase(),
       qty,
       primaryColor: cleanText(raw?.primaryColor, LIMITS.color),
       secondaryColor: cleanText(raw?.secondaryColor, LIMITS.color),
+      primaryColorId: cleanText(raw?.primaryColorId, LIMITS.colorId),
+      secondaryColorId: cleanText(raw?.secondaryColorId, LIMITS.colorId),
+      options,
     });
   }
   return { value: items };
+}
+
+/**
+ * Resolve the colour a line asked for against the product's own colours: by id first, then by
+ * name (carts saved before ids were sent). Products without colours in a role need none.
+ */
+export function resolveColour(colours, requestedId, requestedName, roleLabel) {
+  if (!colours || colours.length === 0) return { value: null };
+  const byId = requestedId ? colours.find((c) => c.color_id === requestedId) : null;
+  const byName = !byId && requestedName ? colours.find((c) => c.name.toLowerCase() === requestedName.toLowerCase()) : null;
+  const colour = byId || byName;
+  if (!colour) return { error: `Please choose a ${roleLabel} for every item in your cart.` };
+  if (colour.out_of_stock) return { error: `${colour.name} is out of stock right now. Please pick another colour.` };
+  return { value: colour };
+}
+
+/**
+ * Check a line's option choices against the product's option groups and return the price and
+ * weight adjustments. `groups` is [{ id, name, is_required, values: [{ id, label, price_delta,
+ * grams_delta, is_available }] }] for this product.
+ */
+export function resolveOptions(groups, requested, productName) {
+  const byGroup = new Map((groups || []).map((g) => [g.id, g]));
+  const chosen = [];
+  for (const r of requested || []) {
+    const group = byGroup.get(r.groupId);
+    if (!group) return { error: `The options for ${productName} have changed. Please add it to your cart again.` };
+    const value = (group.values || []).find((v) => v.id === r.valueId);
+    if (!value) return { error: `The options for ${productName} have changed. Please add it to your cart again.` };
+    if (!value.is_available) return { error: `${group.name} “${value.label}” for ${productName} isn't available right now.` };
+    chosen.push({
+      groupId: group.id,
+      group: group.name,
+      valueId: value.id,
+      value: value.label,
+      priceDelta: toMoney(value.price_delta || 0),
+      gramsDelta: Number(value.grams_delta || 0),
+    });
+  }
+  for (const g of groups || []) {
+    if (g.is_required && !chosen.some((c) => c.groupId === g.id)) {
+      return { error: `Please choose ${String(g.name).toLowerCase()} for ${productName}.` };
+    }
+  }
+  return { value: chosen };
 }
 
 function toMoney(value) {
@@ -124,8 +184,12 @@ export function effectiveUnitPrice(row) {
 /**
  * Price requested items against trusted catalogue rows.
  * `productsById` maps product id -> products row; `bundleItemsByProduct` maps bundle id -> [{productId,name,slug,qty}].
+ * `extras.optionsByProduct` maps product id -> option groups (see resolveOptions);
+ * `extras.coloursByProduct` maps product id -> { primary: [...], secondary: [...] } product_colors
+ * rows, each with `out_of_stock` from the colour library. Both are optional so older callers work.
  */
-export function priceProductOrder(requested, productsById, bundleItemsByProduct = {}) {
+export function priceProductOrder(requested, productsById, bundleItemsByProduct = {}, extras = {}) {
+  const { optionsByProduct = {}, coloursByProduct = null } = extras;
   const items = [];
   let subtotal = 0;
 
@@ -134,13 +198,29 @@ export function priceProductOrder(requested, productsById, bundleItemsByProduct 
     if (!row || !row.is_published) {
       return { error: "One of the items in your order is no longer available. Please review your cart." };
     }
-    const unitPrice = effectiveUnitPrice(row);
-    if (!Number.isFinite(unitPrice)) return { error: "One of the items in your order has no price yet." };
+    const basePrice = effectiveUnitPrice(row);
+    if (!Number.isFinite(basePrice)) return { error: "One of the items in your order has no price yet." };
+
+    const options = resolveOptions(optionsByProduct[row.id] || [], line.options || [], row.name);
+    if (options.error) return { error: options.error };
+    const unitPrice = Math.max(0, toMoney(basePrice + options.value.reduce((s, o) => s + o.priceDelta, 0)));
+
+    let primaryColor = line.primaryColor;
+    let secondaryColor = line.secondaryColor;
+    if (coloursByProduct) {
+      const colours = coloursByProduct[row.id] || { primary: [], secondary: [] };
+      const primary = resolveColour(colours.primary, line.primaryColorId, line.primaryColor, "colour");
+      if (primary.error) return { error: primary.error };
+      const secondary = resolveColour(colours.secondary, line.secondaryColorId, line.secondaryColor, "accent colour");
+      if (secondary.error) return { error: secondary.error };
+      primaryColor = primary.value?.name || "";
+      secondaryColor = secondary.value?.name || "";
+    }
 
     const lineSubtotal = toMoney(unitPrice * line.qty);
     subtotal = toMoney(subtotal + lineSubtotal);
     const isBundle = Boolean(row.is_bundle);
-    const discounted = unitPrice !== toMoney(row.base_price);
+    const discounted = basePrice !== toMoney(row.base_price);
 
     items.push({
       itemType: isBundle ? "bundle" : "product",
@@ -151,10 +231,12 @@ export function priceProductOrder(requested, productsById, bundleItemsByProduct 
       qty: line.qty,
       unitPrice,
       subtotal: lineSubtotal,
-      primaryColor: line.primaryColor,
-      secondaryColor: line.secondaryColor,
+      primaryColor,
+      secondaryColor,
+      options: options.value.map(({ gramsDelta: _g, ...o }) => o),
+      basePrice,
       bundleItems: isBundle ? bundleItemsByProduct[row.id] || [] : [],
-      discount: discounted ? { oldPrice: toMoney(row.base_price), newPrice: unitPrice } : null,
+      discount: discounted ? { oldPrice: toMoney(row.base_price), newPrice: basePrice } : null,
     });
   }
 

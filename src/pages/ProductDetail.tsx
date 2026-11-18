@@ -1,18 +1,24 @@
 import Layout from "@/components/Layout";
 import Sleeve from "@/components/catalog/Sleeve";
 import ColorPicker from "@/components/catalog/ColorPicker";
+import OptionPicker from "@/components/catalog/OptionPicker";
 import CatalogueRow from "@/components/catalog/CatalogueRow";
 import { useProducts } from "@/hooks/use-brand-products";
 import { useCart } from "@/lib/cart-context";
-import { getUnitPrice, type ProductOrderDraft } from "@/lib/product-order";
+import type { ProductOrderDraft } from "@/lib/product-order";
 import { cacheProducts } from "@/lib/runtime-product-cache";
 import {
   catalogueNo,
-  categoryLabel,
-  effectivePrice,
+  defaultOptionSelection,
+  firstAvailableColorId,
   formatEGP,
   hasDiscount,
-  imagesForColor,
+  imagesForSelection,
+  missingRequiredOptions,
+  priceWithOptions,
+  productCategoryLabel,
+  selectedOptions,
+  type OptionSelection,
 } from "@/lib/catalog-format";
 import { ArrowLeft, ChevronLeft, ChevronRight } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -37,24 +43,37 @@ export default function ProductDetail() {
 
   const [selectedPrimaryId, setSelectedPrimaryId] = useState("");
   const [selectedSecondaryId, setSelectedSecondaryId] = useState("");
+  const [optionSelection, setOptionSelection] = useState<OptionSelection>({});
   const [activeImageIdx, setActiveImageIdx] = useState(0);
   const [justAdded, setJustAdded] = useState(false);
   const touchStartX = useRef<number | null>(null);
 
   useEffect(() => {
     if (!product) return;
+    // Keep a valid, in-stock choice; out-of-stock colours can't be picked.
     setSelectedPrimaryId((prev) =>
-      prev && product.primaryColors.some((color) => color.id === prev) ? prev : product.primaryColors[0]?.id || ""
+      prev && product.primaryColors.some((color) => color.id === prev && !color.outOfStock) ? prev : firstAvailableColorId(product.primaryColors)
     );
     setSelectedSecondaryId((prev) =>
-      prev && product.secondaryColors.some((color) => color.id === prev) ? prev : product.secondaryColors[0]?.id || ""
+      prev && product.secondaryColors.some((color) => color.id === prev && !color.outOfStock) ? prev : firstAvailableColorId(product.secondaryColors)
     );
+    setOptionSelection((prev) => {
+      const next = defaultOptionSelection(product);
+      for (const g of product.optionGroups || []) {
+        const kept = g.values.find((v) => v.id === prev[g.id] && v.isAvailable);
+        if (kept) next[g.id] = kept.id;
+      }
+      return next;
+    });
   }, [product]);
+
+  const chosenValueIds = useMemo(() => Object.values(optionSelection).filter(Boolean), [optionSelection]);
+  const chosenKey = chosenValueIds.join(",");
 
   // A new product or a new colour starts the gallery at its first photo.
   useEffect(() => {
     setActiveImageIdx(0);
-  }, [productId, selectedPrimaryId]);
+  }, [productId, selectedPrimaryId, chosenKey]);
 
   // Room for the fixed phone buy bar at the end of the page
   useEffect(() => {
@@ -112,15 +131,27 @@ export default function ProductDetail() {
     );
   }
 
-  const images = imagesForColor(product, selectedPrimaryId);
+  const images = imagesForSelection(product, selectedPrimaryId, chosenValueIds);
   const currentImage = images[activeImageIdx] || images[0];
-  const price = getUnitPrice(product, false);
+  const options = selectedOptions(product, optionSelection);
+  const price = priceWithOptions(product, options);
+  const missing = missingRequiredOptions(product, optionSelection);
   const selectedPrimary = product.primaryColors.find((color) => color.id === selectedPrimaryId);
   const selectedSecondary = product.secondaryColors.find((color) => color.id === selectedSecondaryId);
   const hasSecondaryColors = product.secondaryColors.length > 0;
+  const colourUnavailable =
+    (product.primaryColors.length > 0 && (!selectedPrimary || Boolean(selectedPrimary.outOfStock))) ||
+    (hasSecondaryColors && (!selectedSecondary || Boolean(selectedSecondary.outOfStock)));
+  const blockedReason = colourUnavailable
+    ? "This colour is out of stock right now"
+    : missing.length
+      ? `Choose ${missing.map((g) => g.name.toLowerCase()).join(" and ")}`
+      : "";
   const hasMultipleImages = images.length > 1;
   const no = catalogueNo(products, product.id);
-  const colourSummary = [selectedPrimary?.name, hasSecondaryColors ? selectedSecondary?.name : null].filter(Boolean).join(" / ");
+  const colourSummary = [selectedPrimary?.name, hasSecondaryColors ? selectedSecondary?.name : null, ...options.map((o) => o.valueLabel)]
+    .filter(Boolean)
+    .join(" / ");
 
   const step = (dir: 1 | -1) => setActiveImageIdx((prev) => (prev + dir + images.length) % images.length);
 
@@ -134,6 +165,7 @@ export default function ProductDetail() {
       primaryColorId: selectedPrimaryId,
       secondaryColorId: selectedSecondaryId,
       ledsEnabled: false,
+      options,
       qty: 1,
     };
     sessionStorage.setItem("productOrderDraft", JSON.stringify(draft));
@@ -141,6 +173,10 @@ export default function ProductDetail() {
 
   const addToCart = () => {
     if (justAdded) return;
+    if (blockedReason) {
+      toast.error(blockedReason);
+      return;
+    }
     addProductToCart({
       brand: product.brand || "pforge",
       productId: product.id,
@@ -153,6 +189,7 @@ export default function ProductDetail() {
       primaryColorName: selectedPrimary?.name,
       secondaryColorName: selectedSecondary?.name,
       ledsEnabled: false,
+      options,
       unitPrice: price,
     });
     persistDraft();
@@ -165,6 +202,10 @@ export default function ProductDetail() {
   };
 
   const buyNow = () => {
+    if (blockedReason) {
+      toast.error(blockedReason);
+      return;
+    }
     persistDraft();
     navigate("/product-checkout");
   };
@@ -187,7 +228,7 @@ export default function ProductDetail() {
           <ArrowLeft className="h-4 w-4" aria-hidden="true" /> Back
         </button>
         <span className="text-muted-foreground">
-          {categoryLabel[product.brand || ""] || "Product"} · <span className="text-ink">{no}</span>
+          {productCategoryLabel(product)} · <span className="text-ink">{no}</span>
         </span>
       </div>
 
@@ -270,7 +311,7 @@ export default function ProductDetail() {
 
             <p className="mt-5">
               <span className="text-[28px] font-bold tracking-[-0.02em]">{formatEGP(price)}</span>
-              {hasDiscount(product) ? (
+              {hasDiscount(product) && !options.some((o) => o.priceDelta) ? (
                 <span className="ml-3 text-muted-foreground line-through">{formatEGP(product.basePrice)}</span>
               ) : null}
             </p>
@@ -292,7 +333,20 @@ export default function ProductDetail() {
                   onChange={setSelectedSecondaryId}
                 />
               ) : null}
+              {(product.optionGroups || []).map((group) => (
+                <OptionPicker
+                  key={group.id}
+                  group={group}
+                  value={optionSelection[group.id] || ""}
+                  onChange={(valueId) => setOptionSelection((prev) => ({ ...prev, [group.id]: valueId }))}
+                />
+              ))}
             </div>
+            {blockedReason ? (
+              <p className="mt-4 text-sm text-ink" role="status">
+                {blockedReason}.
+              </p>
+            ) : null}
 
             <div className="mt-6 hidden gap-2 md:grid md:grid-cols-[1fr_auto]">
               <button type="button" onClick={addToCart} className="btn-primary">
@@ -369,7 +423,7 @@ export default function ProductDetail() {
       <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background pb-[env(safe-area-inset-bottom)] md:hidden">
         <div className="frame flex h-[72px] items-center gap-4">
           <div className="min-w-0">
-            <p className="text-lg font-bold leading-tight">{formatEGP(effectivePrice(product))}</p>
+            <p className="text-lg font-bold leading-tight">{formatEGP(price)}</p>
             <p className="truncate text-sm text-muted-foreground">{colourSummary || "Pick a colour"}</p>
           </div>
           <button type="button" onClick={addToCart} className="btn-primary min-h-12 flex-1">

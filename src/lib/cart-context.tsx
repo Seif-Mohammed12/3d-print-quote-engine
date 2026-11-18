@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useCallback, ReactNode } from "react";
 import { QuoteResult } from "./quote-calculator";
-import type { BrandId } from "@/lib/brand-catalog";
+import type { BrandId, SelectedOption } from "@/lib/brand-catalog";
 
 export interface CartItem {
   id: string;
@@ -26,6 +26,8 @@ export interface ProductCartItem {
   primaryColorName?: string;
   secondaryColorName?: string;
   ledsEnabled: boolean;
+  /** Option choices (size, pattern…). The server re-prices them at checkout. */
+  options?: SelectedOption[];
   unitPrice: number;
 }
 

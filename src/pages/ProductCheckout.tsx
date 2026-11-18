@@ -6,10 +6,10 @@ import SectionHeading from "@/components/SectionHeading";
 import CheckoutAuthPrompt from "@/components/CheckoutAuthPrompt";
 import { toast } from "sonner";
 import { useCart, type ProductCartItem } from "@/lib/cart-context";
-import type { Product } from "@/lib/brand-catalog";
+import type { Product, SelectedOption } from "@/lib/brand-catalog";
+import { liveOptions, priceWithOptions } from "@/lib/catalog-format";
 import {
   getProduct,
-  getUnitPrice,
   type PaymentMethod,
   type ProductOrderCustomer,
   type ProductOrderDraft,
@@ -30,6 +30,7 @@ type CartLineResolved = {
   primary: { name: string } | null;
   secondary: { name: string } | null;
   hasSecondaryColors: boolean;
+  options: SelectedOption[];
   unitPrice: number;
   lineSubtotal: number;
 };
@@ -152,8 +153,10 @@ export default function ProductCheckout() {
       const live = cartQueries[idx]?.data;
       const legacy = live ? mapDbProductToLegacyProduct(live) : getProduct(item.brand, item.productId);
       const qty = Math.max(1, item.qty || 1);
-      // Charge the live catalogue price (the server enforces it), not the price saved in the cart.
-      const unitPrice = legacy ? getUnitPrice(legacy, false) : item.unitPrice;
+      // Charge the live catalogue price and option adjustments (the server enforces both),
+      // not the price saved in the cart.
+      const options = legacy ? liveOptions(legacy, item.options) : item.options || [];
+      const unitPrice = legacy ? priceWithOptions(legacy, options) : item.unitPrice;
       const lineSubtotal = unitPrice * qty;
       if (!legacy) {
         return {
@@ -163,6 +166,7 @@ export default function ProductCheckout() {
           primary: null,
           secondary: null,
           hasSecondaryColors: false,
+          options,
           unitPrice,
           lineSubtotal,
         };
@@ -176,6 +180,7 @@ export default function ProductCheckout() {
         primary,
         secondary,
         hasSecondaryColors: legacy.secondaryColors.length > 0,
+        options,
         unitPrice,
         lineSubtotal,
       };
@@ -196,10 +201,11 @@ export default function ProductCheckout() {
     return product.secondaryColors.length > 0;
   }, [product]);
 
+  const singleOptions = useMemo(() => (draft && product ? liveOptions(product, draft.options) : []), [draft, product]);
   const unitPrice = useMemo(() => {
     if (!draft || !product) return 0;
-    return getUnitPrice(product, false);
-  }, [draft, product]);
+    return priceWithOptions(product, singleOptions);
+  }, [draft, product, singleOptions]);
 
   const singleSubtotal = useMemo(() => {
     if (!draft) return 0;
@@ -379,6 +385,9 @@ export default function ProductCheckout() {
                   subtotal: line.lineSubtotal,
                   primaryColor: line.primary?.name || "",
                   secondaryColor: line.secondary?.name || "",
+                  primaryColorId: line.item.primaryColorId || "",
+                  secondaryColorId: line.item.secondaryColorId || "",
+                  options: line.options.map((o) => ({ groupId: o.groupId, valueId: o.valueId })),
                   bundleItems: line.item.bundleItems || line.product!.bundleItems || [],
                   discount:
                     line.product!.discount?.enabled && line.product!.discount.price
@@ -406,6 +415,9 @@ export default function ProductCheckout() {
                 subtotal,
                 primaryColor: primary?.name || "",
                 secondaryColor: secondary?.name || "",
+                primaryColorId: draft!.primaryColorId || "",
+                secondaryColorId: draft!.secondaryColorId || "",
+                options: singleOptions.map((o) => ({ groupId: o.groupId, valueId: o.valueId })),
                 bundleItems: draft!.bundleItems || product!.bundleItems || [],
                 discount: product!.discount?.enabled
                   ? { oldPrice: product!.basePrice, newPrice: product!.discount.price }
@@ -495,6 +507,9 @@ export default function ProductCheckout() {
                               Qty {line.item.qty} • Primary: {line.primary?.name || "—"}
                               {line.hasSecondaryColors ? ` • Secondary: ${line.secondary?.name || "—"}` : ""}
                             </p>
+                            {line.options.length ? (
+                              <p className="text-xs text-muted-foreground">{line.options.map((o) => `${o.groupName}: ${o.valueLabel}`).join(" • ")}</p>
+                            ) : null}
                             {line.item.isBundle && (line.item.bundleItems?.length || line.product?.bundleItems?.length) ? (
                               <p className="text-xs text-muted-foreground mt-1">
                                 Includes: {(line.item.bundleItems || line.product?.bundleItems || []).map((bundleItem) => `${bundleItem.name}${bundleItem.qty > 1 ? ` x${bundleItem.qty}` : ""}`).join(", ")}
@@ -529,6 +544,9 @@ export default function ProductCheckout() {
                           Primary: {primary?.name || "—"}
                           {hasSingleSecondaryColors ? ` • Secondary: ${secondary?.name || "—"}` : ""}
                         </p>
+                        {singleOptions.length ? (
+                          <p className="text-xs text-muted-foreground">{singleOptions.map((o) => `${o.groupName}: ${o.valueLabel}`).join(" • ")}</p>
+                        ) : null}
                         {draft!.isBundle && (draft!.bundleItems?.length || product!.bundleItems?.length) ? (
                           <p className="text-xs text-muted-foreground mt-1">
                             Includes: {(draft!.bundleItems || product!.bundleItems || []).map((bundleItem) => `${bundleItem.name}${bundleItem.qty > 1 ? ` x${bundleItem.qty}` : ""}`).join(", ")}

@@ -33,7 +33,8 @@ function itemRows(items, { forAdmin }) {
         ${row("Qty", e(it.qty))}
         ${forAdmin ? row("Unit price", `EGP${e(it.unitPrice)}`) : ""}
         ${row("Primary color", e(it.primaryColor))}
-        ${row("Secondary color", e(it.secondaryColor))}
+        ${it.secondaryColor ? row("Secondary color", e(it.secondaryColor)) : ""}
+        ${(Array.isArray(it.options) ? it.options : []).map((o) => row(e(o.group), `${e(o.value)}${o.priceDelta ? ` (${o.priceDelta > 0 ? "+" : "-"}EGP${e(Math.abs(o.priceDelta))})` : ""}`)).join("")}
         ${contents ? row("Bundle contents", contents) : ""}
         ${forAdmin && it.discount ? row("List / sale", `EGP${e(it.discount.oldPrice)} → EGP${e(it.discount.newPrice)}`) : ""}
         ${row("Line total", `EGP${e(it.subtotal)}`)}`;

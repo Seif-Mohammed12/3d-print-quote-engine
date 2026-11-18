@@ -23,6 +23,7 @@ function extractItemData(item: any) {
   return {
     primaryColor: data.primaryColor || data.primaryColorId || data.primary_color || null,
     secondaryColor: data.secondaryColor || data.secondaryColorId || data.secondary_color || null,
+    options: Array.isArray(data.options) ? (data.options as Array<{ group: string; value: string }>) : [],
     productId: data.productId || data.product_id || null,
     brand: data.brand || null,
     qty: data.qty ?? item.qty ?? null,
@@ -174,6 +175,9 @@ export default function OrderDetail() {
                           <MetadataRow label="Product ID" value={extractItemData(item).productId} />
                           <MetadataRow label="Primary color" value={extractItemData(item).primaryColor} />
                           <MetadataRow label="Secondary color" value={extractItemData(item).secondaryColor} />
+                          {extractItemData(item).options.map((o) => (
+                            <MetadataRow key={o.group} label={o.group} value={o.value} />
+                          ))}
                           {data.order.order_type !== "quote" && (
                             <>
                               <MetadataRow label="Unit price" value={extractItemData(item).unitPrice != null ? `${Number(extractItemData(item).unitPrice).toFixed(0)} EGP` : null} />

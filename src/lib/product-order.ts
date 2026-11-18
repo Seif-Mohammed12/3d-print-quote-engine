@@ -1,4 +1,4 @@
-import { brandCatalog, type BrandId } from "@/lib/brand-catalog";
+import { brandCatalog, type BrandId, type SelectedOption } from "@/lib/brand-catalog";
 import { getCachedProduct } from "@/lib/runtime-product-cache";
 
 export type ShippingMethod = "pickup" | "aramex";
@@ -14,6 +14,7 @@ export type ProductOrderDraft = {
   primaryColorId: string;
   secondaryColorId: string;
   ledsEnabled: boolean;
+  options?: SelectedOption[];
   qty: number;
 };
 

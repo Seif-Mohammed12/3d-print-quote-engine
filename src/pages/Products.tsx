@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import Layout from "@/components/Layout";
 import QuickAddProductDialog from "@/components/QuickAddProductDialog";
 import Sleeve from "@/components/catalog/Sleeve";
@@ -7,41 +7,49 @@ import { useProducts } from "@/hooks/use-brand-products";
 import type { Product } from "@/lib/brand-catalog";
 import {
   catalogueNo,
-  categoryLabel,
-  categoryOrder,
   effectivePrice,
   firstColorHex,
   formatEGP,
   hasDiscount,
+  productCategoryKey,
+  productCategoryLabel,
   productHref,
+  storefrontCategories,
 } from "@/lib/catalog-format";
-
-type Filter = "all" | (typeof categoryOrder)[number];
 
 export default function Products() {
   const [quickAddProduct, setQuickAddProduct] = useState<Product | null>(null);
-  const [filter, setFilter] = useState<Filter>("all");
   const { data: products, isPending, isError, refetch, isRefetching } = useProducts();
+  const [params, setParams] = useSearchParams();
+  const categories = useMemo(() => storefrontCategories(products ?? []), [products]);
+  // The chosen shelf lives in the URL (?category=slug) so it can be shared; unknown values show all.
+  const requested = params.get("category") || "all";
+  const filter = requested === "all" || categories.some((c) => c.key === requested) || !products ? requested : "all";
+  const setFilter = (id: string) =>
+    setParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        if (id === "all") next.delete("category");
+        else next.set("category", id);
+        return next;
+      },
+      { replace: true }
+    );
 
   const counts = useMemo(() => {
     const all = products ?? [];
-    return {
-      all: all.length,
-      pforge: all.filter((p) => p.brand === "pforge").length,
-      printique: all.filter((p) => p.brand === "printique").length,
-    } as Record<Filter, number>;
+    const c: Record<string, number> = { all: all.length };
+    for (const p of all) c[productCategoryKey(p)] = (c[productCategoryKey(p)] || 0) + 1;
+    return c;
   }, [products]);
 
   // Photographed releases first; products still waiting on a photo go to the end of their shelf.
   const visible = useMemo(() => {
-    const list = (products ?? []).filter((p) => filter === "all" || p.brand === filter);
+    const list = (products ?? []).filter((p) => filter === "all" || productCategoryKey(p) === filter);
     return [...list].sort((a, b) => Number(b.images.length > 0) - Number(a.images.length > 0));
   }, [products, filter]);
 
-  const filters: { id: Filter; label: string }[] = [
-    { id: "all", label: "All" },
-    ...categoryOrder.map((id) => ({ id, label: categoryLabel[id] })),
-  ];
+  const filters: { id: string; label: string }[] = [{ id: "all", label: "All" }, ...categories.map((c) => ({ id: c.key, label: c.label }))];
 
   return (
     <Layout>
@@ -71,7 +79,7 @@ export default function Products() {
                 }`}
               >
                 {f.label}
-                <span className="text-sm text-muted-foreground">{products ? counts[f.id] : ""}</span>
+                <span className="text-sm text-muted-foreground">{products ? counts[f.id] || 0 : ""}</span>
                 {active ? <span className="absolute inset-x-0 bottom-0 h-0.5 bg-ink" aria-hidden="true" /> : null}
               </button>
             );
@@ -138,7 +146,7 @@ export default function Products() {
                         </Link>
                       </h2>
                       <p className="mt-1 text-sm text-muted-foreground">
-                        {categoryLabel[product.brand || ""] || "Product"}
+                        {productCategoryLabel(product)}
                         {product.isBundle ? <span className="text-ink"> · Bundle</span> : null}
                         {product.primaryColors.length > 1 ? ` · ${product.primaryColors.length} colours` : ""}
                       </p>
