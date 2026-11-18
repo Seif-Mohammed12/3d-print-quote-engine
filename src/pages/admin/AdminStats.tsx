@@ -1,10 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import Layout from "@/components/Layout";
+import AdminShell from "@/components/admin/AdminShell";
 import { DollarSign, Package, Droplet, Plus, Edit2, Trash2, Calendar, ChevronDown } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { toast } from "sonner";
-import AdminNav from "@/components/admin/AdminNav";
 import { getAccessToken } from "@/lib/auth-session";
 import {
   AlertDialog,
@@ -394,15 +393,12 @@ export default function AdminStats() {
       : "No completed orders for monthly view yet";
 
   return (
-    <Layout>
-      <section className="section-padding">
-        <div className="container mx-auto max-w-7xl space-y-8">
-          <AdminNav />
-          {/* Page Title */}
-          <div>
-            <h1 className="font-heading text-3xl font-bold text-foreground">Sales Statistics</h1>
-            <p className="text-muted-foreground mt-2">Track revenue, orders, and filament usage</p>
-          </div>
+    <AdminShell
+      title="Sales ledger"
+      description="Offline sales you enter by hand, plus a copy of each website order made automatically when it's completed. Insights keeps the two apart."
+    >
+      <section>
+        <div className="space-y-8">
 
           {!loading && (
             <>
@@ -887,6 +883,6 @@ export default function AdminStats() {
           )}
         </div>
       </section>
-    </Layout>
+    </AdminShell>
   );
 }

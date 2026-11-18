@@ -13,6 +13,10 @@ export default {
       },
     },
     extend: {
+      screens: {
+        // Touch screens: admin controls grow to a 44px target.
+        coarse: { raw: "(pointer: coarse)" },
+      },
       fontFamily: {
         heading: ['"Host Grotesk"', '"Noto Sans Arabic"', 'system-ui', 'sans-serif'],
         body: ['"Host Grotesk"', '"Noto Sans Arabic"', 'system-ui', 'sans-serif'],

@@ -36,8 +36,15 @@ const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const Account = lazy(() => import("./pages/Account"));
 const Orders = lazy(() => import("./pages/Orders"));
 const OrderDetail = lazy(() => import("./pages/OrderDetail"));
-const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
+const AdminToday = lazy(() => import("./pages/admin/AdminToday"));
 const AdminOrders = lazy(() => import("./pages/admin/AdminOrders"));
+const AdminQuotes = lazy(() => import("./pages/admin/AdminQuotes"));
+const AdminCatalogue = lazy(() => import("./pages/admin/AdminCatalogue"));
+const AdminColours = lazy(() => import("./pages/admin/AdminColours"));
+const AdminCategories = lazy(() => import("./pages/admin/AdminCategories"));
+const AdminCustomers = lazy(() => import("./pages/admin/AdminCustomers"));
+const AdminInsights = lazy(() => import("./pages/admin/AdminInsights"));
+const AdminSettings = lazy(() => import("./pages/admin/AdminSettings"));
 const AdminStats = lazy(() => import("./pages/admin/AdminStats"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
@@ -120,7 +127,7 @@ const App = () => (
               path="/admin"
               element={
                 <AdminRoleRoute>
-                  <AdminDashboard />
+                  <AdminToday />
                 </AdminRoleRoute>
               }
             />
@@ -129,6 +136,62 @@ const App = () => (
               element={
                 <AdminRoleRoute>
                   <AdminOrders />
+                </AdminRoleRoute>
+              }
+            />
+            <Route
+              path="/admin/quotes"
+              element={
+                <AdminRoleRoute>
+                  <AdminQuotes />
+                </AdminRoleRoute>
+              }
+            />
+            <Route
+              path="/admin/catalogue"
+              element={
+                <AdminRoleRoute>
+                  <AdminCatalogue />
+                </AdminRoleRoute>
+              }
+            />
+            <Route
+              path="/admin/catalogue/colours"
+              element={
+                <AdminRoleRoute>
+                  <AdminColours />
+                </AdminRoleRoute>
+              }
+            />
+            <Route
+              path="/admin/catalogue/categories"
+              element={
+                <AdminRoleRoute>
+                  <AdminCategories />
+                </AdminRoleRoute>
+              }
+            />
+            <Route
+              path="/admin/customers"
+              element={
+                <AdminRoleRoute>
+                  <AdminCustomers />
+                </AdminRoleRoute>
+              }
+            />
+            <Route
+              path="/admin/insights"
+              element={
+                <AdminRoleRoute>
+                  <AdminInsights />
+                </AdminRoleRoute>
+              }
+            />
+            <Route
+              path="/admin/settings"
+              element={
+                <AdminRoleRoute>
+                  <AdminSettings />
                 </AdminRoleRoute>
               }
             />
