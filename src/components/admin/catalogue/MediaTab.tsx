@@ -203,7 +203,7 @@ export default function MediaTab({
                 className={cn("border border-border bg-background", dragId === img.id && "opacity-40")}
               >
                 <div className="relative aspect-square bg-black">
-                  <img src={img.image_url} alt={`Photo ${idx + 1}`} className="h-full w-full object-cover" loading="lazy" />
+                  <img src={img.image_url} alt={`Photo ${idx + 1}`} className="h-full w-full object-cover" />
                   {idx === 0 ? <span className="absolute left-1.5 top-1.5 bg-background/90 px-1.5 py-0.5 text-[11px] font-semibold">Cover</span> : null}
                   {busyId === img.id ? <Loader2 className="absolute right-1.5 top-1.5 h-4 w-4 animate-spin" aria-label="Saving" /> : null}
                 </div>

@@ -2,8 +2,9 @@ import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Download, Plus } from "lucide-react";
 import { toast } from "sonner";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import {
-  CommandDialog,
+  Command,
   CommandEmpty,
   CommandGroup,
   CommandInput,
@@ -34,7 +35,14 @@ export default function CommandPalette({ open, onOpenChange }: { open: boolean; 
   };
 
   return (
-    <CommandDialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="overflow-hidden p-0 shadow-lg">
+      <DialogTitle className="sr-only">Search and jump</DialogTitle>
+      {/* Plain substring matching: every typed word must appear, so "nami" finds Nami, not every Mohammed. */}
+      <Command
+        filter={(value, search) => (search.toLowerCase().split(/\s+/).filter(Boolean).every((w) => value.toLowerCase().includes(w)) ? 1 : 0)}
+        className="[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-muted-foreground [&_[cmdk-group]]:px-2 [&_[cmdk-input]]:h-12 [&_[cmdk-item]]:px-2 [&_[cmdk-item]]:py-3"
+      >
       <CommandInput placeholder="Type a page, order code, customer or product…" />
       <CommandList className="max-h-[60vh]">
         <CommandEmpty>Nothing matches.</CommandEmpty>
@@ -77,6 +85,16 @@ export default function CommandPalette({ open, onOpenChange }: { open: boolean; 
             Export all orders as CSV
           </CommandItem>
         </CommandGroup>
+        {catalog.data?.products.length ? (
+          <CommandGroup heading="Products">
+            {catalog.data.products.map((p) => (
+              <CommandItem key={p.id} value={`product ${p.name} ${p.slug}`} onSelect={() => go(`/admin/catalogue?product=${p.id}`)}>
+                <span className="min-w-0 flex-1 truncate">{p.name}</span>
+                <span className="ml-2 text-xs text-muted-foreground">{p.is_published ? "Published" : "Draft"}</span>
+              </CommandItem>
+            ))}
+          </CommandGroup>
+        ) : null}
         {orders.data?.orders.length ? (
           <CommandGroup heading="Orders">
             {orders.data.orders.slice(0, 200).map((o) => (
@@ -94,17 +112,9 @@ export default function CommandPalette({ open, onOpenChange }: { open: boolean; 
             ))}
           </CommandGroup>
         ) : null}
-        {catalog.data?.products.length ? (
-          <CommandGroup heading="Products">
-            {catalog.data.products.map((p) => (
-              <CommandItem key={p.id} value={`product ${p.name} ${p.slug}`} onSelect={() => go(`/admin/catalogue?product=${p.id}`)}>
-                <span className="min-w-0 flex-1 truncate">{p.name}</span>
-                <span className="ml-2 text-xs text-muted-foreground">{p.is_published ? "Published" : "Draft"}</span>
-              </CommandItem>
-            ))}
-          </CommandGroup>
-        ) : null}
       </CommandList>
-    </CommandDialog>
+      </Command>
+      </DialogContent>
+    </Dialog>
   );
 }

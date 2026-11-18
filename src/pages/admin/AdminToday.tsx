@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, RefreshCw } from "lucide-react";
 import AdminShell from "@/components/admin/AdminShell";
@@ -69,6 +69,7 @@ function AttentionRow({ order, reason }: { order: AdminOrder; reason: string }) 
 
 export default function AdminToday() {
   const { data, isPending, error, refetch, isRefetching } = useAdminOrders();
+  const [showAll, setShowAll] = useState(false);
   const orders = useMemo(() => data?.orders ?? [], [data]);
   const today = todayISO();
 
@@ -133,11 +134,18 @@ export default function AdminToday() {
                 No pending orders{data?.productionFields ? ", nothing overdue and nothing due today" : ""}.
               </EmptyState>
             ) : (
-              <ul className="divide-y divide-border">
-                {attention.map(({ order, reason }) => (
-                  <AttentionRow key={order.id} order={order} reason={reason} />
-                ))}
-              </ul>
+              <>
+                <ul className="divide-y divide-border">
+                  {(showAll ? attention : attention.slice(0, 6)).map(({ order, reason }) => (
+                    <AttentionRow key={order.id} order={order} reason={reason} />
+                  ))}
+                </ul>
+                {attention.length > 6 ? (
+                  <button type="button" className="adm-btn-ghost w-full justify-center border-t border-border" onClick={() => setShowAll((v) => !v)} aria-expanded={showAll}>
+                    {showAll ? "Show fewer" : `Show all ${attention.length}`}
+                  </button>
+                ) : null}
+              </>
             )}
             {!isPending && data && !data.productionFields ? (
               <p className="border-t border-border px-4 py-2 text-xs text-muted-foreground">

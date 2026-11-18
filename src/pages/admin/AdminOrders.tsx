@@ -105,7 +105,7 @@ function Board({ orders, canWrite, onOpen }: { orders: AdminOrder[]; canWrite: b
                     className={cn("border border-border bg-background p-2.5", dragId === o.id && "opacity-40")}
                   >
                     <button type="button" onClick={() => onOpen(o.id)} className="block w-full text-left">
-                      <span className="num block text-sm font-semibold">{o.order_code}</span>
+                      <span className="num block whitespace-nowrap text-[13px] font-semibold">{o.order_code}</span>
                       <span className="block truncate text-xs" dir="auto">{o.customer_name}</span>
                       <span className="mt-1 block truncate text-xs text-muted-foreground">{itemsSummary(o)}</span>
                       <span className="num mt-1 flex justify-between text-xs">

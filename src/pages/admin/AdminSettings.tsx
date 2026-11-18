@@ -90,7 +90,15 @@ export default function AdminSettings() {
         <Panel title="Switches">
           {data ? (
             <ul className="divide-y divide-border">
-              <Row ok={data.switches.orderEmails} label="Order emails" detail="Resend is configured, so new orders email the studio and the customer." />
+              <Row
+                ok={data.switches.orderEmails}
+                label="Order emails"
+                detail={
+                  data.switches.orderEmails
+                    ? "Resend is configured, so new orders email the studio and the customer."
+                    : "RESEND_API_KEY or RESEND_FROM_EMAIL is missing where this server runs, so orders are saved but no emails go out."
+                }
+              />
               <Row ok={data.switches.serviceRoleKey} label="Server database key" detail="Functions use the Supabase service key. Without it, admin reads fall back to your own permissions." />
               <li className="flex items-start gap-3 px-4 py-3">
                 <span className="mt-0.5 w-5" aria-hidden="true" />
